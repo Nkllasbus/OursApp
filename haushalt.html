@@ -581,14 +581,15 @@ body{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/20
       try{
         [profiles,access,meta,invites]=(await Promise.all(["profiles","access","meta","invites"].map(k=>db.ref(`spaces/${sid}/${k}`).once("value")))).map(s=>s.val()||{});
       }catch(err){ return; }
-      const owner=meta.owner===user.uid, ids=Object.keys(access);
-      const list=ids.map(id=>({id,name:(profiles[id]&&profiles[id].name)||"Ohne Namen",mail:profiles[id]&&profiles[id].email||"",own:meta.owner===id}))
+      const coOwn=id=>meta.owner===id || (meta.owners&&meta.owners[id]);
+      const owner=!!coOwn(user.uid), ids=Object.keys(access);
+      const list=ids.map(id=>({id,name:(profiles[id]&&profiles[id].name)||"Ohne Namen",mail:profiles[id]&&profiles[id].email||"",own:!!coOwn(id)}))
         .sort((a,b)=>(b.own-a.own)||(a.id===user.uid?-1:b.id===user.uid?1:0));
       const nInv=Object.keys(invites).length;
       show(`Personen bei ${PAGE.label}`,
         PAGE.type==="budget"&&ids.length<=1?"Im Moment siehst nur du dein Budget.":`${ids.length} ${ids.length===1?"Person sieht":"Personen sehen"} diese ${PAGE.noun}.`,
         `<ul class="auth-people">${list.map(p=>`<li><span class="av">${esc(initial(p.name))}</span>
-            <span class="nm"><b>${esc(p.name)}${p.id===user.uid?" (du)":""}</b><small>${p.own?"Hat die Liste angelegt":esc(p.mail)}</small></span>
+            <span class="nm"><b>${esc(p.name)}${p.id===user.uid?" (du)":""}</b><small>${p.own?(type==="recipes"&&ids.length>1?"Besitzer":"Hat die Liste angelegt"):esc(p.mail)}</small></span>
             ${owner&&p.id!==user.uid?`<button type="button" class="rm${rmConfirm===p.id?" sure":""}" data-rm="${esc(p.id)}">${rmConfirm===p.id?"Entfernen?":"Entfernen"}</button>`:""}</li>`).join("")}</ul>
         ${(()=>{ const fl=Object.entries(friends).filter(([id])=>!access[id]); return fl.length?`<p class="auth-sec">Freunde einladen</p>
           <ul class="auth-people">${fl.map(([id,f])=>`<li><span class="av">${esc(initial(f.name))}</span><span class="nm"><b>${esc(f.name||"Freund")}</b><small>bekommt die Einladung unter „Freunde“</small></span>
@@ -599,7 +600,7 @@ body{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/20
         <div class="auth-copy" id="invBox" hidden><input type="text" id="invLink" readonly aria-label="Einladungslink"><button class="auth-btn" type="button" id="invCopy">Kopieren</button></div>
         <p class="auth-msg" id="authMsg" hidden></p>
         ${nInv?`<button class="auth-link" type="button" id="invRevoke">${nInv} offene${nInv===1?"r Link":" Links"} · alle zurückziehen</button>`:""}
-        ${owner?"":`<button class="auth-link danger" type="button" id="leave">Diese ${esc(PAGE.noun)} verlassen</button>`}
+        ${(type==="recipes"?ids.length>1:!owner)?`<button class="auth-link danger" type="button" id="leave">Diese ${esc(PAGE.noun)} verlassen</button>`:""}
         <button class="auth-btn alt" type="button" id="ppClose">Fertig</button>`,true);
       $a("#ppClose").onclick=()=>{ rmConfirm=null; hide(); };
       $a("#invNew").onclick=async()=>{
@@ -629,7 +630,25 @@ body{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/20
         peopleView();
       });
       const lv=$a("#leave"); if(lv) lv.onclick=async()=>{
-        if(lv.dataset.sure!=="1"){ lv.dataset.sure="1"; lv.textContent="Wirklich verlassen? Du kommst nur mit einer neuen Einladung zurück."; return; }
+        if(lv.dataset.sure!=="1"){ lv.dataset.sure="1"; lv.textContent=type==="recipes"?"Wirklich austreten? Du behältst alle Rezepte als eigene Sammlung, neue teilt ihr nicht mehr.":"Wirklich verlassen? Du kommst nur mit einer neuen Einladung zurück."; return; }
+        if(type==="recipes"){
+          // alle Rezepte in eine eigene, neue Sammlung mitnehmen
+          lv.textContent="Rezepte werden mitgenommen …"; lv.disabled=true;
+          const nid=rand(20);
+          try{
+            await db.ref(`spaces/${nid}/access/${user.uid}`).set("owner");
+            await db.ref(`spaces/${nid}/meta`).set({type,owner:user.uid,createdAt:Date.now()});
+            await copyRecipes(sid,nid);
+            await db.ref(`users/${user.uid}/spaces/${type}`).set(nid);
+            const rd=(await db.ref(`spaces/${sid}/readers`).once("value")).val()||{};
+            for(const [k,v] of Object.entries(rd)) if(v&&v.by===user.uid) await db.ref(`spaces/${sid}/readers/${k}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/share/${user.uid}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/meta/owners/${user.uid}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/profiles/${user.uid}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/access/${user.uid}`).remove().catch(()=>{});
+          }catch(err){ lv.disabled=false; lv.textContent="Austreten hat nicht geklappt. Versuch es noch einmal."; return; }
+          location.reload(); return;
+        }
         await db.ref(`spaces/${sid}/profiles/${user.uid}`).remove().catch(()=>{});
         await db.ref(`spaces/${sid}/access/${user.uid}`).remove().catch(()=>{});
         await db.ref(`users/${user.uid}/spaces/${type}`).remove().catch(()=>{});
@@ -775,6 +794,16 @@ body{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/20
 
     /* ---------- Einladung annehmen ---------- */
     async function join(j,current){
+      if(current && current!==j.sid && !confirm_ && type==="recipes"){
+        let n=0; try{ n=Object.keys((await db.ref(`spaces/${current}/recipes`).once("value")).val()||{}).length; }catch(e){}
+        show("Sammlungen zusammenlegen?","",`<p class="auth-note">Du hast schon eine eigene Rezeptsammlung${n?` mit ${n} ${n===1?"Rezept":"Rezepten"}`:""}. Beim Beitreten werden deine Rezepte in die gemeinsame Sammlung übernommen. Die Sammlung gehört dann euch beiden.</p>
+          <p class="auth-note">Wenn du später austrittst, behältst du alle Rezepte.</p>
+          <button class="auth-btn" type="button" id="jYes">Zusammenlegen</button>
+          <button class="auth-btn alt" type="button" id="jNo">Abbrechen</button>`);
+        $a("#jYes").onclick=()=>{ confirm_=true; $a("#jYes").disabled=true; $a("#jYes").textContent="Wird zusammengelegt …"; join(j,current); };
+        $a("#jNo").onclick=()=>{ clearHash(); hide(); open(current); };
+        return;
+      }
       if(current && current!==j.sid && !confirm_){
         show(`Einladung zu ${PAGE.label}`,"",`<p class="auth-note">Du bist schon in einer anderen ${esc(PAGE.noun)}. Möchtest du zur neuen wechseln? Die alte bleibt bestehen, du siehst sie dann aber nicht mehr.</p>
           <button class="auth-btn" type="button" id="jYes">Zur neuen wechseln</button>
@@ -785,12 +814,37 @@ body{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/20
       }
       try{
         await db.ref(`spaces/${j.sid}/access/${user.uid}`).set(j.code);
+        if(type==="recipes"){
+          await db.ref(`spaces/${j.sid}/meta/owners/${user.uid}`).set(true);   // gehört dann allen gemeinsam
+          if(current && current!==j.sid){
+            await copyRecipes(current,j.sid);
+            // alte Sammlung aufräumen, wenn sonst niemand drin war
+            try{ const acc=(await db.ref(`spaces/${current}/access`).once("value")).val()||{};
+              if(Object.keys(acc).length<=1) await db.ref(`spaces/${current}`).remove();
+              else { await db.ref(`spaces/${current}/profiles/${user.uid}`).remove(); await db.ref(`spaces/${current}/access/${user.uid}`).remove(); } }catch(e){}
+          }
+        }
         await db.ref(`users/${user.uid}/spaces/${type}`).set(j.sid);
         await db.ref(`spaces/${j.sid}/invites/${j.code}`).remove().catch(()=>{});   // Link gilt nur einmal
         clearHash(); ready(j.sid);
       }catch(err){ clearHash(); if(current) open(current); else setupView("Der Einladungslink ist ungültig oder wurde zurückgezogen."); }
     }
     let confirm_=false;
+    // Rezepte samt Titelbildern von einer Sammlung in eine andere kopieren (vorhandene bleiben)
+    async function copyRecipes(from,to){
+      const rs=(await db.ref(`spaces/${from}/recipes`).once("value")).val()||{};
+      const have=(await db.ref(`spaces/${to}/recipes`).once("value")).val()||{};
+      const out={};
+      for(const [id,r] of Object.entries(rs)){
+        if(have[id] || !r) continue;
+        if(r.cover && /^[0-9a-f]{32}$/.test(r.cover)){
+          const ph=(await db.ref(`spaces/${from}/photos/${r.cover}`).once("value")).val();
+          if(ph) await db.ref(`spaces/${to}/photos/${r.cover}`).set(ph);
+        }
+        out[id]=r;
+      }
+      if(Object.keys(out).length) await db.ref(`spaces/${to}/recipes`).update(out);
+    }
 
     async function open(id){
       try{ await db.ref(`spaces/${id}/meta`).once("value"); ready(id); }

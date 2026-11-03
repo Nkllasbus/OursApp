@@ -741,14 +741,15 @@ header p{margin-top:4px;font-size:.88rem}
       try{
         [profiles,access,meta,invites]=(await Promise.all(["profiles","access","meta","invites"].map(k=>db.ref(`spaces/${sid}/${k}`).once("value")))).map(s=>s.val()||{});
       }catch(err){ return; }
-      const owner=meta.owner===user.uid, ids=Object.keys(access);
-      const list=ids.map(id=>({id,name:(profiles[id]&&profiles[id].name)||"Ohne Namen",mail:profiles[id]&&profiles[id].email||"",own:meta.owner===id}))
+      const coOwn=id=>meta.owner===id || (meta.owners&&meta.owners[id]);
+      const owner=!!coOwn(user.uid), ids=Object.keys(access);
+      const list=ids.map(id=>({id,name:(profiles[id]&&profiles[id].name)||"Ohne Namen",mail:profiles[id]&&profiles[id].email||"",own:!!coOwn(id)}))
         .sort((a,b)=>(b.own-a.own)||(a.id===user.uid?-1:b.id===user.uid?1:0));
       const nInv=Object.keys(invites).length;
       show(`Personen bei ${PAGE.label}`,
         PAGE.type==="budget"&&ids.length<=1?"Im Moment siehst nur du dein Budget.":`${ids.length} ${ids.length===1?"Person sieht":"Personen sehen"} diese ${PAGE.noun}.`,
         `<ul class="auth-people">${list.map(p=>`<li><span class="av">${esc(initial(p.name))}</span>
-            <span class="nm"><b>${esc(p.name)}${p.id===user.uid?" (du)":""}</b><small>${p.own?"Hat die Liste angelegt":esc(p.mail)}</small></span>
+            <span class="nm"><b>${esc(p.name)}${p.id===user.uid?" (du)":""}</b><small>${p.own?(type==="recipes"&&ids.length>1?"Besitzer":"Hat die Liste angelegt"):esc(p.mail)}</small></span>
             ${owner&&p.id!==user.uid?`<button type="button" class="rm${rmConfirm===p.id?" sure":""}" data-rm="${esc(p.id)}">${rmConfirm===p.id?"Entfernen?":"Entfernen"}</button>`:""}</li>`).join("")}</ul>
         ${(()=>{ const fl=Object.entries(friends).filter(([id])=>!access[id]); return fl.length?`<p class="auth-sec">Freunde einladen</p>
           <ul class="auth-people">${fl.map(([id,f])=>`<li><span class="av">${esc(initial(f.name))}</span><span class="nm"><b>${esc(f.name||"Freund")}</b><small>bekommt die Einladung unter „Freunde“</small></span>
@@ -759,7 +760,7 @@ header p{margin-top:4px;font-size:.88rem}
         <div class="auth-copy" id="invBox" hidden><input type="text" id="invLink" readonly aria-label="Einladungslink"><button class="auth-btn" type="button" id="invCopy">Kopieren</button></div>
         <p class="auth-msg" id="authMsg" hidden></p>
         ${nInv?`<button class="auth-link" type="button" id="invRevoke">${nInv} offene${nInv===1?"r Link":" Links"} · alle zurückziehen</button>`:""}
-        ${owner?"":`<button class="auth-link danger" type="button" id="leave">Diese ${esc(PAGE.noun)} verlassen</button>`}
+        ${(type==="recipes"?ids.length>1:!owner)?`<button class="auth-link danger" type="button" id="leave">Diese ${esc(PAGE.noun)} verlassen</button>`:""}
         <button class="auth-btn alt" type="button" id="ppClose">Fertig</button>`,true);
       $a("#ppClose").onclick=()=>{ rmConfirm=null; hide(); };
       $a("#invNew").onclick=async()=>{
@@ -789,7 +790,25 @@ header p{margin-top:4px;font-size:.88rem}
         peopleView();
       });
       const lv=$a("#leave"); if(lv) lv.onclick=async()=>{
-        if(lv.dataset.sure!=="1"){ lv.dataset.sure="1"; lv.textContent="Wirklich verlassen? Du kommst nur mit einer neuen Einladung zurück."; return; }
+        if(lv.dataset.sure!=="1"){ lv.dataset.sure="1"; lv.textContent=type==="recipes"?"Wirklich austreten? Du behältst alle Rezepte als eigene Sammlung, neue teilt ihr nicht mehr.":"Wirklich verlassen? Du kommst nur mit einer neuen Einladung zurück."; return; }
+        if(type==="recipes"){
+          // alle Rezepte in eine eigene, neue Sammlung mitnehmen
+          lv.textContent="Rezepte werden mitgenommen …"; lv.disabled=true;
+          const nid=rand(20);
+          try{
+            await db.ref(`spaces/${nid}/access/${user.uid}`).set("owner");
+            await db.ref(`spaces/${nid}/meta`).set({type,owner:user.uid,createdAt:Date.now()});
+            await copyRecipes(sid,nid);
+            await db.ref(`users/${user.uid}/spaces/${type}`).set(nid);
+            const rd=(await db.ref(`spaces/${sid}/readers`).once("value")).val()||{};
+            for(const [k,v] of Object.entries(rd)) if(v&&v.by===user.uid) await db.ref(`spaces/${sid}/readers/${k}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/share/${user.uid}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/meta/owners/${user.uid}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/profiles/${user.uid}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/access/${user.uid}`).remove().catch(()=>{});
+          }catch(err){ lv.disabled=false; lv.textContent="Austreten hat nicht geklappt. Versuch es noch einmal."; return; }
+          location.reload(); return;
+        }
         await db.ref(`spaces/${sid}/profiles/${user.uid}`).remove().catch(()=>{});
         await db.ref(`spaces/${sid}/access/${user.uid}`).remove().catch(()=>{});
         await db.ref(`users/${user.uid}/spaces/${type}`).remove().catch(()=>{});
@@ -935,6 +954,16 @@ header p{margin-top:4px;font-size:.88rem}
 
     /* ---------- Einladung annehmen ---------- */
     async function join(j,current){
+      if(current && current!==j.sid && !confirm_ && type==="recipes"){
+        let n=0; try{ n=Object.keys((await db.ref(`spaces/${current}/recipes`).once("value")).val()||{}).length; }catch(e){}
+        show("Sammlungen zusammenlegen?","",`<p class="auth-note">Du hast schon eine eigene Rezeptsammlung${n?` mit ${n} ${n===1?"Rezept":"Rezepten"}`:""}. Beim Beitreten werden deine Rezepte in die gemeinsame Sammlung übernommen. Die Sammlung gehört dann euch beiden.</p>
+          <p class="auth-note">Wenn du später austrittst, behältst du alle Rezepte.</p>
+          <button class="auth-btn" type="button" id="jYes">Zusammenlegen</button>
+          <button class="auth-btn alt" type="button" id="jNo">Abbrechen</button>`);
+        $a("#jYes").onclick=()=>{ confirm_=true; $a("#jYes").disabled=true; $a("#jYes").textContent="Wird zusammengelegt …"; join(j,current); };
+        $a("#jNo").onclick=()=>{ clearHash(); hide(); open(current); };
+        return;
+      }
       if(current && current!==j.sid && !confirm_){
         show(`Einladung zu ${PAGE.label}`,"",`<p class="auth-note">Du bist schon in einer anderen ${esc(PAGE.noun)}. Möchtest du zur neuen wechseln? Die alte bleibt bestehen, du siehst sie dann aber nicht mehr.</p>
           <button class="auth-btn" type="button" id="jYes">Zur neuen wechseln</button>
@@ -945,12 +974,37 @@ header p{margin-top:4px;font-size:.88rem}
       }
       try{
         await db.ref(`spaces/${j.sid}/access/${user.uid}`).set(j.code);
+        if(type==="recipes"){
+          await db.ref(`spaces/${j.sid}/meta/owners/${user.uid}`).set(true);   // gehört dann allen gemeinsam
+          if(current && current!==j.sid){
+            await copyRecipes(current,j.sid);
+            // alte Sammlung aufräumen, wenn sonst niemand drin war
+            try{ const acc=(await db.ref(`spaces/${current}/access`).once("value")).val()||{};
+              if(Object.keys(acc).length<=1) await db.ref(`spaces/${current}`).remove();
+              else { await db.ref(`spaces/${current}/profiles/${user.uid}`).remove(); await db.ref(`spaces/${current}/access/${user.uid}`).remove(); } }catch(e){}
+          }
+        }
         await db.ref(`users/${user.uid}/spaces/${type}`).set(j.sid);
         await db.ref(`spaces/${j.sid}/invites/${j.code}`).remove().catch(()=>{});   // Link gilt nur einmal
         clearHash(); ready(j.sid);
       }catch(err){ clearHash(); if(current) open(current); else setupView("Der Einladungslink ist ungültig oder wurde zurückgezogen."); }
     }
     let confirm_=false;
+    // Rezepte samt Titelbildern von einer Sammlung in eine andere kopieren (vorhandene bleiben)
+    async function copyRecipes(from,to){
+      const rs=(await db.ref(`spaces/${from}/recipes`).once("value")).val()||{};
+      const have=(await db.ref(`spaces/${to}/recipes`).once("value")).val()||{};
+      const out={};
+      for(const [id,r] of Object.entries(rs)){
+        if(have[id] || !r) continue;
+        if(r.cover && /^[0-9a-f]{32}$/.test(r.cover)){
+          const ph=(await db.ref(`spaces/${from}/photos/${r.cover}`).once("value")).val();
+          if(ph) await db.ref(`spaces/${to}/photos/${r.cover}`).set(ph);
+        }
+        out[id]=r;
+      }
+      if(Object.keys(out).length) await db.ref(`spaces/${to}/recipes`).update(out);
+    }
 
     async function open(id){
       try{ await db.ref(`spaces/${id}/meta`).once("value"); ready(id); }
@@ -1644,6 +1698,7 @@ async function loadFriendRecipes(){
     const fs=(await fdb().ref(`friends/${myUid}`).once("value")).val()||{};
     for(const [fid,f] of Object.entries(fs)){
       let sh=null; try{ sh=(await fdb().ref(`shelf/${fid}`).once("value")).val(); }catch(e){}
+      if(sh && sh.recipes===mySid){ out.push({fid,name:f.name||"Freund",sid:null,same:true,recipes:[]}); continue; }
       if(sh && sh.recipes){
         try{ const rs=(await fdb().ref(`spaces/${sh.recipes}/recipes`).once("value")).val()||{};
           out.push({fid,name:f.name||"Freund",sid:sh.recipes,recipes:Object.entries(rs).map(([id,r])=>({id,...r})).sort((a,b)=>(a.title||"").localeCompare(b.title||""))}); }
@@ -1655,7 +1710,7 @@ async function loadFriendRecipes(){
 }
 function renderFriendsList(){
   const shareCard=`<div class="share-card">
-      <label class="kswitch share-sw" for="shareToggle"><span><b>Meine Rezepte mit Freunden teilen</b><small>${isOwner?(shareOn?"Deine Freunde sehen deine Sammlung und können Rezepte übernehmen.":"Im Moment sieht niemand außer euch deine Sammlung."):"Teilen kann nur, wer diese Sammlung angelegt hat."}</small></span>
+      <label class="kswitch share-sw" for="shareToggle"><span><b>Meine Rezepte mit Freunden teilen</b><small>${shareOn?"Deine Freunde sehen eure Sammlung und können Rezepte übernehmen.":"Deine Freunde sehen eure Sammlung gerade nicht."}</small></span>
       <input type="checkbox" id="shareToggle" role="switch"${shareOn?" checked":""}${isOwner?"":" disabled"}><span class="track" aria-hidden="true"></span></label></div>`;
   if(frLoading && !frData) return shareCard+`<p class="card-meta">Rezepte deiner Freunde werden geladen …</p>`;
   if(!frData || !frData.length) return shareCard+`<div class="empty"><strong>Noch keine Freunde</strong><span>Füg über den Profil-Knopf unter „Freunde“ jemanden hinzu. Sobald ihr befreundet seid, siehst du hier seine Rezepte.</span></div>`;
@@ -1665,7 +1720,7 @@ function renderFriendsList(){
         <span class="cat-emo fr-av" aria-hidden="true">${esc((f.name||"?")[0].toUpperCase())}</span><span class="cat-name">${esc(f.name)}</span><span class="cat-n">${f.recipes.length}</span>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      ${shut?"":!f.sid?`<p class="card-meta">${esc(f.name)} teilt die eigenen Rezepte gerade nicht.</p>`
+      ${shut?"":f.same?`<p class="card-meta">Ihr teilt euch schon dieselbe Sammlung. Die Rezepte stehen unter „Meine“.</p>`:!f.sid?`<p class="card-meta">${esc(f.name)} teilt die eigenen Rezepte gerade nicht.</p>`
         :f.recipes.length?`<div class="grid">${f.recipes.map(r=>{ const u=okId(r.cover)&&friendPhoto(f.sid,r.cover), c=catOf(r);
           return `<button class="card" type="button" data-fopen="${esc(f.fid)}|${esc(r.id)}">
             <div class="cover">${u?`<img src="${u}" alt="" style="object-position:50% ${coverY(r)}%">`:LEAF}${starsBadge(r)}</div>
@@ -1719,12 +1774,23 @@ function setSrc(v){
   if(v==="feed"){ markFeedSeen(); loadFeed(); }
   renderList();
 }
+// Teilen gilt pro Person: wer teilt, trägt seine Freunde als Leser der Sammlung ein
+async function syncReaders(){
+  if(!root || !myUid) return;
+  const fr=(await fdb().ref(`friends/${myUid}`).once("value")).val()||{};
+  const rd=(await root.child("readers").once("value")).val()||{};
+  const upd={};
+  if(shareOn) Object.keys(fr).forEach(fid=>{ if(!rd[fid]) upd[fid]={by:myUid}; });
+  Object.entries(rd).forEach(([fid,v])=>{ if(v && v.by===myUid && (!shareOn || !fr[fid])) upd[fid]=null; });
+  if(Object.keys(upd).length) await root.child("readers").update(upd);
+}
 async function setShare(on){
-  if(!isOwner || !root) return;
+  if(!root || !myUid) return;
   shareOn=on;
   try{
-    await root.child("meta/shareFriends").set(on);
+    await root.child(`share/${myUid}`).set(on);
     await fdb().ref(`shelf/${myUid}`).set(on?{recipes:mySid}:null);
+    await syncReaders();
   }catch(e){ $("#status").textContent="Das Teilen konnte nicht gespeichert werden. Prüf die Regeln in Firebase."; }
   renderList();
 }
@@ -1738,10 +1804,11 @@ document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !$("#frx").hidde
 async function initSharing(info){
   myUid=info.uid; mySid=info.sid; myName=info.name||(info.email||"").split("@")[0]||"Ich";
   try{
+    const sh=(await root.child(`share/${myUid}`).once("value")).val();
     const meta=(await root.child("meta").once("value")).val()||{};
-    isOwner=meta.owner===myUid;
-    if(isOwner && meta.shareFriends===undefined){ await setShare(true); }   // Standard: mit Freunden teilen
-    else { shareOn=meta.shareFriends===true; if(isOwner && shareOn) fdb().ref(`shelf/${myUid}`).set({recipes:mySid}).catch(()=>{}); }
+    isOwner=true;   // in einer gemeinsamen Sammlung darf jeder für sich teilen
+    if(sh===null){ await setShare(meta.owner===myUid && meta.shareFriends===false ? false : true); }   // Standard: teilen
+    else { shareOn=sh===true; await fdb().ref(`shelf/${myUid}`).set(shareOn?{recipes:mySid}:null); await syncReaders(); }
   }catch(e){}
   if(src==="friends") loadFriendRecipes(); else renderList();
   loadFeed(src!=="feed");   // für den Zähler am Reiter "Feed"
