@@ -9,10 +9,11 @@
 <style>
 /* Layout: gleiche App-Form wie die Dateideen; Kopf steht, Rezeptkacheln scrollen; Detailansicht ersetzt die Liste */
 :root{
-  --page:#7e9e72; --dots:rgba(255,255,255,.16); --frame-line:#6d8c62; --shadow:rgba(25,45,20,.45);
-  --band:#3f6638; --on-band:#f2f8ee; --on-band-muted:#c6dbbd;
-  --bg:#e9f1e4; --surface:#f8fbf5; --ink:#22301e; --muted:#62765b; --line:#d2e0c9;
-  --accent:#4a7a40; --accent-soft:#d9e8cf; --btn:#cfe2c3;
+  /* Weinrot wie Samt, dazu Oliv- und Salbeigrün als Akzent */
+  --page:#4e1622; --dots:rgba(255,255,255,.08); --frame-line:#3e111b; --shadow:rgba(35,6,14,.6);
+  --band:#6e1d2e; --on-band:#fbeef0; --on-band-muted:#dcb4bc;
+  --bg:#f6efec; --surface:#fffaf8; --ink:#2c1a1e; --muted:#7a6266; --line:#e8d8d5;
+  --accent:#5c7448; --accent-soft:#e6ecdd; --btn:#efdfdc;
   --display:"Gloock", Georgia, serif; --body:"Figtree", system-ui, -apple-system, sans-serif;
 }
 :root{color-scheme:light}
@@ -139,7 +140,7 @@ header p{color:var(--on-band-muted)}
 .btn.primary{background:var(--band)}
 
 /* Hintergrund: Kritzeleien wie von Kinderhand */
-body{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420' viewBox='0 0 420 420' fill='none' stroke='rgba%28255,255,255,0.15%29' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M62 64c12-17 38-15 43 4c5 21-17 36-34 31c-15-5-20-22-9-35z'/%3E%3Cpath d='M92 96c10 22 30 56 50 86'/%3E%3Cpath d='M78 101c12 24 32 58 52 88'/%3E%3Cpath d='M130 189c4 7 12 3 12-7'/%3E%3Cpath d='M318 172c-31-38-33-108 1-121c32 9 28 81-3 121'/%3E%3Cpath d='M318 172c-13-39-11-98 3-115c15 15 13 79-5 116'/%3E%3Cpath d='M313 172l-2 48c0 9 13 9 13 0l-3-47'/%3E%3Cpath d='M52 284c-1 30 1 58 9 76c38 9 76 8 84-1c8-20 9-48 6-76'/%3E%3Cpath d='M42 284c38-7 78-7 116 0'/%3E%3Cpath d='M43 300c-15 0-17 15-3 15'/%3E%3Cpath d='M157 300c15 0 17 15 3 15'/%3E%3Cpath d='M84 268c-9-9 1-18-6-26c-6-7 2-14-2-20'/%3E%3Cpath d='M114 268c-9-9 1-18-6-26c-6-7 2-14-2-20'/%3E%3Cpath d='M268 392c1-28 2-52 5-74'/%3E%3Cpath d='M252 314c1-14 1-30 3-46'/%3E%3Cpath d='M265 316c0-16 0-32 2-48'/%3E%3Cpath d='M279 316c0-15-1-31-1-46'/%3E%3Cpath d='M250 314c11 12 21 12 30 1'/%3E%3Cpath d='M352 236c18 10 30 30 26 40c-6 9-28-2-44-22c-8-11 6-24 18-18z'/%3E%3Cpath d='M345 240l7 8'/%3E%3Cpath d='M360 252l6 8'/%3E%3Cpath d='M342 231c-6-10-4-20 3-22'/%3E%3Cpath d='M346 228c2-10 9-15 15-12'/%3E%3Cpath d='M341 233c-10-4-17-1-18 5'/%3E%3Cpath d='M170 40c22-4 46 4 48 20c2 18-24 26-46 22c-20-4-24-38-2-42z'/%3E%3Cpath d='M216 58c22 6 44 12 66 22'/%3E%3Cpath d='M218 66c22 6 42 12 62 20'/%3E%3Cpath d='M210 210l4 12m-10-6l12 0'/%3E%3Cpath d='M372 150l3 9m-8-4l10 0'/%3E%3Cpath d='M30 200l3 9m-8-4l10 0'/%3E%3C/svg%3E"),radial-gradient(var(--dots) 1.2px,transparent 1.2px);background-size:420px 420px,18px 18px}
+body{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420' viewBox='0 0 420 420' fill='none' stroke='rgba%28255,255,255,0.08%29' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M62 64c12-17 38-15 43 4c5 21-17 36-34 31c-15-5-20-22-9-35z'/%3E%3Cpath d='M92 96c10 22 30 56 50 86'/%3E%3Cpath d='M78 101c12 24 32 58 52 88'/%3E%3Cpath d='M130 189c4 7 12 3 12-7'/%3E%3Cpath d='M318 172c-31-38-33-108 1-121c32 9 28 81-3 121'/%3E%3Cpath d='M318 172c-13-39-11-98 3-115c15 15 13 79-5 116'/%3E%3Cpath d='M313 172l-2 48c0 9 13 9 13 0l-3-47'/%3E%3Cpath d='M52 284c-1 30 1 58 9 76c38 9 76 8 84-1c8-20 9-48 6-76'/%3E%3Cpath d='M42 284c38-7 78-7 116 0'/%3E%3Cpath d='M43 300c-15 0-17 15-3 15'/%3E%3Cpath d='M157 300c15 0 17 15 3 15'/%3E%3Cpath d='M84 268c-9-9 1-18-6-26c-6-7 2-14-2-20'/%3E%3Cpath d='M114 268c-9-9 1-18-6-26c-6-7 2-14-2-20'/%3E%3Cpath d='M268 392c1-28 2-52 5-74'/%3E%3Cpath d='M252 314c1-14 1-30 3-46'/%3E%3Cpath d='M265 316c0-16 0-32 2-48'/%3E%3Cpath d='M279 316c0-15-1-31-1-46'/%3E%3Cpath d='M250 314c11 12 21 12 30 1'/%3E%3Cpath d='M352 236c18 10 30 30 26 40c-6 9-28-2-44-22c-8-11 6-24 18-18z'/%3E%3Cpath d='M345 240l7 8'/%3E%3Cpath d='M360 252l6 8'/%3E%3Cpath d='M342 231c-6-10-4-20 3-22'/%3E%3Cpath d='M346 228c2-10 9-15 15-12'/%3E%3Cpath d='M341 233c-10-4-17-1-18 5'/%3E%3Cpath d='M170 40c22-4 46 4 48 20c2 18-24 26-46 22c-20-4-24-38-2-42z'/%3E%3Cpath d='M216 58c22 6 44 12 66 22'/%3E%3Cpath d='M218 66c22 6 42 12 62 20'/%3E%3Cpath d='M210 210l4 12m-10-6l12 0'/%3E%3Cpath d='M372 150l3 9m-8-4l10 0'/%3E%3Cpath d='M30 200l3 9m-8-4l10 0'/%3E%3C/svg%3E"),radial-gradient(var(--dots) 1.2px,transparent 1.2px);background-size:420px 420px,18px 18px}
 .filters{cursor:grab;user-select:none;-webkit-user-select:none}
 .filters.dragging{cursor:grabbing}
 .filters.more-right{-webkit-mask-image:linear-gradient(90deg,#000 82%,transparent);mask-image:linear-gradient(90deg,#000 82%,transparent)}
@@ -183,9 +184,9 @@ body{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/20
 .match-sec{margin-top:26px;display:flex;flex-direction:column;gap:10px}
 .match-sec h3{margin:0;font-family:var(--display);font-weight:400;font-size:1.35rem;display:flex;align-items:baseline;gap:8px}
 .match-sec h3 span{font-family:var(--body);font-size:.85rem;color:var(--muted)}
-.modal{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(20,35,18,.5);
+.modal{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(40,8,16,.5);
   padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));animation:fade .15s ease-out}
-.sheet{width:100%;max-width:360px;background:var(--surface);border-radius:24px;overflow:hidden;box-shadow:0 24px 60px -20px rgba(20,35,18,.6);animation:pop .25s ease-out;text-align:center}
+.sheet{width:100%;max-width:360px;background:var(--surface);border-radius:24px;overflow:hidden;box-shadow:0 24px 60px -20px rgba(40,8,16,.6);animation:pop .25s ease-out;text-align:center}
 .sheet .mimg{position:relative;aspect-ratio:4/3;background:var(--accent-soft);display:grid;place-items:center;color:var(--accent)}
 .sheet .mimg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .sheet .mimg svg{width:56px;height:56px;opacity:.6}
@@ -330,7 +331,7 @@ header p{margin-top:4px;font-size:.88rem}
 .share-sw small{font-size:.8rem;color:var(--muted)}
 .share-sw input:disabled + .track{opacity:.4}
 .fr-av{font-family:var(--body);font-weight:700;font-size:1rem;color:var(--accent)}
-.frx{position:fixed;inset:0;z-index:45;background:rgba(20,35,18,.55);overflow-y:auto;
+.frx{position:fixed;inset:0;z-index:45;background:rgba(40,8,16,.55);overflow-y:auto;
   padding:max(16px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
 .frx-card{position:relative;max-width:620px;margin:0 auto;background:var(--bg);border-radius:22px;padding:16px 18px 22px;box-shadow:0 24px 60px -20px rgba(0,0,0,.6)}
 .frx-close{position:absolute;top:24px;right:26px;z-index:3;width:36px;height:36px;border-radius:50%;border:0;background:var(--surface);color:var(--ink);font-size:1.4rem;line-height:1;box-shadow:0 2px 8px rgba(0,0,0,.2)}
@@ -437,7 +438,7 @@ header p{margin-top:4px;font-size:.88rem}
     {type:"dates",   file:"index.html",    label:"Dateideen", color:"#8c7559", noun:"Dateideen-Liste",
      empty:"Noch keine Dateideen-Liste", hint:"Leg eine Liste an und lad danach deine Freundin oder deinen Freund ein. Nur eingeladene Personen sehen sie.",
      keys:["ideas"]},
-    {type:"recipes", file:"rezepte.html",  label:"Rezepte",   color:"#4a7a40", noun:"Rezeptsammlung",
+    {type:"recipes", file:"rezepte.html",  label:"Rezepte",   color:"#7a2434", noun:"Rezeptsammlung",
      empty:"Noch keine Rezeptsammlung", hint:"Leg eine Sammlung an und lad Freunde oder Familie ein. Nur eingeladene Personen sehen sie.",
      keys:["recipes","people","swipe"]},
     {type:"chores",  file:"haushalt.html", label:"Haushalt",  color:"#3f6f8c", noun:"Haushalt",
