@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Unser Budget</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: dunkle App-Karte; oben die Monatsbilanz, darunter Abos, Ausgaben, Einnahmen und Kategorien */
+:root{
+  --page:#08090a; --dots:rgba(255,255,255,.05); --frame-line:#26282c; --shadow:rgba(0,0,0,.7);
+  --band:#000000; --on-band:#f3efe4; --on-band-muted:#a19c8f;
+  --bg:#141518; --surface:#1d1f23; --surface2:#25282d; --ink:#f1eee6; --muted:#9b9a94; --line:#2d3035;
+  --accent:#e0bf73; --accent-soft:#2e2a20; --btn:#2a2d32;
+  --plus:#6fd39b; --minus:#ff8574;
+  --display:"Gloock", Georgia, serif; --body:"Figtree", system-ui, -apple-system, sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{height:100%}
+body{margin:0;overflow:hidden;color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;background-color:var(--page);padding-block:16px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button{font:inherit;cursor:pointer;color:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+.wrap{max-width:620px;height:100%;margin:0 auto;display:flex;flex-direction:column;gap:12px;background:var(--bg);border-radius:26px;overflow:hidden;
+  padding:0 22px 12px;border:1px solid var(--frame-line);box-shadow:0 18px 40px -18px var(--shadow)}
+header{flex:none;margin:0 -22px;padding:16px 22px 18px;background:var(--band);color:var(--on-band);position:relative;transition:margin-top .3s ease;border-bottom:1px solid #1c1d20}
+header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:14px;background:var(--bg);border-radius:14px 14px 0 0}
+.wrap.compact header{margin-top:calc(24px - var(--headH, 130px))}
+.count{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--on-band-muted);font-variant-numeric:tabular-nums}
+.switch{display:inline-flex;align-items:center;gap:10px;border-radius:8px}
+.switch h1{font-family:var(--display);font-weight:400;font-size:clamp(1.7rem,5.5vw,2.3rem);line-height:1.05;margin:0;color:var(--accent)}
+.switch svg{width:18px;height:18px;color:var(--on-band-muted);flex:none}
+header p{margin:4px 0 0;color:var(--on-band-muted);font-size:.88rem}
+
+.panel{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
+.topbar{flex:none;display:flex;align-items:center;gap:8px}
+.month{display:flex;align-items:center;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:2px}
+.month button{border:0;background:none;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--muted)}
+.month button:hover{background:var(--surface2);color:var(--ink)}
+.month button svg{width:16px;height:16px}
+.month span{min-width:118px;text-align:center;font-weight:600;font-size:.9rem}
+.btn{background:var(--btn);color:var(--ink);border:0;border-radius:9px;padding:8px 13px;font-weight:600;font-size:.9rem}
+.btn.primary{background:var(--accent);color:#16130b}
+.topbar .btn.primary{margin-left:auto}
+.scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:2px 2px 28px;margin:0 -2px;display:flex;flex-direction:column;gap:18px}
+
+/* Bilanz */
+.hero{background:linear-gradient(160deg,#1f2126,#17181b);border:1px solid var(--line);border-radius:18px;padding:16px 16px 14px;display:flex;flex-direction:column;gap:12px}
+.hero .lbl{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.hero .left{font-family:var(--display);font-size:clamp(2rem,9vw,2.8rem);line-height:1.05}
+.hero .left.pos{color:var(--plus)} .hero .left.neg{color:var(--minus)}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{background:var(--surface2);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tile span{font-size:.72rem;color:var(--muted)}
+.tile b{font-size:.98rem;font-weight:700;overflow-wrap:anywhere}
+.split{height:8px;border-radius:999px;background:var(--surface2);overflow:hidden;display:flex}
+.split span{display:block;height:100%}
+.hint{font-size:.78rem;color:var(--muted);margin:0}
+
+/* Abschnitte */
+.sec{display:flex;flex-direction:column;gap:8px}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.sec-head h2{margin:0;font-family:var(--display);font-weight:400;font-size:1.3rem}
+.sec-head .sum{font-size:.82rem;color:var(--muted)}
+.add{border:1px dashed var(--line);background:none;color:var(--accent);border-radius:10px;padding:8px 12px;font-weight:600;font-size:.88rem;text-align:left}
+.add:hover{border-color:var(--accent)}
+ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.row{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;text-align:left}
+.row:hover{border-color:#3a3d43}
+.ico{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-weight:700;font-size:.9rem;color:#111}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.main b{font-weight:600;overflow-wrap:anywhere}
+.main small{font-size:.78rem;color:var(--muted)}
+.amt{flex:none;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.amt small{display:block;font-weight:500;font-size:.72rem;color:var(--muted)}
+.amt.plus{color:var(--plus)}
+.day{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:6px 0 -2px}
+.empty{border:1.5px dashed var(--line);border-radius:12px;padding:14px;color:var(--muted);font-size:.9rem}
+.soon{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.soon::-webkit-scrollbar{display:none}
+.pill{flex:none;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:.8rem;white-space:nowrap}
+.pill b{color:var(--accent);font-weight:600}
+.cats{display:flex;flex-direction:column;gap:8px}
+.cat{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;font-size:.88rem}
+.cat .track{grid-column:1/-1;height:7px;border-radius:999px;background:var(--surface2);overflow:hidden}
+.cat .track span{display:block;height:100%;border-radius:999px}
+.cat-name{display:flex;align-items:center;gap:7px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.status{flex:none;font-size:.8rem;color:var(--muted);min-height:1.2em}
+
+/* Formular-Pop-up */
+.modal{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(0,0,0,.65);
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.sheet{width:100%;max-width:400px;max-height:100%;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 60px -20px #000}
+.sheet h3{margin:0;font-family:var(--display);font-weight:400;font-size:1.55rem}
+.amount{display:flex;align-items:center;gap:8px;background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:6px 14px}
+.amount:focus-within{border-color:var(--accent)}
+.amount input{flex:1;min-width:0;border:0;background:none;color:var(--ink);font:inherit;font-size:1.8rem;font-weight:700;font-variant-numeric:tabular-nums;padding:4px 0}
+.amount input:focus{outline:none}
+.amount span{font-size:1.4rem;color:var(--muted)}
+.sheet input[type=text],.sheet input[type=date]{font:inherit;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);min-width:0;width:100%}
+.sheet input:focus{outline:none;border-color:var(--accent)}
+.field{display:flex;flex-direction:column;gap:6px}
+.flabel{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{border:1px solid var(--line);background:var(--surface2);color:var(--ink);border-radius:999px;padding:5px 11px;font-size:.85rem;font-weight:500;display:inline-flex;align-items:center;gap:6px}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#16130b}
+.chip.plus{border-style:dashed;color:var(--accent);font-weight:700;background:none}
+.chip-x{border:0;background:none;color:var(--muted);font-size:1rem;line-height:1;padding:2px 4px;margin-left:-2px}
+.chipwrap{display:inline-flex;align-items:center}
+.addcat{display:inline-flex;gap:6px}
+.addcat input{width:140px;font:inherit;font-size:.85rem;padding:5px 10px;border:1.5px solid var(--accent);border-radius:999px;background:var(--bg);color:var(--ink)}
+.addcat input:focus{outline:none}
+.sheet-actions{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:2px}
+.sheet-actions .right{display:flex;gap:8px}
+.ghost{background:none;border:0;color:var(--muted);padding:8px 4px}
+.del{background:none;border:0;color:var(--muted);font-size:.85rem;padding:4px 0;text-decoration:underline}
+.del.sure{color:var(--minus);font-weight:600}
+.err{margin:0;font-size:.85rem;color:var(--minus)}
+@media (max-width:480px){body{padding-block:10px;padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px))}
+  .wrap{padding:0 16px 10px;border-radius:22px} header{margin:0 -16px;padding:14px 16px 18px} .month span{min-width:104px}}
+@media (prefers-reduced-motion:reduce){header{transition:none}}
+
+/* Seitenmenü hinter dem Titel */
+.switch{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;text-align:left}
+.switch svg{transition:transform .2s}
+.switch[aria-expanded="true"] svg{transform:rotate(180deg)}
+.pagemenu{position:absolute;left:16px;top:calc(100% - 22px);z-index:30;min-width:210px;display:flex;flex-direction:column;gap:2px;padding:6px;
+  background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 36px -14px rgba(0,0,0,.35)}
+.pagemenu a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:inherit;text-decoration:none;font-weight:500}
+.pagemenu a:hover{background:var(--accent-soft)}
+.pagemenu a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+.pm-dot{width:10px;height:10px;border-radius:50%;flex:none}
+
+/* Hintergrund: Münzen, Sparschwein, Kassenbon */
+body{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420' viewBox='0 0 420 420' fill='none' stroke='rgba%28224,191,115,0.10%29' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M70 70a26 26 0 1 0 1 0'/%3E%3Cpath d='M70 84v-6m0 34v6m-9-28c0-6 18-6 18 2c0 9-18 6-18 15c0 8 18 8 18 2'/%3E%3Cpath d='M120 120a16 16 0 1 0 1 0'/%3E%3Cpath d='M117 132l3-4l3 4'/%3E%3Cpath d='M250 120c0-28 28-44 62-44c36 0 60 18 60 42c0 22-16 38-38 42l-2 18h-14l-2-14c-10 1-20 1-30-1l-2 15h-14l-2-20c-12-8-18-22-18-38z'/%3E%3Cpath d='M300 80c4-10 14-14 22-12'/%3E%3Cpath d='M352 108a3 3 0 1 0 1 0'/%3E%3Cpath d='M372 122c8 0 12 4 12 10'/%3E%3Cpath d='M250 124c-10-2-16 4-14 12'/%3E%3Cpath d='M80 260l60 0l0 110l-10-8l-10 8l-10-8l-10 8l-10-8l-10 8z'/%3E%3Cpath d='M92 284h36m-36 18h28m-28 18h34m-34 18h22'/%3E%3Cpath d='M300 300a14 14 0 1 0 1 0'/%3E%3Cpath d='M330 330a10 10 0 1 0 1 0'/%3E%3Cpath d='M210 220l4 12m-10-6l12 0'/%3E%3Cpath d='M30 190l3 9m-8-4l10 0'/%3E%3C/svg%3E"),radial-gradient(var(--dots) 1.2px,transparent 1.2px);background-size:420px 420px,18px 18px}
+.pagemenu{background:var(--surface2)}
+
+.tile b{white-space:nowrap;font-size:clamp(.82rem,3.5vw,.98rem)}
+.tile span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header id="head">
+    <div class="count" id="count">Verbindet …</div>
+    <div class="switch"><h1>Unser Budget</h1></div>
+    <p>Einnahmen, Abos, Fixkosten und Ausgaben. Was bleibt im Monat übrig?</p>
+  </header>
+
+  <section class="panel">
+    <div class="topbar">
+      <div class="month" role="group" aria-label="Monat wählen">
+        <button type="button" id="prevM" aria-label="Vorheriger Monat"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <span id="monthLabel" aria-live="polite"></span>
+        <button type="button" id="nextM" aria-label="Nächster Monat"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <button class="btn primary" type="button" data-new="expense">+ Ausgabe</button>
+    </div>
+    <div class="scroll" id="list"></div>
+  </section>
+  <div class="status" id="status"></div>
+</div>
+
+<div class="modal" id="formModal" hidden>
+  <form class="sheet" id="form" role="dialog" aria-modal="true" aria-labelledby="formTitle" autocomplete="off">
+    <h3 id="formTitle"></h3>
+    <label class="amount"><input id="fAmount" inputmode="decimal" placeholder="0,00" aria-label="Betrag"><span>€</span></label>
+    <div class="field"><span class="flabel" id="fNameLbl">Wofür</span><input type="text" id="fName" maxlength="60"></div>
+    <div class="field" id="fKindWrap"><span class="flabel">Art</span><div class="chips" id="fKind"></div></div>
+    <div class="field" id="fEveryWrap"><span class="flabel">Rhythmus</span><div class="chips" id="fEvery"></div></div>
+    <div class="field"><span class="flabel" id="fDateLbl">Datum</span><input type="date" id="fDate"></div>
+    <div class="field"><span class="flabel">Kategorie</span><div class="chips" id="fCat"></div></div>
+    <p class="err" id="fErr" hidden></p>
+    <div class="sheet-actions">
+      <button class="del" type="button" id="fDel" hidden>Löschen</button><span id="fDelSpacer"></span>
+      <div class="right"><button class="ghost" type="button" id="fCancel">Abbrechen</button><button class="btn primary" type="submit" id="fSave">Speichern</button></div>
+    </div>
+  </form>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+/* Anmeldung, Profil und Bereiche für alle Seiten
+   - E-Mail und Passwort über Firebase Authentication
+   - Jede Seite hat ihren eigenen Bereich unter spaces/<id> mit eigenen Personen (access/<uid>)
+   - users/<uid>/spaces/<typ> merkt sich, welcher Bereich zu welcher Seite gehört
+   Seiten rufen Auth.start(firebaseConfig, "dates" | "recipes" | "chores" | "budget", (ref, info) => { ... }) auf. */
+(function(){
+  const PAGES = [
+    {type:"dates",   file:"index.html",    label:"Dateideen", color:"#8c7559", noun:"Dateideen-Liste",
+     empty:"Noch keine Dateideen-Liste", hint:"Leg eine Liste an und lad danach deine Freundin oder deinen Freund ein. Nur eingeladene Personen sehen sie.",
+     keys:["ideas"]},
+    {type:"recipes", file:"rezepte.html",  label:"Rezepte",   color:"#4a7a40", noun:"Rezeptsammlung",
+     empty:"Noch keine Rezeptsammlung", hint:"Leg eine Sammlung an und lad Freunde oder Familie ein. Nur eingeladene Personen sehen sie.",
+     keys:["recipes","people","swipe"]},
+    {type:"chores",  file:"haushalt.html", label:"Haushalt",  color:"#3f6f8c", noun:"Haushalt",
+     empty:"Noch kein Haushalt", hint:"Leg einen Haushalt an und lad deine Mitbewohner ein.",
+     keys:["chores","choreLog","members","rooms","people"]},
+    {type:"budget",  file:"budget.html",   label:"Budget",    color:"#1b1b1d", noun:"Budget",
+     empty:"Noch kein Budget", hint:"Dein Budget ist privat. Später kannst du jemanden dazuholen, zum Beispiel deine Freundin oder deinen Freund.",
+     keys:null},
+  ];
+  const CSS = `
+  .auth-screen{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow-y:auto;background:var(--page);
+    padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+  .auth-screen.dim{background:rgba(10,12,14,.55)}
+  .auth-card{width:100%;max-width:390px;background:var(--bg);color:var(--ink);border:1px solid var(--frame-line,var(--line));border-radius:24px;overflow:hidden;
+    box-shadow:0 18px 40px -18px var(--shadow,rgba(0,0,0,.4))}
+  .auth-head{background:var(--band);color:var(--on-band);padding:18px 22px 22px;position:relative}
+  .auth-head::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:14px;background:var(--bg);border-radius:14px 14px 0 0}
+  .auth-head h2{margin:0;font-family:var(--display);font-weight:400;font-size:1.8rem;line-height:1.1}
+  .auth-head p{margin:4px 0 0;font-size:.88rem;opacity:.8}
+  .auth-body{padding:10px 22px 22px;display:flex;flex-direction:column;gap:12px}
+  .auth-tabs{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:2px}
+  .auth-tabs button{flex:1;border:0;background:none;border-radius:8px;padding:7px 10px;font:inherit;font-size:.9rem;font-weight:600;color:var(--muted);cursor:pointer}
+  .auth-tabs button[aria-pressed="true"]{background:var(--band);color:var(--on-band)}
+  .auth-body label{display:flex;flex-direction:column;gap:5px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .auth-body input[type=email],.auth-body input[type=password],.auth-body input[type=text]{font:inherit;font-size:1rem;text-transform:none;letter-spacing:0;padding:11px 12px;
+    border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);min-width:0}
+  .auth-body input:focus{outline:none;border-color:var(--accent)}
+  .auth-btn{border:0;border-radius:10px;padding:12px 16px;font:inherit;font-weight:700;cursor:pointer;background:var(--band);color:var(--on-band)}
+  .auth-btn.alt{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+  .auth-btn:disabled{opacity:.6;cursor:progress}
+  .auth-link{align-self:center;background:none;border:0;padding:4px;font:inherit;font-size:.85rem;color:var(--muted);text-decoration:underline;cursor:pointer}
+  .auth-link.danger{color:#c0533f}
+  .auth-msg{margin:0;font-size:.88rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .auth-msg.err{border-color:#c0533f;color:#c0533f}
+  .auth-note{margin:0;font-size:.88rem;color:var(--muted)}
+  .auth-check{flex-direction:row!important;align-items:center;gap:8px!important;text-transform:none!important;letter-spacing:0!important;font-size:.9rem!important;color:var(--ink)!important;font-weight:500!important}
+  .auth-check input{accent-color:var(--band);width:18px;height:18px}
+  .auth-copy{display:flex;gap:6px}
+  .auth-copy input{flex:1;font-size:.82rem!important;padding:9px 10px!important}
+  .auth-people{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .auth-people li{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+  .auth-people .av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.85rem;background:var(--band);color:var(--on-band);flex:none}
+  .auth-people .nm{flex:1;min-width:0;display:flex;flex-direction:column}
+  .auth-people .nm b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .auth-people .nm small{font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .auth-people .rm{border:1px solid var(--line);background:none;color:var(--muted);border-radius:999px;padding:3px 10px;font:inherit;font-size:.8rem;cursor:pointer}
+  .auth-people .rm.sure{color:#c0533f;border-color:#c0533f;font-weight:600}
+  .auth-sec{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 -4px}
+
+  /* Profil-Knopf und Menü */
+  header{padding-right:64px!important}
+  .pf-btn{position:absolute;top:14px;right:16px;z-index:31;width:40px;height:40px;border-radius:50%;cursor:pointer;
+    border:1.5px solid color-mix(in srgb,var(--on-band) 40%,transparent);background:color-mix(in srgb,var(--on-band) 16%,transparent);
+    color:var(--on-band);font:inherit;font-weight:700;font-size:1rem;display:grid;place-items:center}
+  .pf-btn:focus-visible{outline:2px solid var(--on-band);outline-offset:2px}
+  .pf-menu{position:absolute;top:60px;right:12px;z-index:32;min-width:230px;display:flex;flex-direction:column;gap:2px;padding:6px;
+    background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 36px -14px rgba(0,0,0,.4)}
+  .pf-menu a,.pf-menu button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border:0;border-radius:10px;background:none;
+    color:inherit;font:inherit;font-weight:500;text-decoration:none;cursor:pointer}
+  .pf-menu a:hover,.pf-menu button:hover{background:var(--accent-soft)}
+  .pf-menu a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+  .pf-menu .dot{width:10px;height:10px;border-radius:50%;flex:none;box-shadow:0 0 0 1px rgba(128,128,128,.4) inset}
+  .pf-menu svg{width:17px;height:17px;flex:none;opacity:.75}
+  .pf-sep{height:1px;background:var(--line);margin:4px 6px}
+  .pf-who{padding:6px 12px 4px;display:flex;flex-direction:column}
+  .pf-who b{font-weight:600}
+  .pf-who small{font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pf-menu button:disabled{opacity:.45;cursor:not-allowed}
+
+  /* Seite ohne Bereich */
+  .auth-setup{position:absolute;left:0;right:0;bottom:0;z-index:20;background:var(--bg);overflow-y:auto;padding:18px 22px 22px;display:flex;flex-direction:column;align-items:stretch}
+  .auth-setup .box{margin:auto 0;display:flex;flex-direction:column;gap:12px;max-width:420px;align-self:center;width:100%;color:var(--ink)}
+  .auth-setup h3{margin:0;font-family:var(--display);font-weight:400;font-size:1.6rem;line-height:1.15}
+  `;
+  const IC = {
+    people:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M16.5 6.2a2.8 2.8 0 0 1 0 5.4M17 14.3c2 .5 3.2 2 3.5 4.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    gear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    out:'<svg viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 16l4-4-4-4M14 12H4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  };
+  const ERR = {
+    "auth/invalid-email":"Die E-Mail-Adresse sieht nicht richtig aus.",
+    "auth/user-not-found":"E-Mail oder Passwort stimmt nicht.",
+    "auth/wrong-password":"E-Mail oder Passwort stimmt nicht.",
+    "auth/invalid-credential":"E-Mail oder Passwort stimmt nicht.",
+    "auth/invalid-login-credentials":"E-Mail oder Passwort stimmt nicht.",
+    "auth/email-already-in-use":"Mit dieser E-Mail gibt es schon ein Konto. Melde dich an.",
+    "auth/weak-password":"Das Passwort ist zu kurz.",
+    "auth/too-many-requests":"Zu viele Versuche. Warte ein paar Minuten und versuch es dann noch einmal.",
+    "auth/network-request-failed":"Keine Verbindung. Prüf dein Internet.",
+    "auth/operation-not-allowed":"Die Anmeldung mit E-Mail ist in Firebase noch nicht eingeschaltet.",
+  };
+  const errText = e => ERR[e && e.code] || "Das hat nicht geklappt. Versuch es noch einmal.";
+  const rand = n => { const a="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    return [...crypto.getRandomValues(new Uint8Array(n))].map(x=>a[x%a.length]).join(""); };
+  const esc = t => String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const parseJoin = () => { const m=location.hash.match(/^#join-([A-Za-z0-9]{12,40})-([A-Za-z0-9]{12,40})$/); return m?{sid:m[1],code:m[2]}:null; };
+  const clearHash = () => history.replaceState(history.state,"",location.pathname);
+  const initial = n => (String(n||"?").trim()[0]||"?").toUpperCase();
+
+  window.Auth = { start(config, type, cb){
+    const PAGE = PAGES.find(p=>p.type===type);
+    const st=document.createElement("style"); st.textContent=CSS; document.head.appendChild(st);
+    let auth, db;
+    try{ if(!firebase.apps.length) firebase.initializeApp(config); auth=firebase.auth(); db=firebase.database(); }
+    catch(e){ cb(null); return; }
+    let user=null, profile={}, sid=null, started=false, setupEl=null;
+
+    /* ---------- Fenster (Anmelden und Pop-ups) ---------- */
+    let screen=null;
+    function show(title,sub,html,dim){
+      if(!screen){ screen=document.createElement("div"); screen.className="auth-screen"; document.body.appendChild(screen);
+        screen.addEventListener("click",e=>{ if(e.target===screen && screen.classList.contains("dim")) hide(); }); }
+      screen.classList.toggle("dim",!!dim);
+      screen.innerHTML=`<div class="auth-card" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="auth-head"><h2>${esc(title)}</h2>${sub?`<p>${esc(sub)}</p>`:""}</div><div class="auth-body">${html}</div></div>`;
+      screen.hidden=false; return screen;
+    }
+    function hide(){ if(screen) screen.hidden=true; }
+    const $a = s => screen.querySelector(s);
+    function msg(t,err,root){ const m=(root||screen).querySelector("#authMsg"); if(!m) return; m.textContent=t||""; m.hidden=!t; m.classList.toggle("err",!!err); }
+    document.addEventListener("keydown",e=>{ if(e.key==="Escape" && screen && !screen.hidden && screen.classList.contains("dim")) hide(); });
+
+    /* ---------- Anmelden / Konto erstellen ---------- */
+    function loginView(mode){
+      const reg=mode==="register", join=parseJoin();
+      show(document.querySelector("header h1")?.textContent||PAGE.label,
+        join?"Du wurdest eingeladen. Melde dich an oder erstell ein Konto.":reg?"Neues Konto erstellen.":"Bitte melde dich an.",
+        `<div class="auth-tabs" role="group"><button type="button" data-mode="login" aria-pressed="${!reg}">Anmelden</button><button type="button" data-mode="register" aria-pressed="${reg}">Konto erstellen</button></div>
+        <form id="authForm" style="display:flex;flex-direction:column;gap:12px" novalidate>
+          ${reg?`<label>Dein Name<input type="text" id="authName" autocomplete="given-name" maxlength="30" placeholder="So sehen dich die anderen"></label>`:""}
+          <label>E-Mail<input type="email" id="authMail" autocomplete="email"></label>
+          <label>Passwort<input type="password" id="authPw" autocomplete="${reg?"new-password":"current-password"}"></label>
+          ${reg?`<label>Passwort wiederholen<input type="password" id="authPw2" autocomplete="new-password"></label>
+            <p class="auth-note">Mindestens 10 Zeichen. Am besten ein Passwort, das du nirgends sonst benutzt.</p>`:""}
+          <p class="auth-msg" id="authMsg" hidden></p>
+          <button class="auth-btn" type="submit" id="authGo">${reg?"Konto erstellen":"Anmelden"}</button>
+        </form>
+        ${reg?"":`<button class="auth-link" type="button" id="authForgot">Passwort vergessen?</button>`}`);
+      screen.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>loginView(b.dataset.mode));
+      (reg?$a("#authName"):$a("#authMail")).focus();
+      $a("#authForm").onsubmit=async e=>{
+        e.preventDefault();
+        const mail=$a("#authMail").value.trim(), pw=$a("#authPw").value;
+        if(!mail || !pw) return msg("Gib E-Mail und Passwort ein.",true);
+        if(reg){
+          if(pw.length<10) return msg("Das Passwort braucht mindestens 10 Zeichen.",true);
+          if(pw!==$a("#authPw2").value) return msg("Die beiden Passwörter sind nicht gleich.",true);
+          try{ sessionStorage.setItem("auth.newName",$a("#authName").value.trim().slice(0,30)); }catch(err){}
+        }
+        $a("#authGo").disabled=true; msg("");
+        try{ reg ? await auth.createUserWithEmailAndPassword(mail,pw) : await auth.signInWithEmailAndPassword(mail,pw); }
+        catch(err){ msg(errText(err),true); $a("#authGo").disabled=false; }
+      };
+      const f=$a("#authForgot");
+      if(f) f.onclick=async()=>{
+        const mail=$a("#authMail").value.trim();
+        if(!mail) return msg("Trag oben deine E-Mail ein, dann schicken wir dir einen Link zum Zurücksetzen.",true);
+        try{ await auth.sendPasswordResetEmail(mail); msg("Wenn es ein Konto mit dieser E-Mail gibt, ist eine Mail zum Zurücksetzen unterwegs. Schau auch im Spam nach."); }
+        catch(err){ msg(errText(err),true); }
+      };
+    }
+
+    /* ---------- Profil-Knopf mit Menü ---------- */
+    function installMenu(){
+      const head=document.querySelector("header"); if(!head || head.querySelector(".pf-btn")) { updateMenu(); return; }
+      head.insertAdjacentHTML("beforeend",`<button class="pf-btn" type="button" id="pfBtn" aria-haspopup="true" aria-expanded="false" aria-controls="pfMenu" aria-label="Profil und Seiten"></button>
+        <nav class="pf-menu" id="pfMenu" hidden aria-label="Profil und Seiten">
+          <div class="pf-who"><b id="pfName"></b><small id="pfMail"></small></div>
+          <div class="pf-sep"></div>
+          ${PAGES.map(p=>`<a href="${p.file}" data-page="${p.type}"${p.type===type?' aria-current="page"':""}><span class="dot" style="background:${p.color}"></span>${p.label}</a>`).join("")}
+          <div class="pf-sep"></div>
+          <button type="button" data-pf="people">${IC.people}Personen bei ${esc(PAGE.label)}</button>
+          <button type="button" data-pf="profile">${IC.user}Profil bearbeiten</button>
+          <button type="button" data-pf="settings">${IC.gear}Einstellungen</button>
+          <button type="button" data-pf="logout">${IC.out}Abmelden</button>
+        </nav>`);
+      const btn=document.getElementById("pfBtn"), menu=document.getElementById("pfMenu");
+      const toggle=open=>{ menu.hidden=!open; btn.setAttribute("aria-expanded",open); };
+      btn.onclick=e=>{ e.stopPropagation(); toggle(menu.hidden); };
+      document.addEventListener("click",e=>{ if(!menu.hidden && !menu.contains(e.target)) toggle(false); });
+      document.addEventListener("keydown",e=>{ if(e.key==="Escape") toggle(false); });
+      menu.querySelectorAll("[data-pf]").forEach(b=>b.onclick=()=>{ toggle(false);
+        ({people:peopleView,profile:profileView,settings:settingsView,logout:()=>auth.signOut()})[b.dataset.pf](); });
+      updateMenu();
+    }
+    function updateMenu(){
+      const name=profile.name||user.email.split("@")[0];
+      const b=document.getElementById("pfBtn"); if(!b) return;
+      b.textContent=initial(name);
+      document.getElementById("pfName").textContent=name;
+      document.getElementById("pfMail").textContent=user.email;
+      document.querySelector('[data-pf="people"]').disabled=!sid;
+    }
+
+    /* ---------- Profil, Einstellungen ---------- */
+    function profileView(){
+      show("Profil bearbeiten","",`<label>Dein Name<input type="text" id="pfIn" maxlength="30" value="${esc(profile.name||"")}"></label>
+        <p class="auth-note">So sehen dich die anderen in euren Listen.</p>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <button class="auth-btn" type="button" id="pfSave">Speichern</button>
+        <button class="auth-link" type="button" id="pfClose">Abbrechen</button>`,true);
+      $a("#pfIn").focus();
+      $a("#pfClose").onclick=hide;
+      $a("#pfSave").onclick=async()=>{
+        const name=$a("#pfIn").value.trim().slice(0,30); if(!name) return msg("Gib einen Namen ein.",true);
+        try{
+          await db.ref(`users/${user.uid}/profile/name`).set(name); profile.name=name;
+          const ptr=(await db.ref(`users/${user.uid}/spaces`).once("value")).val()||{};
+          for(const s of Object.values(ptr)) await db.ref(`spaces/${s}/profiles/${user.uid}/name`).set(name).catch(()=>{});
+          updateMenu(); hide();
+        }catch(err){ msg("Speichern hat nicht geklappt.",true); }
+      };
+    }
+    function settingsView(){
+      show("Einstellungen","",`<p class="auth-sec">Konto</p>
+        <p class="auth-note">Angemeldet als <b>${esc(user.email)}</b></p>
+        <button class="auth-btn alt" type="button" id="stPw">Passwort ändern</button>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <p class="auth-sec">Diese Seite</p>
+        <p class="auth-note">${sid?`Du bist in einer ${esc(PAGE.noun)}. Wer sie sieht, steht unter „Personen bei ${esc(PAGE.label)}“.`:`Für ${esc(PAGE.label)} gibt es noch keine Liste.`}</p>
+        <button class="auth-btn alt" type="button" id="stOut">Abmelden</button>
+        <button class="auth-link" type="button" id="stClose">Schließen</button>`,true);
+      $a("#stClose").onclick=hide;
+      $a("#stOut").onclick=()=>auth.signOut();
+      $a("#stPw").onclick=async()=>{
+        try{ await auth.sendPasswordResetEmail(user.email); msg(`Wir haben dir eine Mail an ${user.email} geschickt. Darüber legst du ein neues Passwort fest.`); }
+        catch(err){ msg(errText(err),true); }
+      };
+    }
+
+    /* ---------- Personen und Einladungen für diese Seite ---------- */
+    let rmConfirm=null;
+    async function peopleView(){
+      if(!sid) return;
+      let profiles={}, access={}, meta={}, invites={};
+      try{
+        [profiles,access,meta,invites]=(await Promise.all(["profiles","access","meta","invites"].map(k=>db.ref(`spaces/${sid}/${k}`).once("value")))).map(s=>s.val()||{});
+      }catch(err){ return; }
+      const owner=meta.owner===user.uid, ids=Object.keys(access);
+      const list=ids.map(id=>({id,name:(profiles[id]&&profiles[id].name)||"Ohne Namen",mail:profiles[id]&&profiles[id].email||"",own:meta.owner===id}))
+        .sort((a,b)=>(b.own-a.own)||(a.id===user.uid?-1:b.id===user.uid?1:0));
+      const nInv=Object.keys(invites).length;
+      show(`Personen bei ${PAGE.label}`,
+        PAGE.type==="budget"&&ids.length<=1?"Im Moment siehst nur du dein Budget.":`${ids.length} ${ids.length===1?"Person sieht":"Personen sehen"} diese ${PAGE.noun}.`,
+        `<ul class="auth-people">${list.map(p=>`<li><span class="av">${esc(initial(p.name))}</span>
+            <span class="nm"><b>${esc(p.name)}${p.id===user.uid?" (du)":""}</b><small>${p.own?"Hat die Liste angelegt":esc(p.mail)}</small></span>
+            ${owner&&p.id!==user.uid?`<button type="button" class="rm${rmConfirm===p.id?" sure":""}" data-rm="${esc(p.id)}">${rmConfirm===p.id?"Entfernen?":"Entfernen"}</button>`:""}</li>`).join("")}</ul>
+        <p class="auth-sec">Jemanden einladen</p>
+        <p class="auth-note">Der Link gilt nur für ${esc(PAGE.label)} und nur für eine Person. Wer ihn öffnet, tritt mit eigenem Konto bei. Deine anderen Seiten sieht die Person nicht.</p>
+        <button class="auth-btn" type="button" id="invNew">Einladungslink erstellen</button>
+        <div class="auth-copy" id="invBox" hidden><input type="text" id="invLink" readonly aria-label="Einladungslink"><button class="auth-btn" type="button" id="invCopy">Kopieren</button></div>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        ${nInv?`<button class="auth-link" type="button" id="invRevoke">${nInv} offene${nInv===1?"r Link":" Links"} · alle zurückziehen</button>`:""}
+        ${owner?"":`<button class="auth-link danger" type="button" id="leave">Diese ${esc(PAGE.noun)} verlassen</button>`}
+        <button class="auth-btn alt" type="button" id="ppClose">Fertig</button>`,true);
+      $a("#ppClose").onclick=()=>{ rmConfirm=null; hide(); };
+      $a("#invNew").onclick=async()=>{
+        const code=rand(20);
+        try{
+          await db.ref(`spaces/${sid}/invites/${code}`).set({by:user.uid,at:Date.now()});
+          const base=location.href.split("#")[0].replace(/[^/]*$/,"");
+          $a("#invLink").value=`${base}${PAGE.file}#join-${sid}-${code}`; $a("#invBox").hidden=false; msg("");
+        }catch(err){ msg("Der Link konnte nicht erstellt werden.",true); }
+      };
+      $a("#invCopy").onclick=async()=>{
+        try{ await navigator.clipboard.writeText($a("#invLink").value); msg("Kopiert. Jetzt per WhatsApp oder Mail verschicken."); }
+        catch(e){ $a("#invLink").select(); msg("Markiert. Jetzt kopieren und verschicken."); }
+      };
+      const rv=$a("#invRevoke"); if(rv) rv.onclick=async()=>{ await db.ref(`spaces/${sid}/invites`).remove().catch(()=>{}); peopleView(); };
+      screen.querySelectorAll("[data-rm]").forEach(b=>b.onclick=async()=>{
+        const id=b.dataset.rm;
+        if(rmConfirm!==id){ rmConfirm=id; peopleView(); return; }
+        rmConfirm=null;
+        await db.ref(`spaces/${sid}/access/${id}`).remove().catch(()=>{});
+        await db.ref(`spaces/${sid}/profiles/${id}`).remove().catch(()=>{});
+        peopleView();
+      });
+      const lv=$a("#leave"); if(lv) lv.onclick=async()=>{
+        if(lv.dataset.sure!=="1"){ lv.dataset.sure="1"; lv.textContent="Wirklich verlassen? Du kommst nur mit einer neuen Einladung zurück."; return; }
+        await db.ref(`spaces/${sid}/profiles/${user.uid}`).remove().catch(()=>{});
+        await db.ref(`spaces/${sid}/access/${user.uid}`).remove().catch(()=>{});
+        await db.ref(`users/${user.uid}/spaces/${type}`).remove().catch(()=>{});
+        location.reload();
+      };
+    }
+
+    /* ---------- Seite ohne Bereich: neu anlegen ---------- */
+    function setupView(problem){
+      hide();
+      const wrap=document.querySelector(".wrap"), head=document.querySelector("header");
+      if(!setupEl){ setupEl=document.createElement("div"); setupEl.className="auth-setup"; wrap.style.position="relative"; wrap.appendChild(setupEl); }
+      setupEl.style.top=(head.offsetTop+head.offsetHeight)+"px";
+      const cnt=document.getElementById("count"); if(cnt) cnt.textContent="";
+      let oldCode=null; try{ oldCode=localStorage.getItem("dateideen.code"); }catch(e){}
+      setupEl.innerHTML=`<div class="box">
+        <h3>${esc(PAGE.empty)}</h3>
+        ${problem?`<p class="auth-msg err">${esc(problem)}</p>`:""}
+        <p class="auth-note">${esc(PAGE.hint)}</p>
+        ${oldCode?`<label class="auth-check"><input type="checkbox" id="setMig" checked> Bisherige ${esc(PAGE.label)} von diesem Gerät übernehmen</label>`:""}
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <button class="auth-btn" type="button" id="setNew">${PAGE.type==="chores"?"Neuen Haushalt anlegen":PAGE.type==="budget"?"Budget anlegen":`${esc(PAGE.noun)} anlegen`}</button>
+        <p class="auth-note">Hat dich jemand eingeladen? Dann öffne einfach den Einladungslink.</p>
+      </div>`;
+      setupEl.hidden=false;
+      setupEl.querySelector("#setNew").onclick=async()=>{
+        const btn=setupEl.querySelector("#setNew"); btn.disabled=true; msg("Wird angelegt …",false,setupEl);
+        const id=rand(20);
+        try{
+          await db.ref(`spaces/${id}/access/${user.uid}`).set("owner");
+          await db.ref(`spaces/${id}/meta`).set({type,owner:user.uid,createdAt:Date.now()});
+          const mig=setupEl.querySelector("#setMig");
+          if(mig && mig.checked && oldCode){ msg("Bisherige Daten werden übernommen …",false,setupEl); await migrate(oldCode,id); }
+          await db.ref(`users/${user.uid}/spaces/${type}`).set(id);
+          ready(id);
+        }catch(err){ msg("Das Anlegen hat nicht geklappt. Prüf die Internetverbindung und die Regeln in Firebase.",true,setupEl); btn.disabled=false; }
+      };
+    }
+    // alte Daten vom geheimen Link übernehmen, nur was zu dieser Seite gehört
+    async function migrate(code,id){
+      if(type==="budget"){
+        const b=(await db.ref(`lists/${code}/budget`).once("value")).val();
+        if(b) await db.ref(`spaces/${id}`).update(b);
+        return;
+      }
+      const out={};
+      for(const k of PAGE.keys){ const v=(await db.ref(`lists/${code}/${k}`).once("value")).val(); if(v!=null) out[k]=v; }
+      const ids=new Set();
+      if(out.ideas) Object.values(out.ideas).forEach(i=>(Array.isArray(i.photos)?i.photos:[]).forEach(p=>ids.add(p)));
+      if(out.recipes) Object.values(out.recipes).forEach(r=>{ if(r.cover) ids.add(r.cover); });
+      if(ids.size){ out.photos={}; for(const p of ids){ const v=(await db.ref(`lists/${code}/photos/${p}`).once("value")).val(); if(v) out.photos[p]=v; } }
+      if(Object.keys(out).length) await db.ref(`spaces/${id}`).update(out);
+    }
+
+    /* ---------- Einladung annehmen ---------- */
+    async function join(j,current){
+      if(current && current!==j.sid && !confirm_){
+        show(`Einladung zu ${PAGE.label}`,"",`<p class="auth-note">Du bist schon in einer anderen ${esc(PAGE.noun)}. Möchtest du zur neuen wechseln? Die alte bleibt bestehen, du siehst sie dann aber nicht mehr.</p>
+          <button class="auth-btn" type="button" id="jYes">Zur neuen wechseln</button>
+          <button class="auth-btn alt" type="button" id="jNo">Bei meiner bleiben</button>`);
+        $a("#jYes").onclick=()=>{ confirm_=true; join(j,current); };
+        $a("#jNo").onclick=()=>{ clearHash(); hide(); open(current); };
+        return;
+      }
+      try{
+        await db.ref(`spaces/${j.sid}/access/${user.uid}`).set(j.code);
+        await db.ref(`users/${user.uid}/spaces/${type}`).set(j.sid);
+        await db.ref(`spaces/${j.sid}/invites/${j.code}`).remove().catch(()=>{});   // Link gilt nur einmal
+        clearHash(); ready(j.sid);
+      }catch(err){ clearHash(); if(current) open(current); else setupView("Der Einladungslink ist ungültig oder wurde zurückgezogen."); }
+    }
+    let confirm_=false;
+
+    async function open(id){
+      try{ await db.ref(`spaces/${id}/meta`).once("value"); ready(id); }
+      catch(err){ await db.ref(`users/${user.uid}/spaces/${type}`).remove().catch(()=>{}); setupView("Du hast keinen Zugriff mehr auf diese Liste. Leg eine neue an oder lass dich wieder einladen."); }
+    }
+    function ready(id){
+      sid=id; hide(); if(setupEl) setupEl.hidden=true; updateMenu();
+      db.ref(`spaces/${id}/profiles/${user.uid}`).update({name:profile.name||user.email.split("@")[0],email:user.email}).catch(()=>{});
+      if(started) return; started=true;
+      cb(db.ref("spaces/"+id),{uid:user.uid,sid:id,email:user.email,name:profile.name});
+    }
+
+    auth.onAuthStateChanged(async u=>{
+      if(!u){ if(user){ location.reload(); return; } loginView(parseJoin()?"register":"login"); return; }
+      user=u;
+      show(PAGE.label,"",`<p class="auth-note">Lädt …</p>`);
+      try{
+        profile=(await db.ref(`users/${u.uid}/profile`).once("value")).val()||{};
+        if(!profile.name){
+          let n=""; try{ n=sessionStorage.getItem("auth.newName")||""; sessionStorage.removeItem("auth.newName"); }catch(e){}
+          profile.name=n||u.email.split("@")[0];
+          await db.ref(`users/${u.uid}/profile/name`).set(profile.name);
+        }
+        installMenu();
+        const current=(await db.ref(`users/${u.uid}/spaces/${type}`).once("value")).val();
+        const j=parseJoin();
+        if(j){ await join(j,current); return; }
+        if(current){ await open(current); return; }
+        setupView();
+      }catch(err){
+        show(PAGE.label,"",`<p class="auth-msg err">Die Daten konnten nicht geladen werden. Prüf die Internetverbindung und die Regeln in Firebase.</p>
+          <button class="auth-btn" type="button" onclick="location.reload()">Neu laden</button>
+          <button class="auth-link" type="button" id="authOut">Abmelden</button>`);
+        $a("#authOut").onclick=()=>auth.signOut();
+      }
+    });
+  }};
+})();
+</script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=t=>String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------- Speicher: Firebase Realtime Database (gleiche Liste wie die anderen Seiten) ---------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyD6JNwGczfmHYTqHp9qI5bnutz-JLphgGI",
+  authDomain: "oursapp-ff4cf.firebaseapp.com",
+  databaseURL: "https://oursapp-ff4cf-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "oursapp-ff4cf",
+  storageBucket: "oursapp-ff4cf.firebasestorage.app",
+  messagingSenderId: "509984933255",
+  appId: "1:509984933255:web:1f2e8b0850c94056f87f22"
+};
+function listCode(){
+  const fromHash=location.hash.replace(/^#/,"");
+  let code=/^[A-Za-z0-9]{24,64}$/.test(fromHash)?fromHash:null;
+  if(!code){ try{ code=localStorage.getItem("dateideen.code") }catch(e){} }
+  if(!code){
+    const abc="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    code=[...crypto.getRandomValues(new Uint8Array(28))].map(x=>abc[x%abc.length]).join("");
+  }
+  try{ localStorage.setItem("dateideen.code",code) }catch(e){}
+  history.replaceState(null,"","#"+code);
+  return code;
+}
+const CODE="";   // früher geheimer Link, jetzt Anmeldung
+
+let root=null;
+// root wird nach der Anmeldung gesetzt (siehe Start)
+function showErr(e){ $("#status").textContent = /permission/i.test(String(e&&(e.code||e.message)))
+  ? "Die Datenbank lässt nicht speichern. Prüf die Regeln in Firebase." : "Speichern hat nicht geklappt. Prüf die Internetverbindung."; }
+
+/* ---------- Geld und Datum ---------- */
+const EUR=new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR"});
+const money=c=>EUR.format((c||0)/100);
+const parseMoney=t=>{ const s=String(t).trim().replace(/\s|€/g,"").replace(/\.(?=\d{3}(\D|$))/g,"").replace(",","."); const v=Math.round(parseFloat(s)*100); return Number.isFinite(v)&&v>0?v:null; };
+const pad=n=>String(n).padStart(2,"0");
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const fromIso=s=>{ const [y,m,d]=String(s||"").split("-").map(Number); return y?new Date(y,m-1,d):new Date(); };
+const daysIn=(y,m)=>new Date(y,m+1,0).getDate();
+const MONTHS=["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+const short=d=>`${d.getDate()}.${d.getMonth()+1}.`;
+const EVERY=[["week","Wöchentlich"],["month","Monatlich"],["quarter","Vierteljährlich"],["year","Jährlich"]];
+const PER_MONTH={week:52/12,month:1,quarter:1/3,year:1/12};
+const KINDS=[["abo","Abo"],["fix","Fixkosten"],["income","Einnahme"]];
+const CATS=["Wohnen","Lebensmittel","Mobilität","Freizeit","Medien & Abos","Versicherung","Gesundheit","Gehalt"];
+const PALETTE=["#e0bf73","#6fd39b","#7cb7ff","#ff8574","#c39bff","#5fd4d0","#f2a65a","#e889c4","#a8c26a","#9aa4b5"];
+
+// Wann wird ein Dauerposten in Monat (y,m) fällig? Liefert die Tage
+function occurrences(r,y,m){
+  const s=fromIso(r.start), ym=y*12+m, sym=s.getFullYear()*12+s.getMonth(), diff=ym-sym;
+  if(diff<0) return [];
+  if(r.every==="week"){
+    const out=[]; const first=new Date(y,m,1), last=new Date(y,m,daysIn(y,m));
+    let d=new Date(s); if(d<first){ const k=Math.ceil((first-d)/(7*864e5)); d=new Date(s.getFullYear(),s.getMonth(),s.getDate()+7*k); }
+    while(d<=last){ out.push(d.getDate()); d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+7); }
+    return out;
+  }
+  const step=r.every==="year"?12:r.every==="quarter"?3:1;
+  if(diff%step) return [];
+  return [Math.min(s.getDate(),daysIn(y,m))];
+}
+function nextDate(r){
+  const t=new Date(); t.setHours(0,0,0,0);
+  for(let i=0;i<26;i++){ const y=t.getFullYear()+Math.floor((t.getMonth()+i)/12), m=(t.getMonth()+i)%12;
+    for(const d of occurrences(r,y,m)){ const x=new Date(y,m,d); if(x>=t) return x; } }
+  return null;
+}
+
+/* ---------- Zustand ---------- */
+let rec={}, exp={}, customCats={};
+const now=new Date(); let vy=now.getFullYear(), vm=now.getMonth();
+const catList=()=>[...CATS,...Object.values(customCats).filter(c=>!CATS.includes(c))];
+const catColor=c=>{ const l=catList(); const i=l.indexOf(c); return PALETTE[(i<0?l.length:i)%PALETTE.length]; };
+
+/* ---------- Rendern ---------- */
+function render(){
+  $("#monthLabel").textContent=`${MONTHS[vm]} ${vy}`;
+  const recs=Object.entries(rec).map(([id,r])=>({id,...r}));
+  const inMonth=recs.map(r=>({...r,days:occurrences(r,vy,vm)}));
+  const income=inMonth.filter(r=>r.kind==="income").reduce((a,r)=>a+r.amount*r.days.length,0);
+  const fixed=inMonth.filter(r=>r.kind!=="income").reduce((a,r)=>a+r.amount*r.days.length,0);
+  const exps=Object.entries(exp).map(([id,e])=>({id,...e})).filter(e=>{ const d=fromIso(e.date); return d.getFullYear()===vy&&d.getMonth()===vm; })
+    .sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.createdAt||0)-(a.createdAt||0));
+  const spent=exps.reduce((a,e)=>a+e.amount,0), left=income-fixed-spent;
+  $("#count").textContent=`${MONTHS[vm]} · ${recs.filter(r=>r.kind==="abo").length} Abos`;
+
+  const tot=Math.max(income,fixed+spent,1);
+  let h=`<div class="hero">
+    <span class="lbl">Übrig im ${MONTHS[vm]}</span>
+    <span class="left num ${left>=0?"pos":"neg"}">${money(left)}</span>
+    <div class="tiles">
+      <div class="tile"><span>Einnahmen</span><b class="num" style="color:var(--plus)">${money(income)}</b></div>
+      <div class="tile"><span>Abos & Fixkosten</span><b class="num">${money(fixed)}</b></div>
+      <div class="tile"><span>Ausgaben</span><b class="num">${money(spent)}</b></div>
+    </div>
+    <div class="split" aria-hidden="true"><span style="width:${fixed/tot*100}%;background:#9aa4b5"></span><span style="width:${spent/tot*100}%;background:var(--accent)"></span>${left>0?`<span style="width:${left/tot*100}%;background:var(--plus)"></span>`:""}</div>
+    ${income?"":`<p class="hint">Trag unten deine Einnahmen ein, dann siehst du, was übrig bleibt.</p>`}
+  </div>`;
+
+  // Bald fällig (nur im aktuellen Monat sinnvoll)
+  const upcoming=recs.filter(r=>r.kind!=="income").map(r=>({r,d:nextDate(r)})).filter(x=>x.d && (x.d-new Date())/864e5<=14).sort((a,b)=>a.d-b.d);
+  if(upcoming.length) h+=`<div class="sec"><div class="sec-head"><h2>Bald fällig</h2><span class="sum">nächste 14 Tage</span></div>
+    <div class="soon">${upcoming.map(x=>`<span class="pill">${short(x.d)} · ${esc(x.r.name)} <b class="num">${money(x.r.amount)}</b></span>`).join("")}</div></div>`;
+
+  // Abos & Fixkosten
+  const costs=recs.filter(r=>r.kind!=="income").sort((a,b)=>(a.kind===b.kind?0:a.kind==="abo"?-1:1)||(b.amount*PER_MONTH[b.every])-(a.amount*PER_MONTH[a.every]));
+  const aboMonth=recs.filter(r=>r.kind==="abo").reduce((a,r)=>a+r.amount*PER_MONTH[r.every],0);
+  h+=`<div class="sec"><div class="sec-head"><h2>Abos & Fixkosten</h2><span class="sum num">Abos ≈ ${money(aboMonth)} im Monat · ${money(aboMonth*12)} im Jahr</span></div>
+    ${costs.length?`<ul>${costs.map(recRow).join("")}</ul>`:`<div class="empty">Noch keine Abos oder Fixkosten. Zum Beispiel Miete, Handyvertrag oder Netflix.</div>`}
+    <button class="add" type="button" data-new="rec">+ Abo oder Fixkosten</button></div>`;
+
+  // Ausgaben
+  h+=`<div class="sec"><div class="sec-head"><h2>Ausgaben</h2><span class="sum num">${exps.length} im ${MONTHS[vm]} · ${money(spent)}</span></div>`;
+  if(exps.length){ let lastDay=""; h+="<ul>"; exps.forEach(e=>{ if(e.date!==lastDay){ lastDay=e.date; const d=fromIso(e.date); h+=`<li class="day">${d.toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"})}</li>`; } h+=expRow(e); }); h+="</ul>"; }
+  else h+=`<div class="empty">In diesem Monat noch keine Ausgaben. Tipp oben auf „+ Ausgabe“.</div>`;
+  h+=`</div>`;
+
+  // Einnahmen
+  const incs=recs.filter(r=>r.kind==="income");
+  h+=`<div class="sec"><div class="sec-head"><h2>Einnahmen</h2><span class="sum num">${money(income)} im ${MONTHS[vm]}</span></div>
+    ${incs.length?`<ul>${incs.map(recRow).join("")}</ul>`:""}
+    <button class="add" type="button" data-new="income">+ Einnahme</button></div>`;
+
+  // Kategorien
+  const byCat={}; inMonth.filter(r=>r.kind!=="income").forEach(r=>{ if(r.days.length) byCat[r.cat||"Ohne Kategorie"]=(byCat[r.cat||"Ohne Kategorie"]||0)+r.amount*r.days.length; });
+  exps.forEach(e=>byCat[e.cat||"Ohne Kategorie"]=(byCat[e.cat||"Ohne Kategorie"]||0)+e.amount);
+  const catsSorted=Object.entries(byCat).sort((a,b)=>b[1]-a[1]), cmax=Math.max(1,...catsSorted.map(c=>c[1]));
+  if(catsSorted.length) h+=`<div class="sec"><div class="sec-head"><h2>Wohin das Geld geht</h2><span class="sum">${MONTHS[vm]}</span></div>
+    <div class="cats">${catsSorted.map(([c,v])=>`<div class="cat"><span class="cat-name"><span class="dot" style="background:${catColor(c)}"></span>${esc(c)}</span><b class="num">${money(v)}</b>
+      <span class="track"><span style="width:${v/cmax*100}%;background:${catColor(c)}"></span></span></div>`).join("")}</div></div>`;
+  $("#list").innerHTML=h;
+}
+function recRow(r){
+  const nd=nextDate(r), every=(EVERY.find(e=>e[0]===r.every)||[0,""])[1];
+  const sub=r.kind==="income"?`${every} · nächste am ${nd?short(nd):"–"}`:`${r.kind==="abo"?"Abo":"Fixkosten"} · ${every} · nächste ${nd?short(nd):"–"}`;
+  const pm=r.every!=="month"?`<small>≈ ${money(r.amount*PER_MONTH[r.every])}/Monat</small>`:"";
+  return `<li><button type="button" class="row" data-edit="rec" data-id="${esc(r.id)}">
+    <span class="ico" style="background:${catColor(r.cat)}">${esc((r.name||"?").slice(0,1).toUpperCase())}</span>
+    <span class="main"><b>${esc(r.name)}</b><small>${sub}</small></span>
+    <span class="amt${r.kind==="income"?" plus":""}">${r.kind==="income"?"+":""}${money(r.amount)}${pm}</span></button></li>`;
+}
+function expRow(e){
+  return `<li><button type="button" class="row" data-edit="exp" data-id="${esc(e.id)}">
+    <span class="ico" style="background:${catColor(e.cat)}">${esc((e.title||e.cat||"?").slice(0,1).toUpperCase())}</span>
+    <span class="main"><b>${esc(e.title||e.cat||"Ausgabe")}</b><small>${esc(e.cat||"Ohne Kategorie")}</small></span>
+    <span class="amt">${money(e.amount)}</span></button></li>`;
+}
+
+/* ---------- Formular ---------- */
+let form=null, addingCat=false, delConfirm=false;
+function openForm(type,id){
+  // type: "expense" | "rec" | "income"
+  const isExp=type==="expense"||type==="exp";
+  const src=id?(isExp?exp[id]:rec[id]):null;
+  form={isExp,id:id||null,kind:src?src.kind:(type==="income"?"income":"abo"),every:src?src.every:"month",
+        cat:src?src.cat:(type==="income"?"Gehalt":isExp?"Lebensmittel":"Medien & Abos")};
+  addingCat=false; delConfirm=false;
+  $("#formTitle").textContent=id?(isExp?"Ausgabe bearbeiten":"Eintrag bearbeiten"):isExp?"Neue Ausgabe":type==="income"?"Neue Einnahme":"Abo oder Fixkosten";
+  $("#fAmount").value=src?(src.amount/100).toFixed(2).replace(".",","):"";
+  $("#fName").value=src?(isExp?src.title:src.name)||"":"";
+  $("#fNameLbl").textContent=isExp?"Wofür":"Name";
+  $("#fName").placeholder=isExp?"z.B. Wocheneinkauf":type==="income"?"z.B. Gehalt":"z.B. Netflix, Miete, Handy";
+  $("#fKindWrap").hidden=isExp; $("#fEveryWrap").hidden=isExp;
+  $("#fDateLbl").textContent=isExp?"Datum":"Erste bzw. nächste Abbuchung";
+  const today=new Date(); const def=(vy===today.getFullYear()&&vm===today.getMonth())?today:new Date(vy,vm,1);
+  $("#fDate").value=src?(isExp?src.date:src.start):iso(def);
+  $("#fDel").hidden=!id; $("#fDel").textContent="Löschen"; $("#fDel").classList.remove("sure");
+  $("#fErr").hidden=true;
+  renderFormChips(); $("#formModal").hidden=false; setTimeout(()=>$("#fAmount").focus(),30);
+}
+function renderFormChips(){
+  $("#fKind").innerHTML=KINDS.map(([k,l])=>`<button type="button" class="chip" data-kind="${k}" aria-pressed="${form.kind===k}">${l}</button>`).join("");
+  $("#fEvery").innerHTML=EVERY.map(([k,l])=>`<button type="button" class="chip" data-every="${k}" aria-pressed="${form.every===k}">${l}</button>`).join("");
+  const list=catList(); if(form.cat && !list.includes(form.cat)) list.push(form.cat);
+  $("#fCat").innerHTML=list.map(c=>{ const custom=!CATS.includes(c)&&Object.values(customCats).includes(c);
+      return `<span class="chipwrap"><button type="button" class="chip" data-cat="${esc(c)}" aria-pressed="${form.cat===c}"><span class="dot" style="background:${catColor(c)}"></span>${esc(c)}</button>${custom?`<button type="button" class="chip-x" data-delcat="${esc(c)}" aria-label="Kategorie ${esc(c)} entfernen">×</button>`:""}</span>`; }).join("")
+    +(addingCat?`<span class="addcat"><input type="text" id="catIn" maxlength="24" placeholder="Neue Kategorie" aria-label="Neue Kategorie"><button type="button" class="chip" id="catSave">Hinzufügen</button></span>`
+      :`<button type="button" class="chip plus" id="catAdd" aria-label="Eigene Kategorie hinzufügen">+</button>`);
+}
+const closeForm=()=>{ $("#formModal").hidden=true; form=null; };
+function saveCat(){
+  const v=($("#catIn")&&$("#catIn").value||"").trim().slice(0,24); addingCat=false;
+  if(v){ if(!catList().includes(v)) root.child("cats").push().set(v).catch(showErr); form.cat=v; }
+  renderFormChips();
+}
+$("#form").addEventListener("click",e=>{
+  const t=e.target;
+  const k=t.closest("[data-kind]"); if(k){ form.kind=k.dataset.kind; if(form.kind==="income"&&form.cat==="Medien & Abos") form.cat="Gehalt"; renderFormChips(); return; }
+  const ev=t.closest("[data-every]"); if(ev){ form.every=ev.dataset.every; renderFormChips(); return; }
+  const c=t.closest("[data-cat]"); if(c){ form.cat=c.dataset.cat; renderFormChips(); return; }
+  const dc=t.closest("[data-delcat]"); if(dc){ const key=Object.keys(customCats).find(x=>customCats[x]===dc.dataset.delcat); if(key) root.child("cats/"+key).remove().catch(showErr); return; }
+  if(t.closest("#catAdd")){ addingCat=true; renderFormChips(); $("#catIn").focus(); return; }
+  if(t.closest("#catSave")){ saveCat(); return; }
+});
+$("#form").addEventListener("keydown",e=>{ if(e.target.id==="catIn" && e.key==="Enter"){ e.preventDefault(); saveCat(); } });
+$("#form").addEventListener("submit",e=>{
+  e.preventDefault(); if(!root||!form) return;
+  const amount=parseMoney($("#fAmount").value), name=$("#fName").value.trim().slice(0,60), date=$("#fDate").value||iso(new Date());
+  const err=t=>{ $("#fErr").textContent=t; $("#fErr").hidden=false; };
+  if(!amount) return err("Gib einen Betrag ein, z.B. 12,99.");
+  if(!form.isExp && !name) return err("Gib dem Eintrag einen Namen.");
+  const id=form.id||Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const data=form.isExp ? {amount,title:name,cat:form.cat||null,date,createdAt:form.id?(exp[form.id].createdAt||Date.now()):Date.now()}
+                        : {amount,name,kind:form.kind,every:form.every,start:date,cat:form.cat||null};
+  root.child((form.isExp?"expenses/":"recurring/")+id).set(data).catch(showErr);
+  if(form.isExp && !form.id){ const d=fromIso(date); vy=d.getFullYear(); vm=d.getMonth(); }
+  closeForm();
+});
+$("#fCancel").addEventListener("click",closeForm);
+$("#formModal").addEventListener("click",e=>{ if(e.target.id==="formModal") closeForm(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !$("#formModal").hidden) closeForm(); });
+$("#fDel").addEventListener("click",()=>{
+  if(!delConfirm){ delConfirm=true; $("#fDel").textContent="Wirklich löschen?"; $("#fDel").classList.add("sure"); return; }
+  root.child((form.isExp?"expenses/":"recurring/")+form.id).remove().catch(showErr); closeForm();
+});
+
+/* ---------- Klicks ---------- */
+document.addEventListener("click",e=>{
+  const n=e.target.closest("[data-new]"); if(n){ openForm(n.dataset.new); return; }
+  const ed=e.target.closest("[data-edit]"); if(ed){ openForm(ed.dataset.edit,ed.dataset.id); return; }
+});
+$("#prevM").addEventListener("click",()=>{ vm--; if(vm<0){ vm=11; vy--; } render(); });
+$("#nextM").addEventListener("click",()=>{ vm++; if(vm>11){ vm=0; vy++; } render(); });
+
+// Beim Runterscrollen schiebt sich der Bereich über den Kopf
+(()=>{
+  const wrap=document.querySelector(".wrap"), head=$("#head"), sc=$("#list");
+  const measure=()=>{ if(!wrap.classList.contains("compact")) wrap.style.setProperty("--headH",head.offsetHeight+"px"); };
+  sc.addEventListener("scroll",()=>{ measure(); if(sc.scrollTop>24) wrap.classList.add("compact"); else if(sc.scrollTop<=2) wrap.classList.remove("compact"); },{passive:true});
+  addEventListener("resize",measure); measure();
+})();
+
+/* ---------- Start ---------- */
+Auth.start(firebaseConfig,"budget",r=>{
+root=r;
+render();
+if(!root){
+  $("#count").textContent="Keine Verbindung";
+  $("#status").textContent="Die Datenbank konnte nicht geladen werden. Prüf die Internetverbindung und lade die Seite neu.";
+}else{
+  root.child("recurring").on("value",s=>{ rec=s.val()||{}; render(); },err=>{ $("#count").textContent="Keine Verbindung"; showErr(err); });
+  root.child("expenses").on("value",s=>{ exp=s.val()||{}; render(); });
+  root.child("cats").on("value",s=>{ customCats=s.val()||{}; render(); if(form) renderFormChips(); });
+}
+});
+</script>
+</body>
+</html>

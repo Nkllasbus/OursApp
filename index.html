@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Unsere Dateideen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: eine schmale Spalte wie ein Notizzettel; offene Ideen oben, Erledigtes sinkt nach unten */
+:root{
+  --page:#cdbca3; --dots:rgba(255,255,255,.22); --frame-line:#bba98e; --shadow:rgba(70,52,30,.35);
+  --band:#7b6650; --on-band:#fbf4e9; --on-band-muted:#e2d3bf;
+  --bg:#f0e7d9; --surface:#faf5ed; --ink:#33291f; --muted:#7f6f5e; --line:#e0d3c0;
+  --accent:#8c7559; --accent-soft:#e8dccb; --done:#ad9f8d; --btn:#e2d3bd;
+  --display:"Gloock", Georgia, serif; --body:"Figtree", system-ui, -apple-system, sans-serif;
+}
+:root{color-scheme:light}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:620px;height:100%;margin:0 auto;padding-block:32px 12px;display:flex;flex-direction:column;gap:24px}
+.wrap>header,.wrap>.tabs,.wrap>.status{flex:none}
+.scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:20px;padding:2px 2px 24px;margin:0 -2px}
+header h1{font-family:var(--display);font-weight:400;font-size:clamp(2.2rem,7vw,3.2rem);line-height:1.05;margin:0;text-wrap:balance}
+.switch{display:inline-flex;align-items:center;gap:10px;color:inherit;text-decoration:none;border-radius:8px}
+.switch svg{width:22px;height:22px;color:var(--muted);flex:none;transition:transform .2s}
+.switch:hover svg{transform:translateX(2px);color:var(--accent)}
+.switch:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header p{margin:8px 0 0;color:var(--muted)}
+.count{font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-variant-numeric:tabular-nums}
+
+form.add{display:flex;gap:8px}
+form.add input{flex:1;min-width:0;font:inherit;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+form.add input:focus{outline:none;border-color:var(--accent)}
+button{font:inherit;cursor:pointer}
+.btn{background:var(--btn);color:var(--ink);border:0;border-radius:10px;padding:0 18px;font-weight:600}
+.btn:focus-visible,button:focus-visible,.check:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.item{background:var(--surface);border:1px solid var(--line);border-radius:12px;transition:border-color .15s}
+.item.open{border-color:var(--accent)}
+.row{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.check{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--accent);background:transparent;display:grid;place-items:center;padding:0}
+.check svg{width:14px;height:14px;opacity:0}
+.done .check{background:var(--done);border-color:var(--done)}
+.done .check svg{opacity:1}
+.check path{stroke:var(--surface)}
+.title{flex:1;min-width:0;text-align:left;background:none;border:0;color:inherit;padding:4px 0;font-weight:500;overflow-wrap:anywhere}
+.done .title{color:var(--done);text-decoration:line-through}
+.hint{flex:none;display:flex;align-items:center;gap:6px;color:var(--muted);font-size:.8rem}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.done .dot{background:var(--done)}
+.chev{width:16px;height:16px;transition:transform .2s;color:var(--muted)}
+.open .chev{transform:rotate(180deg)}
+
+.details{padding:0 14px 14px 50px;display:flex;flex-direction:column;gap:10px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+label{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.details input,.details textarea{font:inherit;font-size:.95rem;text-transform:none;letter-spacing:0;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+.details textarea{min-height:110px;resize:vertical}
+.details input:focus,.details textarea:focus{outline:none;border-color:var(--accent)}
+.actions{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.saved{font-size:.8rem;color:var(--muted)}
+.del{background:none;border:0;color:var(--muted);font-size:.85rem;padding:4px 0;text-decoration:underline}
+.del.sure{color:var(--accent);font-weight:600}
+
+.divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase}
+.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+
+.empty{border:1.5px dashed var(--line);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:12px;color:var(--muted)}
+.empty strong{color:var(--ink);font-family:var(--display);font-weight:400;font-size:1.35rem}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--accent-soft);color:var(--ink);border:0;border-radius:999px;padding:6px 12px;font-size:.9rem}
+.status{font-size:.8rem;color:var(--muted)}
+
+.panel{flex:1;min-height:0;display:flex;flex-direction:column;gap:20px}
+.panel>form,.panel>.panel-intro{flex:none}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:-8px}
+.tab{background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:8px 12px;color:var(--muted);font-weight:500}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.tab .n{font-size:.8rem;margin-left:4px;color:var(--muted);font-variant-numeric:tabular-nums}
+.again-btn{flex:none;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--muted);display:grid;place-items:center;padding:0}
+.again-btn svg{width:16px;height:16px}
+.again-btn[aria-pressed="true"]{background:var(--btn);border-color:var(--accent);color:var(--ink)}
+.meta{font-variant-numeric:tabular-nums;white-space:nowrap}
+.done.again .title{text-decoration:none;color:var(--muted)}
+.panel-intro{margin:0;color:var(--muted)}
+.rating{display:flex;gap:4px;flex-wrap:wrap}
+.rate{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:.85rem;font-variant-numeric:tabular-nums;padding:0}
+.rate.fill{background:var(--accent-soft);color:var(--ink)}
+.rate.on{background:var(--btn);border-color:var(--accent);color:var(--ink);font-weight:600}
+.rating-note{font-size:.8rem;color:var(--muted);text-transform:none;letter-spacing:0}
+.photo-wrap{display:flex;flex-direction:column;gap:4px}
+.flabel{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px}
+.ph{position:relative;aspect-ratio:1;max-width:100%;border-radius:8px;overflow:hidden;background:var(--accent-soft)}
+.ph-open{display:block;width:100%;height:100%;border:0;padding:0;background:none}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph-del{position:absolute;top:4px;right:4px;min-width:24px;height:24px;border-radius:999px;border:0;background:var(--surface);color:var(--ink);font-size:.9rem;line-height:1;padding:0 6px}
+.ph-del.sure{font-size:.75rem;font-weight:600}
+.add-ph{aspect-ratio:1;max-width:100%;border:1.5px dashed var(--line);border-radius:8px;background:none;color:var(--muted);font-size:.85rem;padding:6px}
+.thumb{flex:none;width:28px;height:28px;border-radius:6px;object-fit:cover;background:var(--accent-soft)}
+.lightbox{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgba(24,21,17,.9);cursor:zoom-out;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.lightbox img{max-width:100%;max-height:100%;border-radius:8px}
+@media (max-width:440px){.details{padding-left:14px}.fields{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* Rahmen: farbiger Hintergrund außen, die App als Karte mit Kopfband */
+body{background-color:var(--page);background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px);background-size:18px 18px;padding-block:16px}
+.wrap{background:var(--bg);border-radius:26px;overflow:hidden;padding:0 22px 12px;border:1px solid var(--frame-line);box-shadow:0 18px 40px -18px var(--shadow),0 2px 6px -2px var(--shadow)}
+header{margin:0 -22px;padding:26px 22px 22px;background:var(--band);color:var(--on-band);position:relative}
+header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:14px;background:var(--bg);border-radius:14px 14px 0 0}
+header .count{color:var(--on-band-muted)}
+header p{color:var(--on-band-muted)}
+.switch svg{color:var(--on-band-muted)}
+.switch:hover svg{color:var(--on-band)}
+.switch:focus-visible{outline-color:var(--on-band)}
+@media (max-width:480px){body{padding-block:10px;padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px))}
+  .wrap{padding:0 16px 10px;border-radius:22px}header{margin:0 -16px;padding:22px 16px 20px}}
+
+/* Karte so hoch wie der Bildschirm, Erledigtes liegt darunter auf der Seite */
+.wrap{height:calc(100vh - 32px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));height:calc(100dvh - 32px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
+.more{flex:none;align-self:center;background:none;border:0;color:var(--muted);font-size:.85rem;padding:4px 8px;display:flex;align-items:center;gap:6px}
+.more:hover{color:var(--ink)}
+.done-card{max-width:620px;margin:16px auto 0;background:var(--bg);border-radius:26px;border:1px solid var(--frame-line);box-shadow:0 18px 40px -18px var(--shadow);padding:20px 22px 22px;display:flex;flex-direction:column;gap:14px}
+.done-card h2{margin:0;font-family:var(--display);font-weight:400;font-size:1.6rem;display:flex;align-items:baseline;gap:8px}
+.done-card h2 span{font-family:var(--body);font-size:.9rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.modal{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(40,30,20,.45);
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));animation:fade .15s ease-out}
+.sheet{width:100%;max-width:380px;background:var(--surface);border-radius:22px;padding:22px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 60px -20px rgba(40,30,20,.6);animation:pop .2s ease-out}
+.sheet h3{margin:0;font-family:var(--display);font-weight:400;font-size:1.6rem;line-height:1.15;overflow-wrap:anywhere}
+.sheet .ghost{align-self:center;background:none;border:0;color:var(--muted);padding:6px 10px;text-decoration:underline}
+.rating.big{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.rating.big .rate{width:auto;height:46px;font-size:1.05rem;border-radius:12px}
+@keyframes fade{from{opacity:0}}
+@keyframes pop{from{transform:translateY(8px) scale(.97);opacity:0}}
+@media (max-width:480px){.wrap{height:calc(100vh - 20px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));height:calc(100dvh - 20px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
+  .done-card{margin-top:10px;padding:18px 16px;border-radius:22px}}
+
+/* Hintergrund: Kritzeleien wie von Kinderhand */
+body{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420' viewBox='0 0 420 420' fill='none' stroke='rgba%28255,255,255,0.22%29' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M60 62.8c-6.4 -11.8 -25.6 -9.600000000000001 -22.400000000000002 4.800000000000001c1.6 11.200000000000001 12.8 19.200000000000003 22.400000000000002 27.200000000000003c9.600000000000001 -8.0 22.400000000000002 -15.0 24.0 -27.200000000000003c1.6 -14.4 -17.6 -17.6 -24.0 -4.800000000000001'/%3E%3Cpath d='M230 48.0c-4.0 -9.0 -16.0 -6.0 -14.0 3.0c1.0 7.0 8.0 12.0 14.0 17.0c6.0 -5.0 14.0 -11.0 15.0 -17.0c1.0 -9.0 -11.0 -11.0 -15.0 -3.0'/%3E%3Cpath d='M350 131.2c-5.6 -9.2 -22.4 -8.399999999999999 -19.599999999999998 4.199999999999999c1.4 9.799999999999999 11.2 16.799999999999997 19.599999999999998 23.799999999999997c8.399999999999999 -7.0 19.599999999999998 -12.0 21.0 -23.799999999999997c1.4 -12.6 -15.399999999999999 -15.399999999999999 -21.0 -4.199999999999999'/%3E%3Cpath d='M130 177.2c-3.6 -7.2 -14.4 -5.4 -12.6 2.7c0.9 6.3 7.2 10.8 12.6 15.3c5.4 -4.5 12.6 -9.0 13.5 -15.3c0.9 -8.1 -9.9 -9.9 -13.5 -2.7'/%3E%3Cpath d='M290 264.4c-7.2 -16.4 -28.8 -10.8 -25.2 5.4c1.8 12.6 14.4 21.6 25.2 30.6c10.8 -9.0 25.2 -20.0 27.0 -30.6c1.8 -16.2 -19.8 -19.8 -27.0 -5.4'/%3E%3Cpath d='M50 299.6c-4.8 -8.6 -19.2 -7.199999999999999 -16.8 3.5999999999999996c1.2 8.4 9.6 14.399999999999999 16.8 20.4c7.199999999999999 -6.0 16.8 -11.0 18.0 -20.4c1.2 -10.799999999999999 -13.2 -13.2 -18.0 -3.5999999999999996'/%3E%3Cpath d='M180 342.0c-6.0 -13.0 -24.0 -9.0 -21.0 4.5c1.5 10.5 12.0 18.0 21.0 25.5c9.0 -7.5 21.0 -16.0 22.5 -25.5c1.5 -13.5 -16.5 -16.5 -22.5 -4.5'/%3E%3Cpath d='M380 367.2c-3.6 -6.2 -14.4 -5.4 -12.6 2.7c0.9 6.3 7.2 10.8 12.6 15.3c5.4 -4.5 12.6 -8.0 13.5 -15.3c0.9 -8.1 -9.9 -9.9 -13.5 -2.7'/%3E%3C/svg%3E"),radial-gradient(var(--dots) 1.2px,transparent 1.2px);background-size:420px 420px,18px 18px}
+
+/* Kleinerer Kopf */
+header{padding:16px 22px 18px}
+header h1{font-size:clamp(1.7rem,5.5vw,2.3rem)}
+.switch svg{width:18px;height:18px}
+header p{margin-top:4px;font-size:.88rem}
+.count{font-size:.72rem}
+@media (max-width:480px){header{padding:14px 16px 18px}}
+
+/* Seitenmenü hinter dem Titel */
+.switch{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;text-align:left}
+.switch svg{transition:transform .2s}
+.switch[aria-expanded="true"] svg{transform:rotate(180deg)}
+.pagemenu{position:absolute;left:16px;top:calc(100% - 22px);z-index:30;min-width:210px;display:flex;flex-direction:column;gap:2px;padding:6px;
+  background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 36px -14px rgba(0,0,0,.35)}
+.pagemenu a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:inherit;text-decoration:none;font-weight:500}
+.pagemenu a:hover{background:var(--accent-soft)}
+.pagemenu a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+.pm-dot{width:10px;height:10px;border-radius:50%;flex:none}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="count" id="count">Verbindet …</div>
+    <div class="switch"><h1>Unsere Dateideen</h1></div>
+    <p>Idee eintragen, antippen zum Planen. Abgehakte Dates rutschen nach unten.</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-ideas" data-tab="ideas">Ideen<span class="n" id="n-ideas"></span></button>
+    <button class="tab" role="tab" id="tab-again" data-tab="again">Nochmal erleben<span class="n" id="n-again"></span></button>
+  </div>
+
+  <section class="panel" id="panel-ideas">
+    <form class="add" id="addForm" autocomplete="off">
+      <input id="newTitle" placeholder="Neue Dateidee, z.B. Sterne gucken am See" maxlength="140" aria-label="Neue Dateidee">
+      <button class="btn" type="submit">Eintragen</button>
+    </form>
+    <div class="scroll">
+    <ul id="openList"></ul>
+    <div class="empty" id="empty" hidden>
+      <strong>Noch keine Ideen</strong>
+      <span>Schreib oben deine erste Idee rein, oder fang mit einem Vorschlag an:</span>
+      <div class="chips" id="chips"></div>
+    </div>
+    </div>
+    <button class="more" id="toDone" type="button" hidden></button>
+  </section>
+
+  <section class="panel" id="panel-again" hidden>
+    <p class="panel-intro">Alle Dates mit mehr als 5/10. Antippen zum neu Planen, abhaken wenn ihr es wieder erlebt habt.</p>
+    <div class="scroll">
+    <ul id="againList"></ul>
+    <div class="empty" id="againEmpty" hidden>
+      <strong>Noch nichts zum Wiederholen</strong>
+      <span>Hak ein erlebtes Date ab und gib ihm 6/10 oder mehr. Dann landet es hier.</span>
+    </div>
+    </div>
+  </section>
+  <div class="status" id="status"></div>
+  <input type="file" id="photoInput" accept="image/*" multiple hidden>
+  <div class="lightbox" id="lightbox" hidden><img id="lightboxImg" alt="Foto vom Date"></div>
+</div>
+
+<section class="done-card" id="doneCard" hidden>
+  <h2>Schon erlebt <span id="n-done"></span></h2>
+  <ul id="doneList"></ul>
+</section>
+
+<div class="modal" id="rateModal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rateTitle">
+    <span class="flabel">Abgehakt</span>
+    <h3 id="rateTitle">Wie war's?</h3>
+    <div class="rating big" id="rateBtns" role="group" aria-label="Bewertung von 1 bis 10"></div>
+    <p class="rating-note">Ab 6 kommt das Date unter „Nochmal erleben“.</p>
+    <button class="ghost" id="rateLater" type="button">Später bewerten</button>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+/* Anmeldung, Profil und Bereiche für alle Seiten
+   - E-Mail und Passwort über Firebase Authentication
+   - Jede Seite hat ihren eigenen Bereich unter spaces/<id> mit eigenen Personen (access/<uid>)
+   - users/<uid>/spaces/<typ> merkt sich, welcher Bereich zu welcher Seite gehört
+   Seiten rufen Auth.start(firebaseConfig, "dates" | "recipes" | "chores" | "budget", (ref, info) => { ... }) auf. */
+(function(){
+  const PAGES = [
+    {type:"dates",   file:"index.html",    label:"Dateideen", color:"#8c7559", noun:"Dateideen-Liste",
+     empty:"Noch keine Dateideen-Liste", hint:"Leg eine Liste an und lad danach deine Freundin oder deinen Freund ein. Nur eingeladene Personen sehen sie.",
+     keys:["ideas"]},
+    {type:"recipes", file:"rezepte.html",  label:"Rezepte",   color:"#4a7a40", noun:"Rezeptsammlung",
+     empty:"Noch keine Rezeptsammlung", hint:"Leg eine Sammlung an und lad Freunde oder Familie ein. Nur eingeladene Personen sehen sie.",
+     keys:["recipes","people","swipe"]},
+    {type:"chores",  file:"haushalt.html", label:"Haushalt",  color:"#3f6f8c", noun:"Haushalt",
+     empty:"Noch kein Haushalt", hint:"Leg einen Haushalt an und lad deine Mitbewohner ein.",
+     keys:["chores","choreLog","members","rooms","people"]},
+    {type:"budget",  file:"budget.html",   label:"Budget",    color:"#1b1b1d", noun:"Budget",
+     empty:"Noch kein Budget", hint:"Dein Budget ist privat. Später kannst du jemanden dazuholen, zum Beispiel deine Freundin oder deinen Freund.",
+     keys:null},
+  ];
+  const CSS = `
+  .auth-screen{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow-y:auto;background:var(--page);
+    padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+  .auth-screen.dim{background:rgba(10,12,14,.55)}
+  .auth-card{width:100%;max-width:390px;background:var(--bg);color:var(--ink);border:1px solid var(--frame-line,var(--line));border-radius:24px;overflow:hidden;
+    box-shadow:0 18px 40px -18px var(--shadow,rgba(0,0,0,.4))}
+  .auth-head{background:var(--band);color:var(--on-band);padding:18px 22px 22px;position:relative}
+  .auth-head::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:14px;background:var(--bg);border-radius:14px 14px 0 0}
+  .auth-head h2{margin:0;font-family:var(--display);font-weight:400;font-size:1.8rem;line-height:1.1}
+  .auth-head p{margin:4px 0 0;font-size:.88rem;opacity:.8}
+  .auth-body{padding:10px 22px 22px;display:flex;flex-direction:column;gap:12px}
+  .auth-tabs{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:2px}
+  .auth-tabs button{flex:1;border:0;background:none;border-radius:8px;padding:7px 10px;font:inherit;font-size:.9rem;font-weight:600;color:var(--muted);cursor:pointer}
+  .auth-tabs button[aria-pressed="true"]{background:var(--band);color:var(--on-band)}
+  .auth-body label{display:flex;flex-direction:column;gap:5px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .auth-body input[type=email],.auth-body input[type=password],.auth-body input[type=text]{font:inherit;font-size:1rem;text-transform:none;letter-spacing:0;padding:11px 12px;
+    border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);min-width:0}
+  .auth-body input:focus{outline:none;border-color:var(--accent)}
+  .auth-btn{border:0;border-radius:10px;padding:12px 16px;font:inherit;font-weight:700;cursor:pointer;background:var(--band);color:var(--on-band)}
+  .auth-btn.alt{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+  .auth-btn:disabled{opacity:.6;cursor:progress}
+  .auth-link{align-self:center;background:none;border:0;padding:4px;font:inherit;font-size:.85rem;color:var(--muted);text-decoration:underline;cursor:pointer}
+  .auth-link.danger{color:#c0533f}
+  .auth-msg{margin:0;font-size:.88rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .auth-msg.err{border-color:#c0533f;color:#c0533f}
+  .auth-note{margin:0;font-size:.88rem;color:var(--muted)}
+  .auth-check{flex-direction:row!important;align-items:center;gap:8px!important;text-transform:none!important;letter-spacing:0!important;font-size:.9rem!important;color:var(--ink)!important;font-weight:500!important}
+  .auth-check input{accent-color:var(--band);width:18px;height:18px}
+  .auth-copy{display:flex;gap:6px}
+  .auth-copy input{flex:1;font-size:.82rem!important;padding:9px 10px!important}
+  .auth-people{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .auth-people li{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+  .auth-people .av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.85rem;background:var(--band);color:var(--on-band);flex:none}
+  .auth-people .nm{flex:1;min-width:0;display:flex;flex-direction:column}
+  .auth-people .nm b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .auth-people .nm small{font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .auth-people .rm{border:1px solid var(--line);background:none;color:var(--muted);border-radius:999px;padding:3px 10px;font:inherit;font-size:.8rem;cursor:pointer}
+  .auth-people .rm.sure{color:#c0533f;border-color:#c0533f;font-weight:600}
+  .auth-sec{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 -4px}
+
+  /* Profil-Knopf und Menü */
+  header{padding-right:64px!important}
+  .pf-btn{position:absolute;top:14px;right:16px;z-index:31;width:40px;height:40px;border-radius:50%;cursor:pointer;
+    border:1.5px solid color-mix(in srgb,var(--on-band) 40%,transparent);background:color-mix(in srgb,var(--on-band) 16%,transparent);
+    color:var(--on-band);font:inherit;font-weight:700;font-size:1rem;display:grid;place-items:center}
+  .pf-btn:focus-visible{outline:2px solid var(--on-band);outline-offset:2px}
+  .pf-menu{position:absolute;top:60px;right:12px;z-index:32;min-width:230px;display:flex;flex-direction:column;gap:2px;padding:6px;
+    background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 36px -14px rgba(0,0,0,.4)}
+  .pf-menu a,.pf-menu button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border:0;border-radius:10px;background:none;
+    color:inherit;font:inherit;font-weight:500;text-decoration:none;cursor:pointer}
+  .pf-menu a:hover,.pf-menu button:hover{background:var(--accent-soft)}
+  .pf-menu a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+  .pf-menu .dot{width:10px;height:10px;border-radius:50%;flex:none;box-shadow:0 0 0 1px rgba(128,128,128,.4) inset}
+  .pf-menu svg{width:17px;height:17px;flex:none;opacity:.75}
+  .pf-sep{height:1px;background:var(--line);margin:4px 6px}
+  .pf-who{padding:6px 12px 4px;display:flex;flex-direction:column}
+  .pf-who b{font-weight:600}
+  .pf-who small{font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pf-menu button:disabled{opacity:.45;cursor:not-allowed}
+
+  /* Seite ohne Bereich */
+  .auth-setup{position:absolute;left:0;right:0;bottom:0;z-index:20;background:var(--bg);overflow-y:auto;padding:18px 22px 22px;display:flex;flex-direction:column;align-items:stretch}
+  .auth-setup .box{margin:auto 0;display:flex;flex-direction:column;gap:12px;max-width:420px;align-self:center;width:100%;color:var(--ink)}
+  .auth-setup h3{margin:0;font-family:var(--display);font-weight:400;font-size:1.6rem;line-height:1.15}
+  `;
+  const IC = {
+    people:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M16.5 6.2a2.8 2.8 0 0 1 0 5.4M17 14.3c2 .5 3.2 2 3.5 4.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    gear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    out:'<svg viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 16l4-4-4-4M14 12H4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  };
+  const ERR = {
+    "auth/invalid-email":"Die E-Mail-Adresse sieht nicht richtig aus.",
+    "auth/user-not-found":"E-Mail oder Passwort stimmt nicht.",
+    "auth/wrong-password":"E-Mail oder Passwort stimmt nicht.",
+    "auth/invalid-credential":"E-Mail oder Passwort stimmt nicht.",
+    "auth/invalid-login-credentials":"E-Mail oder Passwort stimmt nicht.",
+    "auth/email-already-in-use":"Mit dieser E-Mail gibt es schon ein Konto. Melde dich an.",
+    "auth/weak-password":"Das Passwort ist zu kurz.",
+    "auth/too-many-requests":"Zu viele Versuche. Warte ein paar Minuten und versuch es dann noch einmal.",
+    "auth/network-request-failed":"Keine Verbindung. Prüf dein Internet.",
+    "auth/operation-not-allowed":"Die Anmeldung mit E-Mail ist in Firebase noch nicht eingeschaltet.",
+  };
+  const errText = e => ERR[e && e.code] || "Das hat nicht geklappt. Versuch es noch einmal.";
+  const rand = n => { const a="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    return [...crypto.getRandomValues(new Uint8Array(n))].map(x=>a[x%a.length]).join(""); };
+  const esc = t => String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const parseJoin = () => { const m=location.hash.match(/^#join-([A-Za-z0-9]{12,40})-([A-Za-z0-9]{12,40})$/); return m?{sid:m[1],code:m[2]}:null; };
+  const clearHash = () => history.replaceState(history.state,"",location.pathname);
+  const initial = n => (String(n||"?").trim()[0]||"?").toUpperCase();
+
+  window.Auth = { start(config, type, cb){
+    const PAGE = PAGES.find(p=>p.type===type);
+    const st=document.createElement("style"); st.textContent=CSS; document.head.appendChild(st);
+    let auth, db;
+    try{ if(!firebase.apps.length) firebase.initializeApp(config); auth=firebase.auth(); db=firebase.database(); }
+    catch(e){ cb(null); return; }
+    let user=null, profile={}, sid=null, started=false, setupEl=null;
+
+    /* ---------- Fenster (Anmelden und Pop-ups) ---------- */
+    let screen=null;
+    function show(title,sub,html,dim){
+      if(!screen){ screen=document.createElement("div"); screen.className="auth-screen"; document.body.appendChild(screen);
+        screen.addEventListener("click",e=>{ if(e.target===screen && screen.classList.contains("dim")) hide(); }); }
+      screen.classList.toggle("dim",!!dim);
+      screen.innerHTML=`<div class="auth-card" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="auth-head"><h2>${esc(title)}</h2>${sub?`<p>${esc(sub)}</p>`:""}</div><div class="auth-body">${html}</div></div>`;
+      screen.hidden=false; return screen;
+    }
+    function hide(){ if(screen) screen.hidden=true; }
+    const $a = s => screen.querySelector(s);
+    function msg(t,err,root){ const m=(root||screen).querySelector("#authMsg"); if(!m) return; m.textContent=t||""; m.hidden=!t; m.classList.toggle("err",!!err); }
+    document.addEventListener("keydown",e=>{ if(e.key==="Escape" && screen && !screen.hidden && screen.classList.contains("dim")) hide(); });
+
+    /* ---------- Anmelden / Konto erstellen ---------- */
+    function loginView(mode){
+      const reg=mode==="register", join=parseJoin();
+      show(document.querySelector("header h1")?.textContent||PAGE.label,
+        join?"Du wurdest eingeladen. Melde dich an oder erstell ein Konto.":reg?"Neues Konto erstellen.":"Bitte melde dich an.",
+        `<div class="auth-tabs" role="group"><button type="button" data-mode="login" aria-pressed="${!reg}">Anmelden</button><button type="button" data-mode="register" aria-pressed="${reg}">Konto erstellen</button></div>
+        <form id="authForm" style="display:flex;flex-direction:column;gap:12px" novalidate>
+          ${reg?`<label>Dein Name<input type="text" id="authName" autocomplete="given-name" maxlength="30" placeholder="So sehen dich die anderen"></label>`:""}
+          <label>E-Mail<input type="email" id="authMail" autocomplete="email"></label>
+          <label>Passwort<input type="password" id="authPw" autocomplete="${reg?"new-password":"current-password"}"></label>
+          ${reg?`<label>Passwort wiederholen<input type="password" id="authPw2" autocomplete="new-password"></label>
+            <p class="auth-note">Mindestens 10 Zeichen. Am besten ein Passwort, das du nirgends sonst benutzt.</p>`:""}
+          <p class="auth-msg" id="authMsg" hidden></p>
+          <button class="auth-btn" type="submit" id="authGo">${reg?"Konto erstellen":"Anmelden"}</button>
+        </form>
+        ${reg?"":`<button class="auth-link" type="button" id="authForgot">Passwort vergessen?</button>`}`);
+      screen.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>loginView(b.dataset.mode));
+      (reg?$a("#authName"):$a("#authMail")).focus();
+      $a("#authForm").onsubmit=async e=>{
+        e.preventDefault();
+        const mail=$a("#authMail").value.trim(), pw=$a("#authPw").value;
+        if(!mail || !pw) return msg("Gib E-Mail und Passwort ein.",true);
+        if(reg){
+          if(pw.length<10) return msg("Das Passwort braucht mindestens 10 Zeichen.",true);
+          if(pw!==$a("#authPw2").value) return msg("Die beiden Passwörter sind nicht gleich.",true);
+          try{ sessionStorage.setItem("auth.newName",$a("#authName").value.trim().slice(0,30)); }catch(err){}
+        }
+        $a("#authGo").disabled=true; msg("");
+        try{ reg ? await auth.createUserWithEmailAndPassword(mail,pw) : await auth.signInWithEmailAndPassword(mail,pw); }
+        catch(err){ msg(errText(err),true); $a("#authGo").disabled=false; }
+      };
+      const f=$a("#authForgot");
+      if(f) f.onclick=async()=>{
+        const mail=$a("#authMail").value.trim();
+        if(!mail) return msg("Trag oben deine E-Mail ein, dann schicken wir dir einen Link zum Zurücksetzen.",true);
+        try{ await auth.sendPasswordResetEmail(mail); msg("Wenn es ein Konto mit dieser E-Mail gibt, ist eine Mail zum Zurücksetzen unterwegs. Schau auch im Spam nach."); }
+        catch(err){ msg(errText(err),true); }
+      };
+    }
+
+    /* ---------- Profil-Knopf mit Menü ---------- */
+    function installMenu(){
+      const head=document.querySelector("header"); if(!head || head.querySelector(".pf-btn")) { updateMenu(); return; }
+      head.insertAdjacentHTML("beforeend",`<button class="pf-btn" type="button" id="pfBtn" aria-haspopup="true" aria-expanded="false" aria-controls="pfMenu" aria-label="Profil und Seiten"></button>
+        <nav class="pf-menu" id="pfMenu" hidden aria-label="Profil und Seiten">
+          <div class="pf-who"><b id="pfName"></b><small id="pfMail"></small></div>
+          <div class="pf-sep"></div>
+          ${PAGES.map(p=>`<a href="${p.file}" data-page="${p.type}"${p.type===type?' aria-current="page"':""}><span class="dot" style="background:${p.color}"></span>${p.label}</a>`).join("")}
+          <div class="pf-sep"></div>
+          <button type="button" data-pf="people">${IC.people}Personen bei ${esc(PAGE.label)}</button>
+          <button type="button" data-pf="profile">${IC.user}Profil bearbeiten</button>
+          <button type="button" data-pf="settings">${IC.gear}Einstellungen</button>
+          <button type="button" data-pf="logout">${IC.out}Abmelden</button>
+        </nav>`);
+      const btn=document.getElementById("pfBtn"), menu=document.getElementById("pfMenu");
+      const toggle=open=>{ menu.hidden=!open; btn.setAttribute("aria-expanded",open); };
+      btn.onclick=e=>{ e.stopPropagation(); toggle(menu.hidden); };
+      document.addEventListener("click",e=>{ if(!menu.hidden && !menu.contains(e.target)) toggle(false); });
+      document.addEventListener("keydown",e=>{ if(e.key==="Escape") toggle(false); });
+      menu.querySelectorAll("[data-pf]").forEach(b=>b.onclick=()=>{ toggle(false);
+        ({people:peopleView,profile:profileView,settings:settingsView,logout:()=>auth.signOut()})[b.dataset.pf](); });
+      updateMenu();
+    }
+    function updateMenu(){
+      const name=profile.name||user.email.split("@")[0];
+      const b=document.getElementById("pfBtn"); if(!b) return;
+      b.textContent=initial(name);
+      document.getElementById("pfName").textContent=name;
+      document.getElementById("pfMail").textContent=user.email;
+      document.querySelector('[data-pf="people"]').disabled=!sid;
+    }
+
+    /* ---------- Profil, Einstellungen ---------- */
+    function profileView(){
+      show("Profil bearbeiten","",`<label>Dein Name<input type="text" id="pfIn" maxlength="30" value="${esc(profile.name||"")}"></label>
+        <p class="auth-note">So sehen dich die anderen in euren Listen.</p>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <button class="auth-btn" type="button" id="pfSave">Speichern</button>
+        <button class="auth-link" type="button" id="pfClose">Abbrechen</button>`,true);
+      $a("#pfIn").focus();
+      $a("#pfClose").onclick=hide;
+      $a("#pfSave").onclick=async()=>{
+        const name=$a("#pfIn").value.trim().slice(0,30); if(!name) return msg("Gib einen Namen ein.",true);
+        try{
+          await db.ref(`users/${user.uid}/profile/name`).set(name); profile.name=name;
+          const ptr=(await db.ref(`users/${user.uid}/spaces`).once("value")).val()||{};
+          for(const s of Object.values(ptr)) await db.ref(`spaces/${s}/profiles/${user.uid}/name`).set(name).catch(()=>{});
+          updateMenu(); hide();
+        }catch(err){ msg("Speichern hat nicht geklappt.",true); }
+      };
+    }
+    function settingsView(){
+      show("Einstellungen","",`<p class="auth-sec">Konto</p>
+        <p class="auth-note">Angemeldet als <b>${esc(user.email)}</b></p>
+        <button class="auth-btn alt" type="button" id="stPw">Passwort ändern</button>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <p class="auth-sec">Diese Seite</p>
+        <p class="auth-note">${sid?`Du bist in einer ${esc(PAGE.noun)}. Wer sie sieht, steht unter „Personen bei ${esc(PAGE.label)}“.`:`Für ${esc(PAGE.label)} gibt es noch keine Liste.`}</p>
+        <button class="auth-btn alt" type="button" id="stOut">Abmelden</button>
+        <button class="auth-link" type="button" id="stClose">Schließen</button>`,true);
+      $a("#stClose").onclick=hide;
+      $a("#stOut").onclick=()=>auth.signOut();
+      $a("#stPw").onclick=async()=>{
+        try{ await auth.sendPasswordResetEmail(user.email); msg(`Wir haben dir eine Mail an ${user.email} geschickt. Darüber legst du ein neues Passwort fest.`); }
+        catch(err){ msg(errText(err),true); }
+      };
+    }
+
+    /* ---------- Personen und Einladungen für diese Seite ---------- */
+    let rmConfirm=null;
+    async function peopleView(){
+      if(!sid) return;
+      let profiles={}, access={}, meta={}, invites={};
+      try{
+        [profiles,access,meta,invites]=(await Promise.all(["profiles","access","meta","invites"].map(k=>db.ref(`spaces/${sid}/${k}`).once("value")))).map(s=>s.val()||{});
+      }catch(err){ return; }
+      const owner=meta.owner===user.uid, ids=Object.keys(access);
+      const list=ids.map(id=>({id,name:(profiles[id]&&profiles[id].name)||"Ohne Namen",mail:profiles[id]&&profiles[id].email||"",own:meta.owner===id}))
+        .sort((a,b)=>(b.own-a.own)||(a.id===user.uid?-1:b.id===user.uid?1:0));
+      const nInv=Object.keys(invites).length;
+      show(`Personen bei ${PAGE.label}`,
+        PAGE.type==="budget"&&ids.length<=1?"Im Moment siehst nur du dein Budget.":`${ids.length} ${ids.length===1?"Person sieht":"Personen sehen"} diese ${PAGE.noun}.`,
+        `<ul class="auth-people">${list.map(p=>`<li><span class="av">${esc(initial(p.name))}</span>
+            <span class="nm"><b>${esc(p.name)}${p.id===user.uid?" (du)":""}</b><small>${p.own?"Hat die Liste angelegt":esc(p.mail)}</small></span>
+            ${owner&&p.id!==user.uid?`<button type="button" class="rm${rmConfirm===p.id?" sure":""}" data-rm="${esc(p.id)}">${rmConfirm===p.id?"Entfernen?":"Entfernen"}</button>`:""}</li>`).join("")}</ul>
+        <p class="auth-sec">Jemanden einladen</p>
+        <p class="auth-note">Der Link gilt nur für ${esc(PAGE.label)} und nur für eine Person. Wer ihn öffnet, tritt mit eigenem Konto bei. Deine anderen Seiten sieht die Person nicht.</p>
+        <button class="auth-btn" type="button" id="invNew">Einladungslink erstellen</button>
+        <div class="auth-copy" id="invBox" hidden><input type="text" id="invLink" readonly aria-label="Einladungslink"><button class="auth-btn" type="button" id="invCopy">Kopieren</button></div>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        ${nInv?`<button class="auth-link" type="button" id="invRevoke">${nInv} offene${nInv===1?"r Link":" Links"} · alle zurückziehen</button>`:""}
+        ${owner?"":`<button class="auth-link danger" type="button" id="leave">Diese ${esc(PAGE.noun)} verlassen</button>`}
+        <button class="auth-btn alt" type="button" id="ppClose">Fertig</button>`,true);
+      $a("#ppClose").onclick=()=>{ rmConfirm=null; hide(); };
+      $a("#invNew").onclick=async()=>{
+        const code=rand(20);
+        try{
+          await db.ref(`spaces/${sid}/invites/${code}`).set({by:user.uid,at:Date.now()});
+          const base=location.href.split("#")[0].replace(/[^/]*$/,"");
+          $a("#invLink").value=`${base}${PAGE.file}#join-${sid}-${code}`; $a("#invBox").hidden=false; msg("");
+        }catch(err){ msg("Der Link konnte nicht erstellt werden.",true); }
+      };
+      $a("#invCopy").onclick=async()=>{
+        try{ await navigator.clipboard.writeText($a("#invLink").value); msg("Kopiert. Jetzt per WhatsApp oder Mail verschicken."); }
+        catch(e){ $a("#invLink").select(); msg("Markiert. Jetzt kopieren und verschicken."); }
+      };
+      const rv=$a("#invRevoke"); if(rv) rv.onclick=async()=>{ await db.ref(`spaces/${sid}/invites`).remove().catch(()=>{}); peopleView(); };
+      screen.querySelectorAll("[data-rm]").forEach(b=>b.onclick=async()=>{
+        const id=b.dataset.rm;
+        if(rmConfirm!==id){ rmConfirm=id; peopleView(); return; }
+        rmConfirm=null;
+        await db.ref(`spaces/${sid}/access/${id}`).remove().catch(()=>{});
+        await db.ref(`spaces/${sid}/profiles/${id}`).remove().catch(()=>{});
+        peopleView();
+      });
+      const lv=$a("#leave"); if(lv) lv.onclick=async()=>{
+        if(lv.dataset.sure!=="1"){ lv.dataset.sure="1"; lv.textContent="Wirklich verlassen? Du kommst nur mit einer neuen Einladung zurück."; return; }
+        await db.ref(`spaces/${sid}/profiles/${user.uid}`).remove().catch(()=>{});
+        await db.ref(`spaces/${sid}/access/${user.uid}`).remove().catch(()=>{});
+        await db.ref(`users/${user.uid}/spaces/${type}`).remove().catch(()=>{});
+        location.reload();
+      };
+    }
+
+    /* ---------- Seite ohne Bereich: neu anlegen ---------- */
+    function setupView(problem){
+      hide();
+      const wrap=document.querySelector(".wrap"), head=document.querySelector("header");
+      if(!setupEl){ setupEl=document.createElement("div"); setupEl.className="auth-setup"; wrap.style.position="relative"; wrap.appendChild(setupEl); }
+      setupEl.style.top=(head.offsetTop+head.offsetHeight)+"px";
+      const cnt=document.getElementById("count"); if(cnt) cnt.textContent="";
+      let oldCode=null; try{ oldCode=localStorage.getItem("dateideen.code"); }catch(e){}
+      setupEl.innerHTML=`<div class="box">
+        <h3>${esc(PAGE.empty)}</h3>
+        ${problem?`<p class="auth-msg err">${esc(problem)}</p>`:""}
+        <p class="auth-note">${esc(PAGE.hint)}</p>
+        ${oldCode?`<label class="auth-check"><input type="checkbox" id="setMig" checked> Bisherige ${esc(PAGE.label)} von diesem Gerät übernehmen</label>`:""}
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <button class="auth-btn" type="button" id="setNew">${PAGE.type==="chores"?"Neuen Haushalt anlegen":PAGE.type==="budget"?"Budget anlegen":`${esc(PAGE.noun)} anlegen`}</button>
+        <p class="auth-note">Hat dich jemand eingeladen? Dann öffne einfach den Einladungslink.</p>
+      </div>`;
+      setupEl.hidden=false;
+      setupEl.querySelector("#setNew").onclick=async()=>{
+        const btn=setupEl.querySelector("#setNew"); btn.disabled=true; msg("Wird angelegt …",false,setupEl);
+        const id=rand(20);
+        try{
+          await db.ref(`spaces/${id}/access/${user.uid}`).set("owner");
+          await db.ref(`spaces/${id}/meta`).set({type,owner:user.uid,createdAt:Date.now()});
+          const mig=setupEl.querySelector("#setMig");
+          if(mig && mig.checked && oldCode){ msg("Bisherige Daten werden übernommen …",false,setupEl); await migrate(oldCode,id); }
+          await db.ref(`users/${user.uid}/spaces/${type}`).set(id);
+          ready(id);
+        }catch(err){ msg("Das Anlegen hat nicht geklappt. Prüf die Internetverbindung und die Regeln in Firebase.",true,setupEl); btn.disabled=false; }
+      };
+    }
+    // alte Daten vom geheimen Link übernehmen, nur was zu dieser Seite gehört
+    async function migrate(code,id){
+      if(type==="budget"){
+        const b=(await db.ref(`lists/${code}/budget`).once("value")).val();
+        if(b) await db.ref(`spaces/${id}`).update(b);
+        return;
+      }
+      const out={};
+      for(const k of PAGE.keys){ const v=(await db.ref(`lists/${code}/${k}`).once("value")).val(); if(v!=null) out[k]=v; }
+      const ids=new Set();
+      if(out.ideas) Object.values(out.ideas).forEach(i=>(Array.isArray(i.photos)?i.photos:[]).forEach(p=>ids.add(p)));
+      if(out.recipes) Object.values(out.recipes).forEach(r=>{ if(r.cover) ids.add(r.cover); });
+      if(ids.size){ out.photos={}; for(const p of ids){ const v=(await db.ref(`lists/${code}/photos/${p}`).once("value")).val(); if(v) out.photos[p]=v; } }
+      if(Object.keys(out).length) await db.ref(`spaces/${id}`).update(out);
+    }
+
+    /* ---------- Einladung annehmen ---------- */
+    async function join(j,current){
+      if(current && current!==j.sid && !confirm_){
+        show(`Einladung zu ${PAGE.label}`,"",`<p class="auth-note">Du bist schon in einer anderen ${esc(PAGE.noun)}. Möchtest du zur neuen wechseln? Die alte bleibt bestehen, du siehst sie dann aber nicht mehr.</p>
+          <button class="auth-btn" type="button" id="jYes">Zur neuen wechseln</button>
+          <button class="auth-btn alt" type="button" id="jNo">Bei meiner bleiben</button>`);
+        $a("#jYes").onclick=()=>{ confirm_=true; join(j,current); };
+        $a("#jNo").onclick=()=>{ clearHash(); hide(); open(current); };
+        return;
+      }
+      try{
+        await db.ref(`spaces/${j.sid}/access/${user.uid}`).set(j.code);
+        await db.ref(`users/${user.uid}/spaces/${type}`).set(j.sid);
+        await db.ref(`spaces/${j.sid}/invites/${j.code}`).remove().catch(()=>{});   // Link gilt nur einmal
+        clearHash(); ready(j.sid);
+      }catch(err){ clearHash(); if(current) open(current); else setupView("Der Einladungslink ist ungültig oder wurde zurückgezogen."); }
+    }
+    let confirm_=false;
+
+    async function open(id){
+      try{ await db.ref(`spaces/${id}/meta`).once("value"); ready(id); }
+      catch(err){ await db.ref(`users/${user.uid}/spaces/${type}`).remove().catch(()=>{}); setupView("Du hast keinen Zugriff mehr auf diese Liste. Leg eine neue an oder lass dich wieder einladen."); }
+    }
+    function ready(id){
+      sid=id; hide(); if(setupEl) setupEl.hidden=true; updateMenu();
+      db.ref(`spaces/${id}/profiles/${user.uid}`).update({name:profile.name||user.email.split("@")[0],email:user.email}).catch(()=>{});
+      if(started) return; started=true;
+      cb(db.ref("spaces/"+id),{uid:user.uid,sid:id,email:user.email,name:profile.name});
+    }
+
+    auth.onAuthStateChanged(async u=>{
+      if(!u){ if(user){ location.reload(); return; } loginView(parseJoin()?"register":"login"); return; }
+      user=u;
+      show(PAGE.label,"",`<p class="auth-note">Lädt …</p>`);
+      try{
+        profile=(await db.ref(`users/${u.uid}/profile`).once("value")).val()||{};
+        if(!profile.name){
+          let n=""; try{ n=sessionStorage.getItem("auth.newName")||""; sessionStorage.removeItem("auth.newName"); }catch(e){}
+          profile.name=n||u.email.split("@")[0];
+          await db.ref(`users/${u.uid}/profile/name`).set(profile.name);
+        }
+        installMenu();
+        const current=(await db.ref(`users/${u.uid}/spaces/${type}`).once("value")).val();
+        const j=parseJoin();
+        if(j){ await join(j,current); return; }
+        if(current){ await open(current); return; }
+        setupView();
+      }catch(err){
+        show(PAGE.label,"",`<p class="auth-msg err">Die Daten konnten nicht geladen werden. Prüf die Internetverbindung und die Regeln in Firebase.</p>
+          <button class="auth-btn" type="button" onclick="location.reload()">Neu laden</button>
+          <button class="auth-link" type="button" id="authOut">Abmelden</button>`);
+        $a("#authOut").onclick=()=>auth.signOut();
+      }
+    });
+  }};
+})();
+</script>
+<script>
+const SUGGEST=["Picknick im Park","Zusammen kochen: neues Rezept","Kino mit Popcorn","Sonnenaufgang anschauen","Flohmarkt am Sonntag","Minigolf"];
+const LS="dateideen.v1";
+let ideas=[];           // {id,title,notes,when,where,done,createdAt,doneAt}
+let openId=null, confirmId=null, rateId=null, store=null;
+let assets=null, uploading={}, photoFor=null, confirmPhoto=null;
+const photosOf=i=>(Array.isArray(i.photos)?i.photos:[]).filter(p=>/^[0-9a-f]{32}$/.test(p));
+let tab="ideas"; try{ if(localStorage.getItem("dateideen.tab")==="again") tab="again" }catch(e){}
+const AGAIN='<svg viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+  tab=t.dataset.tab; openId=confirmId=null; $("#status").textContent="";
+  try{localStorage.setItem("dateideen.tab",tab)}catch(e){}
+  render();
+}));
+const $=s=>document.querySelector(s);
+
+/* ---------- Speicher: Firebase Realtime Database ---------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyD6JNwGczfmHYTqHp9qI5bnutz-JLphgGI",
+  authDomain: "oursapp-ff4cf.firebaseapp.com",
+  databaseURL: "https://oursapp-ff4cf-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "oursapp-ff4cf",
+  storageBucket: "oursapp-ff4cf.firebasestorage.app",
+  messagingSenderId: "509984933255",
+  appId: "1:509984933255:web:1f2e8b0850c94056f87f22"
+};
+// Jede Liste liegt unter einem langen geheimen Code. Wer den Link hat, sieht die Liste.
+function listCode(){
+  const fromHash=location.hash.replace(/^#/,"");
+  let code=/^[A-Za-z0-9]{24,64}$/.test(fromHash)?fromHash:null;
+  if(!code){ try{ code=localStorage.getItem("dateideen.code") }catch(e){} }
+  if(!code){
+    const abc="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    code=[...crypto.getRandomValues(new Uint8Array(28))].map(x=>abc[x%abc.length]).join("");
+  }
+  try{ localStorage.setItem("dateideen.code",code) }catch(e){}
+  history.replaceState(null,"","#"+code);
+  return code;
+}
+const CODE="";   // früher geheimer Link, jetzt Anmeldung
+
+let root=null;
+// root wird nach der Anmeldung gesetzt (siehe Start)
+const clean=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,v===undefined?null:v]));
+async function put(idea){
+  const {id,...data}=idea; try{ await root.child("ideas/"+id).set(clean(data)) }catch(e){ showErr(e) }
+}
+async function patch(id,data){
+  try{ await root.child("ideas/"+id).update(clean(data)) }catch(e){ showErr(e) }
+}
+async function remove(id){
+  try{ await root.child("ideas/"+id).remove() }catch(e){ showErr(e) }
+}
+function showErr(e){ $("#status").textContent = /permission/i.test(String(e&&(e.code||e.message)))
+  ? "Die Datenbank lässt nicht speichern. Prüf die Regeln in Firebase." : "Speichern hat nicht geklappt. Prüf die Internetverbindung."; }
+
+/* ---------- Rendern ---------- */
+const CHECK='<svg viewBox="0 0 14 14"><path d="M3 7.5l2.6 2.6L11 4.5" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CHEV='<svg class="chev" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+
+function sorted(){
+  const open=ideas.filter(i=>!i.done).sort((a,b)=>a.createdAt-b.createdAt);
+  const done=ideas.filter(i=>i.done).sort((a,b)=>(b.doneAt||0)-(a.doneAt||0));
+  return {open,done};
+}
+function render(){
+  const {open,done}=sorted();
+  const again=ideas.filter(i=>i.again).sort((a,b)=>(a.doneAt||0)-(b.doneAt||0));
+  $("#count").textContent = `${open.length} offen · ${done.length} erlebt`;
+  $("#n-ideas").textContent = open.length;
+  $("#n-again").textContent = again.length;
+  for(const t of ["ideas","again"]){
+    $("#tab-"+t).setAttribute("aria-selected", tab===t);
+    $("#panel-"+t).hidden = tab!==t;
+  }
+  if(tab==="again"){
+    $("#doneCard").hidden = true;
+    $("#againEmpty").hidden = again.length>0;
+    fill($("#againList"),again,"again");
+    return;
+  }
+  $("#empty").hidden = ideas.length>0;
+  $("#doneCard").hidden = done.length===0;
+  $("#n-done").textContent = done.length;
+  $("#toDone").hidden = done.length===0;
+  $("#toDone").innerHTML = `${done.length} schon erlebt, runterscrollen <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+  fill($("#openList"),open); fill($("#doneList"),done);
+}
+function fill(ul,list,mode="main"){
+  // fokussiertes Notizfeld nicht neu bauen, damit Tippen nicht unterbrochen wird
+  const active=document.activeElement;
+  if(active && ul.contains(active) && active.dataset.field){
+    const li=active.closest("li");
+    if(li && list.some(i=>i.id===li.dataset.id) && list.map(i=>i.id).join()===[...ul.children].map(c=>c.dataset.id).join()) return;
+  }
+  ul.replaceChildren(...list.map(i=>itemEl(i,mode)));
+}
+function itemEl(i,mode){
+  const li=document.createElement("li");
+  const rep=mode==="again";
+  li.className="item"+(i.done&&!rep?" done":"")+(i.again?" again":"")+(openId===i.id?" open":"");
+  li.dataset.id=i.id;
+  const hasNotes=!!(i.notes||i.when||i.where);
+  const n=i.timesDone||(i.done?1:0);
+  const parts=[];
+  if(i.rating) parts.push(`${i.rating}/10`);
+  if(rep&&n) parts.push(`${n}× erlebt`);
+  const meta=parts.length?`<span class="meta">${parts.join(" · ")}</span>`:"";
+  const againBtn="";
+  li.innerHTML=`<div class="row">
+    <button class="check" data-act="${rep?"relive":"toggle"}" aria-label="${rep?"Wieder erlebt":i.done?"Als offen markieren":"Abhaken"}" aria-pressed="${!!i.done&&!rep}">${CHECK}</button>
+    <button class="title" data-act="expand" aria-expanded="${openId===i.id}"></button>
+    ${photosOf(i).length?`<img class="thumb" src="${photoUrl(photosOf(i)[0])}" alt="">`:""}
+    <span class="hint">${meta}${hasNotes?'<span class="dot" title="Hat Notizen"></span>':''}${CHEV}</span>
+    ${againBtn}
+  </div>`;
+  li.querySelector(".title").textContent=i.title;
+  li.querySelector(".hint").addEventListener("click",()=>toggleOpen(i.id));
+  if(openId===i.id){
+    const d=document.createElement("div"); d.className="details";
+    d.innerHTML=`${(i.done||rep)?ratingBlock(i)+photoBlock(i):""}<div class="fields">
+        <label>Wann<input id="when-${i.id}" data-field="when" placeholder="z.B. Samstag, 18 Uhr"></label>
+        <label>Wo<input id="where-${i.id}" data-field="where" placeholder="z.B. Stadtpark"></label>
+      </div>
+      <label>Notizen<textarea id="notes-${i.id}" data-field="notes" placeholder="Was mitnehmen, was buchen, was kostet's …"></textarea></label>
+      <div class="actions"><span class="saved" id="saved-${i.id}"></span>
+        <button class="del${confirmId===i.id?" sure":""}" data-act="delete">${confirmId===i.id?"Wirklich löschen?":"Idee löschen"}</button></div>`;
+    for(const f of ["when","where","notes"]) d.querySelector(`[data-field="${f}"]`).value=i[f]||"";
+    li.appendChild(d);
+  }
+  return li;
+}
+function ratingBlock(i,quick){
+  const r=i.rating||0;
+  return `<label>${quick?"Wie war's?":"Bewertung"}
+      <div class="rating" role="group" aria-label="Bewertung von 1 bis 10">${Array.from({length:10},(_,k)=>k+1).map(v=>
+        `<button type="button" class="rate${v===r?" on":v<r?" fill":""}" data-act="rate" data-v="${v}" aria-pressed="${v===r}">${v}</button>`).join("")}</div>
+      <span class="rating-note">${r>5?"Steht unter „Nochmal erleben“.":"Ab 6 kommt das Date unter „Nochmal erleben“."}</span>
+    </label>${quick?'<div class="actions"><span></span><button type="button" class="del" data-act="later">Später bewerten</button></div>':""}`;
+}
+function photoBlock(i){
+  const ps=photosOf(i);
+  if(!assets && !ps.length) return "";
+  const thumbs=ps.map(p=>`<div class="ph">
+      <button type="button" class="ph-open" data-act="viewphoto" data-p="${p}" aria-label="Foto groß ansehen"><img src="${photoUrl(p)}" alt="" loading="lazy"></button>
+      ${assets?`<button type="button" class="ph-del${confirmPhoto===p?" sure":""}" data-act="delphoto" data-p="${p}" aria-label="Foto löschen">${confirmPhoto===p?"Löschen?":"×"}</button>`:""}
+    </div>`).join("");
+  const add=assets?`<button type="button" class="add-ph" data-act="addphoto">${uploading[i.id]?"Lädt hoch …":"+ Fotos"}</button>`:"";
+  return `<div class="photo-wrap"><span class="flabel">Fotos</span><div class="photos">${thumbs}${add}</div></div>`;
+}
+async function shrink(f){
+  // große Handyfotos verkleinern, spart Speicher und lädt schneller
+  try{
+    const bmp=await createImageBitmap(f);
+    const s=Math.min(1,1800/Math.max(bmp.width,bmp.height));
+    if(s===1 && f.size<3e6) return f;
+    const c=document.createElement("canvas");
+    c.width=Math.round(bmp.width*s); c.height=Math.round(bmp.height*s);
+    c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+    return await new Promise(r=>c.toBlob(b=>r(b||f),"image/jpeg",.85));
+  }catch(e){ return f; }
+}
+$("#photoInput").addEventListener("change",async e=>{
+  const files=[...e.target.files]; e.target.value="";
+  const id=photoFor; if(!files.length||!assets||!ideas.some(x=>x.id===id)) return;
+  uploading[id]=true; render();
+  for(const f of files){
+    try{
+      const res=await assets.upload(await shrink(f));
+      const cur=ideas.find(x=>x.id===id); if(!cur) break;
+      cur.photos=[...photosOf(cur),res.id];
+      await patch(id,{photos:cur.photos});
+      render();
+    }catch(err){
+      $("#status").textContent = err&&/quota|storage/.test(err.code||"") ? "Der Speicher für Fotos ist voll."
+        : `„${f.name}“ konnte nicht hochgeladen werden. Nimm ein JPG oder PNG unter 20 MB.`;
+    }
+  }
+  delete uploading[id]; render();
+});
+const closeLightbox=()=>{ $("#lightbox").hidden=true; $("#lightboxImg").removeAttribute("src"); };
+$("#lightbox").addEventListener("click",closeLightbox);
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeLightbox(); });
+function setRating(i,v){
+  i.rating=v;
+  const was=!!i.again; i.again=(v||0)>5;
+  render(); patch(i.id,{rating:i.rating,again:i.again});
+  $("#status").textContent = i.again&&!was?`„${i.title}“ steht jetzt unter „Nochmal erleben“. Dort könnt ihr es neu planen.`
+    : !i.again&&was?`„${i.title}“ ist nicht mehr unter „Nochmal erleben“.`:"";
+}
+function showRate(i){
+  rateId=i.id;
+  $("#rateTitle").textContent=`Wie war „${i.title}“?`;
+  $("#rateBtns").innerHTML=Array.from({length:10},(_,k)=>k+1).map(v=>`<button type="button" class="rate" data-v="${v}">${v}</button>`).join("");
+  $("#rateModal").hidden=false;
+  $("#rateBtns .rate").focus();
+}
+const hideRate=()=>{ $("#rateModal").hidden=true; rateId=null; };
+$("#rateBtns").addEventListener("click",e=>{
+  const b=e.target.closest(".rate"); if(!b) return;
+  const i=ideas.find(x=>x.id===rateId); hideRate();
+  if(i) setRating(i,+b.dataset.v);
+});
+$("#rateBtns").addEventListener("mouseover",e=>{
+  const b=e.target.closest(".rate"); if(!b) return;
+  $("#rateBtns").querySelectorAll(".rate").forEach(x=>x.classList.toggle("fill",+x.dataset.v<=+b.dataset.v));
+});
+$("#rateLater").addEventListener("click",hideRate);
+$("#rateModal").addEventListener("click",e=>{ if(e.target.id==="rateModal") hideRate(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !$("#rateModal").hidden) hideRate(); });
+$("#toDone").addEventListener("click",()=>$("#doneCard").scrollIntoView({behavior:"smooth"}));
+function toggleOpen(id){ openId = openId===id?null:id; confirmId=null; render(); }
+
+/* ---------- Interaktion ---------- */
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-act]"); if(!b) return;
+  const id=b.closest("li")?.dataset.id; const i=ideas.find(x=>x.id===id); if(!i) return;
+  if(b.dataset.act==="expand") toggleOpen(id);
+  if(b.dataset.act==="toggle"){
+    i.done=!i.done; i.doneAt=i.done?Date.now():null;
+    i.timesDone=i.done?Math.max(1,i.timesDone||0):Math.max(0,(i.timesDone||1)-1);
+    if(!i.done) i.again=false;
+    if(openId===id) openId=null;
+    render();
+    if(i.done) showRate(i);
+    patch(id,{done:i.done,doneAt:i.doneAt,timesDone:i.timesDone,again:!!i.again});
+  }
+  if(b.dataset.act==="rate"){
+    const v=+b.dataset.v;
+    setRating(i, i.rating===v?null:v);
+  }
+  if(b.dataset.act==="later"){ rateId=null; render(); }
+  if(b.dataset.act==="addphoto"){ photoFor=id; $("#photoInput").click(); }
+  if(b.dataset.act==="viewphoto"){ $("#lightboxImg").src=photoUrl(b.dataset.p); $("#lightbox").hidden=false; }
+  if(b.dataset.act==="delphoto"){
+    const p=b.dataset.p;
+    if(confirmPhoto!==p){ confirmPhoto=p; render(); return; }
+    confirmPhoto=null; i.photos=photosOf(i).filter(x=>x!==p); render();
+    patch(id,{photos:i.photos}); assets?.delete(p).catch(()=>{});
+  }
+  if(b.dataset.act==="again"){
+    i.again=!i.again; render(); patch(id,{again:i.again});
+    $("#status").textContent = i.again?`„${i.title}“ steht jetzt unter „Nochmal erleben“.`:"";
+  }
+  if(b.dataset.act==="relive"){
+    i.timesDone=(i.timesDone||1)+1; i.done=true; i.doneAt=Date.now(); render();
+    patch(id,{timesDone:i.timesDone,done:true,doneAt:i.doneAt});
+    $("#status").textContent=`Schön! „${i.title}“ habt ihr jetzt ${i.timesDone}× erlebt.`;
+  }
+  if(b.dataset.act==="delete"){
+    if(confirmId!==id){ confirmId=id; render(); return; }
+    photosOf(i).forEach(p=>assets?.delete(p).catch(()=>{}));
+    ideas=ideas.filter(x=>x.id!==id); openId=confirmId=null; render(); remove(id);
+  }
+});
+const timers={};
+document.addEventListener("input",e=>{
+  const f=e.target.dataset.field; if(!f) return;
+  const id=e.target.closest("li").dataset.id; const i=ideas.find(x=>x.id===id); if(!i) return;
+  i[f]=e.target.value;
+  const s=document.getElementById("saved-"+id); if(s) s.textContent="Speichert …";
+  clearTimeout(timers[id]);
+  timers[id]=setTimeout(async()=>{
+    await patch(id,{notes:i.notes||"",when:i.when||"",where:i.where||""});
+    const s2=document.getElementById("saved-"+id); if(s2) s2.textContent="Gespeichert";
+    const dot=document.querySelector(`li[data-id="${id}"] .hint`);
+    if(dot) render();
+  },600);
+});
+function addIdea(title){
+  title=title.trim(); if(!title) return;
+  const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const idea={id,title,notes:"",when:"",where:"",done:false,createdAt:Date.now(),doneAt:null};
+  ideas.push(idea); render(); put(idea);
+}
+$("#addForm").addEventListener("submit",e=>{e.preventDefault();addIdea($("#newTitle").value);$("#newTitle").value="";});
+$("#chips").replaceChildren(...SUGGEST.map(t=>{const c=document.createElement("button");c.className="chip";c.type="button";c.textContent="+ "+t;c.onclick=()=>addIdea(t);return c;}));
+
+
+/* ---------- Fotos: verkleinert in der Datenbank, werden erst bei Bedarf geladen ---------- */
+const photoCache=new Map(), photoLoading=new Set();
+const BLANK="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
+function photoUrl(p){
+  if(photoCache.has(p)) return photoCache.get(p);
+  if(root && !photoLoading.has(p)){
+    photoLoading.add(p);
+    root.child("photos/"+p).once("value").then(snap=>{
+      const v=snap.val();
+      if(typeof v==="string" && v.startsWith("data:image/")){ photoCache.set(p,v); render(); }
+    }).catch(()=>{});
+  }
+  return BLANK;
+}
+async function toDataUrl(blob){
+  const bmp=await createImageBitmap(blob);
+  const s=Math.min(1,1280/Math.max(bmp.width,bmp.height));
+  const c=document.createElement("canvas");
+  c.width=Math.round(bmp.width*s); c.height=Math.round(bmp.height*s);
+  c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+  return c.toDataURL("image/jpeg",.8);
+}
+const dbAssets={
+  async upload(blob){
+    const url=await toDataUrl(blob);
+    const id=[...crypto.getRandomValues(new Uint8Array(16))].map(x=>x.toString(16).padStart(2,"0")).join("");
+    await root.child("photos/"+id).set(url);
+    photoCache.set(id,url);
+    return {id};
+  },
+  async delete(id){ await root.child("photos/"+id).remove(); photoCache.delete(id); }
+};
+
+/* ---------- Start ---------- */
+Auth.start(firebaseConfig,"dates",r=>{
+root=r;
+render();
+if(!root){
+  $("#count").textContent="Keine Verbindung";
+  $("#status").textContent="Die Datenbank konnte nicht geladen werden. Prüf die Internetverbindung und lade die Seite neu.";
+}else{
+  assets=dbAssets;
+  root.child("ideas").on("value",snap=>{
+    const v=snap.val()||{};
+    ideas=Object.entries(v).map(([id,d])=>({id,...d}));
+    if(openId && !ideas.some(i=>i.id===openId)) openId=null;
+    render();
+  },err=>{ $("#count").textContent="Keine Verbindung"; showErr(err); });
+}
+});
+</script>
+</body>
+</html>
