@@ -254,6 +254,9 @@ header.brand .ours-mark{-webkit-text-stroke:6px #1d3140;paint-order:stroke fill;
 header.brand{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:12px 64px 25px!important}
 header.brand .ours-mark{font-size:.82rem;font-weight:800;letter-spacing:.24em;text-transform:uppercase;opacity:.8;-webkit-text-stroke:0;text-shadow:none;padding-left:.24em}
 header.brand .wordmark{opacity:1;font-size:clamp(2.1rem,9.5vw,2.7rem);letter-spacing:0;color:var(--on-band)}
+
+/* Profilmenü darf aus dem Kopf herausragen */
+#head,header.brand{overflow:visible!important;z-index:30}
 </style>
 </head>
 <body>
