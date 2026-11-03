@@ -270,6 +270,21 @@ header p{margin-top:4px;font-size:.88rem}
 .count{font-size:.72rem}
 @media (max-width:480px){header{padding:14px 16px 18px}}
 
+/* Kopf: Ours mittig, „Rezepte“ groß und blass dahinter */
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#head{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:128px;overflow:hidden;padding-top:16px;padding-bottom:30px}
+#head .wordmark{position:absolute;left:0;right:0;top:calc(50% - 8px);transform:translateY(-50%);font-family:var(--display);font-size:clamp(3.6rem,17vw,5.6rem);line-height:1;letter-spacing:.01em;
+  color:var(--on-band);opacity:.13;pointer-events:none;user-select:none;white-space:nowrap}
+#head .ours-mark{position:relative;z-index:1;justify-content:center;font-size:2rem;margin:0;letter-spacing:.06em}
+#head .ours-mark::before{display:none}
+#head .count{position:relative;z-index:1;margin-top:4px;letter-spacing:.14em}
+/* Reiter + Filter in einer Zeile, Swipen als Herz unten links */
+.srcrow{display:flex;align-items:stretch;gap:8px}
+.srcrow .seg{flex:1}
+.srcrow .filter-btn{margin:0;padding:0 12px;border-radius:10px;gap:4px;min-width:44px;justify-content:center}
+.srcrow .filter-btn span:empty{display:none}
+.fab-left{right:auto;left:0}
+
 /* Seitenmenü hinter dem Titel */
 .switch{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;text-align:left}
 .switch svg{transition:transform .2s}
@@ -406,14 +421,13 @@ header p{margin-top:4px;font-size:.88rem}
 <body>
 <div class="wrap">
   <header id="head">
+    <div class="wordmark" aria-hidden="true">Rezepte</div>
+    <h1 class="sr-only">Rezepte</h1>
     <div class="count" id="count">Verbindet …</div>
-    <div class="switch"><h1>Unsere Rezepte</h1></div>
-    <p>Rezept anlegen, Titelbild dazu, antippen für Zutaten und Schritte.</p>
   </header>
 
   <section class="panel" id="listView">
-    <div class="row-end" id="newBar" style="justify-content:flex-start"><button class="btn primary" id="newBtn" type="button">+ Rezept<span class="wide"> hinzufügen</span></button><button class="btn" id="swipeBtn" type="button">♥ Swipen</button><button class="btn filter-btn" id="filterBtn" type="button" aria-expanded="false" aria-controls="filters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7.5V18l-4 2v-7.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span id="filterLabel">Filter</span></button></div>
-    <div class="seg" role="group" aria-label="Welche Rezepte"><button type="button" data-src="mine" aria-pressed="true">Meine</button><button type="button" data-src="friends" aria-pressed="false">Freunde</button><button type="button" data-src="feed" aria-pressed="false">Feed<span class="nbadge" id="feedBadge" hidden></span></button></div>
+    <div class="srcrow"><div class="seg" role="group" aria-label="Welche Rezepte"><button type="button" data-src="mine" aria-pressed="true">Meine</button><button type="button" data-src="friends" aria-pressed="false">Freunde</button><button type="button" data-src="feed" aria-pressed="false">Feed<span class="nbadge" id="feedBadge" hidden></span></button></div><button class="btn filter-btn" id="filterBtn" type="button" aria-expanded="false" aria-controls="filters" aria-label="Nach Kategorie filtern"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7.5V18l-4 2v-7.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span id="filterLabel"></span></button></div>
     <form class="newform" id="newForm" hidden autocomplete="off">
       <button class="pick" type="button" id="pickCover"><span id="pickLabel">Titelbild auswählen</span></button>
       <input id="newName" placeholder="Name, z.B. Linsen-Curry mit Kokos" maxlength="120" aria-label="Name des Rezepts">
@@ -428,14 +442,16 @@ header p{margin-top:4px;font-size:.88rem}
       <div class="grid" id="grid"></div>
       <div class="empty" id="empty" hidden>
         <strong>Noch keine Rezepte</strong>
-        <span>Tipp auf „+ Rezept hinzufügen“, wähl ein Titelbild und gib dem Rezept einen Namen. Oder tipp unten rechts auf das Plus und füg einen Video-Link oder ein Foto von einem Rezept ein.</span>
+        <span>Tipp unten rechts auf das Plus: Trag ein Rezept selbst ein, füg einen Video-Link ein oder fotografier ein Rezept.</span>
       </div>
     </div>
+    <button class="fab fab-left" id="swipeBtn" type="button" aria-label="Rezepte zu zweit swipen" title="Swipen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="currentColor"/></svg></button>
     <div class="fab-menu" id="fabMenu" aria-hidden="true">
+      <button class="fab-opt" type="button" id="newBtn" tabindex="-1"><span>Selbst eintragen</span><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19h4l10-10-4-4L5 15zM13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg></i></button>
       <button class="fab-opt" type="button" id="optLink" tabindex="-1"><span>Per Link</span><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.2 1.2M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.2-1.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></i></button>
       <button class="fab-opt" type="button" id="optPhoto" tabindex="-1"><span>Per Foto</span><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.8l1.4-2h4.6l1.4 2h1.8A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12.5" r="3.4" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></i></button>
     </div>
-    <button class="fab" id="videoBtn" type="button" aria-expanded="false" aria-controls="fabMenu" aria-label="Rezept per Link oder Foto hinzufügen" title="Rezept per Link oder Foto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+    <button class="fab" id="videoBtn" type="button" aria-expanded="false" aria-controls="fabMenu" aria-label="Rezept hinzufügen" title="Rezept hinzufügen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
   </section>
 
   <section class="panel" id="detailView" hidden>
@@ -1287,7 +1303,8 @@ function renderList(){
   const chips=[{id:"alle",label:"Alle",items:list},...groups.filter(g=>g.id!=="ohne"||g.items.length)];
   $("#filters").hidden=list.length===0 || !filtersOpen;
   const active=chips.find(g=>g.id===filter);
-  $("#filterLabel").textContent = filter==="alle" ? "Filter" : `${active.emoji} ${active.label}`;
+  $("#filterLabel").textContent = filter==="alle" ? "" : active.emoji;
+  $("#filterBtn").setAttribute("aria-label", filter==="alle" ? "Nach Kategorie filtern" : `Filter: ${active.label}`);
   $("#filterBtn").classList.toggle("active", filter!=="alle");
   $("#filterBtn").setAttribute("aria-expanded", filtersOpen);
   $("#filterBtn").hidden = list.length===0;
@@ -1346,13 +1363,13 @@ addEventListener("popstate",e=>{ view=e.state&&e.state.r||null; swipeOpen=!!(e.s
 $("#back").addEventListener("click",()=>{ if(history.state&&history.state.r) history.back(); else { view=null; render(); } });
 
 /* ---------- Neues Rezept ---------- */
-$("#newBtn").addEventListener("click",()=>{ $("#newForm").hidden=false; $("#newBar").hidden=true; $("#newName").focus(); });
+$("#newBtn").addEventListener("click",()=>{ setFab(false); if(src!=="mine") setSrc("mine"); $("#newForm").hidden=false; $("#listView .scroll").scrollTop=0; $("#newName").focus(); });
 function renderNewCats(){
   $("#newCats").innerHTML=CATS.map(c=>`<button type="button" class="chip" data-newcat="${c.id}" aria-pressed="${newCat===c.id}">${c.emoji} ${c.one}</button>`).join("");
 }
 renderNewCats();
 function resetNew(){
-  newBlob=null; newCat=null; renderNewCats(); $("#newForm").reset(); $("#newForm").hidden=true; $("#newBar").hidden=false;
+  newBlob=null; newCat=null; renderNewCats(); $("#newForm").reset(); $("#newForm").hidden=true;
   $("#pickCover").innerHTML='<span id="pickLabel">Titelbild auswählen</span>';
 }
 $("#cancelNew").addEventListener("click",resetNew);
