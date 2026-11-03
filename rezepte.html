@@ -371,6 +371,14 @@ header p{margin-top:4px;font-size:.88rem}
 .c-body b{font-weight:600}
 .c-body small{display:block;font-size:.72rem;color:var(--muted)}
 .c-del{flex:none;border:0;background:none;color:var(--muted);font-size:1rem;padding:4px}
+.comments li.own{flex-direction:row-reverse;padding-left:28px}
+.comments li:not(.own){padding-right:28px}
+.comments li.own .c-body{background:var(--band);color:var(--on-band);text-align:right}
+.comments li.own .c-body small{color:var(--on-band-muted)}
+.post-head .post-who{flex:1;min-width:0}
+.post-del{flex:none;border:0;background:none;color:var(--muted);width:34px;height:34px;border-radius:50%;display:grid;place-items:center;padding:0}
+.post-del svg{width:19px;height:19px}
+.post-del.sure{width:auto;padding:0 10px;border-radius:999px;background:#a33a3a;color:#fff;font-size:.78rem;font-weight:600}
 .cform{display:flex;gap:6px}
 .cform input{flex:1;min-width:0;font:inherit;font-size:.9rem;padding:9px 12px;border:1.5px solid var(--line);border-radius:999px;background:var(--bg);color:var(--ink)}
 .cform input:focus{outline:none;border-color:var(--accent)}
@@ -1855,12 +1863,12 @@ function renderFeed(){
     const cm=Object.entries(p.comments||{}).map(([id,x])=>({id,...x})).filter(x=>x&&x.text).sort((a,b)=>a.at-b.at);
     return `<article class="post">
       <div class="post-head"><span class="av">${esc((p.name||"?")[0].toUpperCase())}</span>
-        <span class="post-who"><b>${esc(mine?"Du":p.name)}</b> ${mine?"hast":"hat"} ein neues Rezept geteilt<small>${agoText(p.at)}</small></span></div>
+        <span class="post-who"><b>${esc(mine?"Du":p.name)}</b> ${mine?"hast":"hat"} ein neues Rezept geteilt<small>${agoText(p.at)}</small></span>${mine?`<button type="button" class="post-del" data-pdel="${esc(p.pid)}" aria-label="Beitrag aus dem Feed entfernen" title="Aus dem Feed entfernen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`:""}</div>
       <button type="button" class="post-card" data-feed-open="${esc(key)}">
         <span class="post-img">${u?`<img src="${u}" alt="">`:LEAF}</span>
         <span class="post-info">${c?`<span class="card-cat">${c.emoji} ${c.one}</span>`:""}<b>${esc(p.title||"Rezept")}</b><small>Ansehen →</small></span>
       </button>
-      ${cm.length?`<ul class="comments">${cm.map(x=>`<li><span class="c-av">${esc((x.name||"?")[0].toUpperCase())}</span><span class="c-body"><b>${esc(x.by===myUid?"Du":x.name)}</b> ${esc(x.text)}<small>${agoText(x.at)}</small></span>
+      ${cm.length?`<ul class="comments">${cm.map(x=>`<li${x.by===p.uid?' class="own"':""}><span class="c-av">${esc((x.name||"?")[0].toUpperCase())}</span><span class="c-body"><b>${esc(x.by===myUid?"Du":x.name)}</b> ${esc(x.text)}<small>${agoText(x.at)}</small></span>
         ${x.by===myUid||mine?`<button type="button" class="c-del" data-cdel="${esc(key)}|${esc(x.id)}" aria-label="Kommentar löschen">×</button>`:""}</li>`).join("")}</ul>`:""}
       <form class="cform" data-cform="${esc(key)}" autocomplete="off"><input type="text" maxlength="500" placeholder="${cm.length?"Antworten …":"Kommentieren …"}" value="${esc(commentDraft[key]||"")}" aria-label="Kommentar"><button type="submit" class="btn">Senden</button></form>
     </article>`; }).join("")}</div>`;
@@ -1876,6 +1884,9 @@ async function openFeedRecipe(key){
 }
 document.addEventListener("click",e=>{
   const o=e.target.closest("[data-feed-open]"); if(o){ openFeedRecipe(o.dataset.feedOpen); return; }
+  const pd=e.target.closest("[data-pdel]"); if(pd){
+    if(!pd.classList.contains("sure")){ pd.classList.add("sure"); pd.textContent="Entfernen?"; setTimeout(()=>{ if(pd.isConnected) renderList(); },3500); return; }
+    const pid=pd.dataset.pdel; unpostRecipe(pid); feed=(feed||[]).filter(x=>!(x.uid===myUid&&x.pid===pid)); renderList(); return; }
   const d=e.target.closest("[data-cdel]"); if(d){ const [uid,pid,cid]=d.dataset.cdel.split("|");
     fdb().ref(`posts/${uid}/${pid}/comments/${cid}`).remove().then(()=>{ const p=feed.find(x=>x.uid===uid&&x.pid===pid); if(p&&p.comments) delete p.comments[cid]; renderList(); }).catch(()=>{}); }
 });
