@@ -271,6 +271,9 @@ header p{margin-top:4px;font-size:.88rem}
   .auth-btn{border:0;border-radius:10px;padding:12px 16px;font:inherit;font-weight:700;cursor:pointer;background:var(--band);color:var(--on-band)}
   .auth-btn.alt{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
   .auth-btn:disabled{opacity:.6;cursor:progress}
+  .auth-or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.8rem;margin:2px 0}
+  .auth-or::before,.auth-or::after{content:"";flex:1;height:1px;background:var(--line)}
+  .auth-google{display:flex;align-items:center;justify-content:center;gap:10px}
   .auth-link{align-self:center;background:none;border:0;padding:4px;font:inherit;font-size:.85rem;color:var(--muted);text-decoration:underline;cursor:pointer}
   .auth-link.danger{color:#c0533f}
   .auth-msg{margin:0;font-size:.88rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
@@ -331,7 +334,10 @@ header p{margin-top:4px;font-size:.88rem}
     "auth/weak-password":"Das Passwort ist zu kurz.",
     "auth/too-many-requests":"Zu viele Versuche. Warte ein paar Minuten und versuch es dann noch einmal.",
     "auth/network-request-failed":"Keine Verbindung. Prüf dein Internet.",
-    "auth/operation-not-allowed":"Die Anmeldung mit E-Mail ist in Firebase noch nicht eingeschaltet.",
+    "auth/operation-not-allowed":"Diese Anmeldeart ist in Firebase noch nicht eingeschaltet.",
+    "auth/unauthorized-domain":"Diese Seite ist in Firebase noch nicht als erlaubte Domain eingetragen (Authentication → Einstellungen → Autorisierte Domains).",
+    "auth/account-exists-with-different-credential":"Mit dieser E-Mail gibt es schon ein Konto mit Passwort. Melde dich mit E-Mail und Passwort an.",
+    "auth/popup-blocked":"Das Anmeldefenster wurde blockiert. Erlaube Pop-ups für diese Seite und versuch es noch einmal.",
   };
   const errText = e => ERR[e && e.code] || "Das hat nicht geklappt. Versuch es noch einmal.";
   const rand = n => { const a="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
@@ -340,6 +346,7 @@ header p{margin-top:4px;font-size:.88rem}
   const parseJoin = () => { const m=location.hash.match(/^#join-([A-Za-z0-9]{12,40})-([A-Za-z0-9]{12,40})$/); return m?{sid:m[1],code:m[2]}:null; };
   const clearHash = () => history.replaceState(history.state,"",location.pathname);
   const initial = n => (String(n||"?").trim()[0]||"?").toUpperCase();
+  const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   window.Auth = { start(config, type, cb){
     const PAGE = PAGES.find(p=>p.type===type);
@@ -378,7 +385,9 @@ header p{margin-top:4px;font-size:.88rem}
           <p class="auth-msg" id="authMsg" hidden></p>
           <button class="auth-btn" type="submit" id="authGo">${reg?"Konto erstellen":"Anmelden"}</button>
         </form>
-        ${reg?"":`<button class="auth-link" type="button" id="authForgot">Passwort vergessen?</button>`}`);
+        ${reg?"":`<button class="auth-link" type="button" id="authForgot">Passwort vergessen?</button>`}
+        <div class="auth-or"><span>oder</span></div>
+        <button class="auth-btn alt auth-google" type="button" id="authGoogle">${GOOGLE}Mit Google ${reg?"registrieren":"anmelden"}</button>`);
       screen.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>loginView(b.dataset.mode));
       (reg?$a("#authName"):$a("#authMail")).focus();
       $a("#authForm").onsubmit=async e=>{
@@ -393,6 +402,15 @@ header p{margin-top:4px;font-size:.88rem}
         $a("#authGo").disabled=true; msg("");
         try{ reg ? await auth.createUserWithEmailAndPassword(mail,pw) : await auth.signInWithEmailAndPassword(mail,pw); }
         catch(err){ msg(errText(err),true); $a("#authGo").disabled=false; }
+      };
+      $a("#authGoogle").onclick=async()=>{
+        msg(""); const prov=new firebase.auth.GoogleAuthProvider(); prov.setCustomParameters({prompt:"select_account"});
+        try{ await auth.signInWithPopup(prov); }
+        catch(err){
+          if(err && (err.code==="auth/popup-closed-by-user"||err.code==="auth/cancelled-popup-request")) return;
+          if(err && err.code==="auth/popup-blocked"){ try{ await auth.signInWithRedirect(prov); return; }catch(e){} }
+          msg(errText(err),true);
+        }
       };
       const f=$a("#authForgot");
       if(f) f.onclick=async()=>{
@@ -612,7 +630,7 @@ header p{margin-top:4px;font-size:.88rem}
         profile=(await db.ref(`users/${u.uid}/profile`).once("value")).val()||{};
         if(!profile.name){
           let n=""; try{ n=sessionStorage.getItem("auth.newName")||""; sessionStorage.removeItem("auth.newName"); }catch(e){}
-          profile.name=n||u.email.split("@")[0];
+          profile.name=n||u.displayName||u.email.split("@")[0];
           await db.ref(`users/${u.uid}/profile/name`).set(profile.name);
         }
         installMenu();
