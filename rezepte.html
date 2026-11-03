@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Unsere Rezepte</title>
+<title>Ours · Rezepte</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600&display=swap">
 <style>
@@ -481,6 +481,15 @@ header p{margin-top:4px;font-size:.88rem}
   .pf-who small{font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .pf-menu button:disabled{opacity:.45;cursor:not-allowed}
 
+  /* Freunde */
+  .pf-badge{margin-left:auto;min-width:20px;height:20px;border-radius:10px;padding:0 6px;background:#d9534f;color:#fff;font-size:.72rem;font-weight:700;display:inline-grid;place-items:center}
+  .pf-dot{position:absolute;top:-1px;right:-1px;width:12px;height:12px;border-radius:50%;background:#d9534f;border:2px solid var(--band)}
+  .pf-brand{font-family:var(--display);font-size:1.15rem;line-height:1;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+  .fr-code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.5rem;font-weight:700;letter-spacing:.18em;text-align:center;padding:10px;border-radius:12px;
+    background:var(--surface);border:1.5px dashed var(--line);color:var(--ink)}
+  .auth-people .rm.yes{background:var(--band);color:var(--on-band);border-color:var(--band);font-weight:600}
+  .auth-people .rm.done{opacity:.6;cursor:default}
+
   /* Seite ohne Bereich */
   .auth-setup{position:absolute;left:0;right:0;bottom:0;z-index:20;background:var(--bg);overflow-y:auto;padding:18px 22px 22px;display:flex;flex-direction:column;align-items:stretch}
   .auth-setup .box{margin:auto 0;display:flex;flex-direction:column;gap:12px;max-width:420px;align-self:center;width:100%;color:var(--ink)}
@@ -490,6 +499,7 @@ header p{margin-top:4px;font-size:.88rem}
     people:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M16.5 6.2a2.8 2.8 0 0 1 0 5.4M17 14.3c2 .5 3.2 2 3.5 4.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
     user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
     gear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    heart:'<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
     out:'<svg viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 16l4-4-4-4M14 12H4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   };
   const ERR = {
@@ -541,8 +551,8 @@ header p{margin-top:4px;font-size:.88rem}
     /* ---------- Anmelden / Konto erstellen ---------- */
     function loginView(mode){
       const reg=mode==="register", join=parseJoin();
-      show(document.querySelector("header h1")?.textContent||PAGE.label,
-        join?"Du wurdest eingeladen. Melde dich an oder erstell ein Konto.":reg?"Neues Konto erstellen.":"Bitte melde dich an.",
+      show("Ours",
+        join?`Du wurdest zu ${PAGE.label} eingeladen. Melde dich an oder erstell ein Konto.`:/^#friend-/.test(location.hash)?"Du wurdest als Freund eingeladen. Melde dich an oder erstell ein Konto.":reg?"Neues Konto erstellen.":"Bitte melde dich an.",
         `<div class="auth-tabs" role="group"><button type="button" data-mode="login" aria-pressed="${!reg}">Anmelden</button><button type="button" data-mode="register" aria-pressed="${reg}">Konto erstellen</button></div>
         <form id="authForm" style="display:flex;flex-direction:column;gap:12px" novalidate>
           ${reg?`<label>Dein Name<input type="text" id="authName" autocomplete="given-name" maxlength="30" placeholder="So sehen dich die anderen"></label>`:""}
@@ -592,13 +602,14 @@ header p{margin-top:4px;font-size:.88rem}
     /* ---------- Profil-Knopf mit Menü ---------- */
     function installMenu(){
       const head=document.querySelector("header"); if(!head || head.querySelector(".pf-btn")) { updateMenu(); return; }
-      head.insertAdjacentHTML("beforeend",`<button class="pf-btn" type="button" id="pfBtn" aria-haspopup="true" aria-expanded="false" aria-controls="pfMenu" aria-label="Profil und Seiten"></button>
+      head.insertAdjacentHTML("beforeend",`<button class="pf-btn" type="button" id="pfBtn" aria-haspopup="true" aria-expanded="false" aria-controls="pfMenu" aria-label="Profil und Seiten"><span id="pfInit"></span><span class="pf-dot" id="pfDot" hidden></span></button>
         <nav class="pf-menu" id="pfMenu" hidden aria-label="Profil und Seiten">
-          <div class="pf-who"><b id="pfName"></b><small id="pfMail"></small></div>
+          <div class="pf-who"><span class="pf-brand">Ours</span><b id="pfName"></b><small id="pfMail"></small></div>
           <div class="pf-sep"></div>
           ${PAGES.map(p=>`<a href="${p.file}" data-page="${p.type}"${p.type===type?' aria-current="page"':""}><span class="dot" style="background:${p.color}"></span>${p.label}</a>`).join("")}
           <div class="pf-sep"></div>
           <button type="button" data-pf="people">${IC.people}Personen bei ${esc(PAGE.label)}</button>
+          <button type="button" data-pf="friends">${IC.heart}Freunde<span class="pf-badge" id="pfFriendBadge" hidden></span></button>
           <button type="button" data-pf="profile">${IC.user}Profil bearbeiten</button>
           <button type="button" data-pf="settings">${IC.gear}Einstellungen</button>
           <button type="button" data-pf="logout">${IC.out}Abmelden</button>
@@ -609,13 +620,13 @@ header p{margin-top:4px;font-size:.88rem}
       document.addEventListener("click",e=>{ if(!menu.hidden && !menu.contains(e.target)) toggle(false); });
       document.addEventListener("keydown",e=>{ if(e.key==="Escape") toggle(false); });
       menu.querySelectorAll("[data-pf]").forEach(b=>b.onclick=()=>{ toggle(false);
-        ({people:peopleView,profile:profileView,settings:settingsView,logout:()=>auth.signOut()})[b.dataset.pf](); });
+        ({people:peopleView,friends:()=>friendsView(),profile:profileView,settings:settingsView,logout:()=>auth.signOut()})[b.dataset.pf](); });
       updateMenu();
     }
     function updateMenu(){
       const name=profile.name||user.email.split("@")[0];
       const b=document.getElementById("pfBtn"); if(!b) return;
-      b.textContent=initial(name);
+      document.getElementById("pfInit").textContent=initial(name); updateFriendBadge();
       document.getElementById("pfName").textContent=name;
       document.getElementById("pfMail").textContent=user.email;
       document.querySelector('[data-pf="people"]').disabled=!sid;
@@ -674,7 +685,10 @@ header p{margin-top:4px;font-size:.88rem}
         `<ul class="auth-people">${list.map(p=>`<li><span class="av">${esc(initial(p.name))}</span>
             <span class="nm"><b>${esc(p.name)}${p.id===user.uid?" (du)":""}</b><small>${p.own?"Hat die Liste angelegt":esc(p.mail)}</small></span>
             ${owner&&p.id!==user.uid?`<button type="button" class="rm${rmConfirm===p.id?" sure":""}" data-rm="${esc(p.id)}">${rmConfirm===p.id?"Entfernen?":"Entfernen"}</button>`:""}</li>`).join("")}</ul>
-        <p class="auth-sec">Jemanden einladen</p>
+        ${(()=>{ const fl=Object.entries(friends).filter(([id])=>!access[id]); return fl.length?`<p class="auth-sec">Freunde einladen</p>
+          <ul class="auth-people">${fl.map(([id,f])=>`<li><span class="av">${esc(initial(f.name))}</span><span class="nm"><b>${esc(f.name||"Freund")}</b><small>bekommt die Einladung unter „Freunde“</small></span>
+          <button type="button" class="rm yes" data-fr-inv="${esc(id)}">Einladen</button></li>`).join("")}</ul>`:""; })()}
+        <p class="auth-sec">Per Link einladen</p>
         <p class="auth-note">Der Link gilt nur für ${esc(PAGE.label)} und nur für eine Person. Wer ihn öffnet, tritt mit eigenem Konto bei. Deine anderen Seiten sieht die Person nicht.</p>
         <button class="auth-btn" type="button" id="invNew">Einladungslink erstellen</button>
         <div class="auth-copy" id="invBox" hidden><input type="text" id="invLink" readonly aria-label="Einladungslink"><button class="auth-btn" type="button" id="invCopy">Kopieren</button></div>
@@ -695,6 +709,11 @@ header p{margin-top:4px;font-size:.88rem}
         try{ await navigator.clipboard.writeText($a("#invLink").value); msg("Kopiert. Jetzt per WhatsApp oder Mail verschicken."); }
         catch(e){ $a("#invLink").select(); msg("Markiert. Jetzt kopieren und verschicken."); }
       };
+      screen.querySelectorAll("[data-fr-inv]").forEach(b=>b.onclick=async()=>{
+        b.disabled=true; b.textContent="…";
+        try{ await inviteFriend(b.dataset.frInv); b.textContent="Eingeladen ✓"; b.classList.remove("yes"); b.classList.add("done"); }
+        catch(err){ b.disabled=false; b.textContent="Einladen"; msg("Die Einladung hat nicht geklappt. Prüf die Regeln in Firebase.",true); }
+      });
       const rv=$a("#invRevoke"); if(rv) rv.onclick=async()=>{ await db.ref(`spaces/${sid}/invites`).remove().catch(()=>{}); peopleView(); };
       screen.querySelectorAll("[data-rm]").forEach(b=>b.onclick=async()=>{
         const id=b.dataset.rm;
@@ -711,6 +730,95 @@ header p{margin-top:4px;font-size:.88rem}
         await db.ref(`users/${user.uid}/spaces/${type}`).remove().catch(()=>{});
         location.reload();
       };
+    }
+
+
+    /* ---------- Freunde ---------- */
+    let friends={}, requestsIn={}, inbox={}, friendCode=null, friendsOpen=false, frConfirm=null;
+    const frBadge=()=>Object.keys(requestsIn).length+Object.keys(inbox).length;
+    function updateFriendBadge(){
+      const n=frBadge(), b=document.getElementById("pfFriendBadge"), d=document.getElementById("pfDot");
+      if(b){ b.textContent=n; b.hidden=!n; } if(d) d.hidden=!n;
+    }
+    async function ensureFriendCode(){
+      friendCode=(await db.ref(`users/${user.uid}/friendCode`).once("value")).val();
+      if(friendCode) return;
+      for(let i=0;i<5 && !friendCode;i++){
+        const c=rand(8).toUpperCase().replace(/[^A-Z0-9]/g,"X");
+        try{ await db.ref(`friendCodes/${c}`).set(user.uid); await db.ref(`users/${user.uid}/friendCode`).set(c); friendCode=c; }catch(e){}
+      }
+    }
+    function watchFriends(){
+      db.ref(`friends/${user.uid}`).on("value",s=>{ friends=s.val()||{}; if(friendsOpen) friendsView(); },()=>{});
+      db.ref(`requests/${user.uid}`).on("value",s=>{ requestsIn=s.val()||{}; updateFriendBadge(); if(friendsOpen) friendsView(); },()=>{});
+      db.ref(`inbox/${user.uid}`).on("value",s=>{ inbox=s.val()||{}; updateFriendBadge(); if(friendsOpen) friendsView(); },()=>{});
+    }
+    const myName=()=>profile.name||user.email.split("@")[0];
+    async function sendRequest(code){
+      code=String(code||"").trim().toUpperCase().replace(/^.*#FRIEND-/,"").replace(/[^A-Z0-9]/g,"");
+      if(code.length<6) return {err:"Gib einen Freundescode ein. Er hat 8 Zeichen."};
+      const uid=(await db.ref(`friendCodes/${code}`).once("value")).val();
+      if(!uid) return {err:"Zu diesem Code gibt es niemanden. Prüf die Schreibweise."};
+      if(uid===user.uid) return {err:"Das ist dein eigener Code."};
+      if(friends[uid]) return {ok:`${friends[uid].name||"Diese Person"} ist schon dein Freund.`};
+      if(requestsIn[uid]){ await acceptRequest(uid); return {ok:`Ihr seid jetzt befreundet.`}; }
+      await db.ref(`requests/${uid}/${user.uid}`).set({name:myName(),at:Date.now()});
+      return {ok:"Freundschaftsanfrage gesendet. Sobald sie angenommen ist, erscheint die Person hier."};
+    }
+    async function acceptRequest(from){
+      const req=requestsIn[from]||{}, now=Date.now();
+      await db.ref(`friends/${user.uid}/${from}`).set({name:req.name||"Freund",since:now});
+      await db.ref(`friends/${from}/${user.uid}`).set({name:myName(),since:now});
+      await db.ref(`requests/${user.uid}/${from}`).remove();
+    }
+    function friendsView(msgText,isErr){
+      friendsOpen=true;
+      const base=location.href.split("#")[0].replace(/[^/]*$/,"");
+      const link=friendCode?`${base}index.html#friend-${friendCode}`:"";
+      const reqs=Object.entries(requestsIn), inv=Object.entries(inbox), fl=Object.entries(friends).sort((a,b)=>(a[1].name||"").localeCompare(b[1].name||""));
+      const pageOf=t=>PAGES.find(p=>p.type===t)||PAGES[0];
+      show("Freunde",fl.length?`${fl.length} ${fl.length===1?"Freund":"Freunde"}`:"Füg Freunde hinzu, um sie schnell zu deinen Listen einzuladen.",`
+        ${inv.length?`<p class="auth-sec">Einladungen</p><ul class="auth-people">${inv.map(([id,x])=>`<li><span class="av" style="background:${pageOf(x.type).color}">${esc(initial(x.fromName))}</span>
+          <span class="nm"><b>${esc(x.fromName||"Jemand")}</b><small>lädt dich zu ${esc(pageOf(x.type).label)} ein</small></span>
+          <button type="button" class="rm" data-inv-no="${esc(id)}">Nein</button><button type="button" class="rm yes" data-inv-yes="${esc(id)}">Annehmen</button></li>`).join("")}</ul>`:""}
+        ${reqs.length?`<p class="auth-sec">Anfragen</p><ul class="auth-people">${reqs.map(([id,x])=>`<li><span class="av">${esc(initial(x.name))}</span>
+          <span class="nm"><b>${esc(x.name||"Jemand")}</b><small>möchte mit dir befreundet sein</small></span>
+          <button type="button" class="rm" data-req-no="${esc(id)}">Ablehnen</button><button type="button" class="rm yes" data-req-yes="${esc(id)}">Annehmen</button></li>`).join("")}</ul>`:""}
+        <p class="auth-sec">Deine Freunde</p>
+        ${fl.length?`<ul class="auth-people">${fl.map(([id,f])=>`<li><span class="av">${esc(initial(f.name))}</span><span class="nm"><b>${esc(f.name||"Freund")}</b><small>befreundet seit ${new Date(f.since||Date.now()).toLocaleDateString("de-DE")}</small></span>
+          <button type="button" class="rm${frConfirm===id?" sure":""}" data-fr-rm="${esc(id)}">${frConfirm===id?"Entfernen?":"Entfernen"}</button></li>`).join("")}</ul>`
+          :`<p class="auth-note">Noch keine Freunde. Schick deinen Code oder Link, oder gib unten einen Code ein.</p>`}
+        <p class="auth-sec">Dein Freundescode</p>
+        <div class="fr-code">${esc(friendCode||"…")}</div>
+        <div class="auth-copy"><input type="text" id="frLink" readonly value="${esc(link)}" aria-label="Dein Freundes-Link"><button class="auth-btn" type="button" id="frCopy">Link kopieren</button></div>
+        <p class="auth-sec">Freund hinzufügen</p>
+        <form class="auth-copy" id="frAdd" autocomplete="off"><input type="text" id="frIn" maxlength="40" placeholder="Code, z.B. K7M2QX9A" aria-label="Freundescode"><button class="auth-btn" type="submit">Senden</button></form>
+        <p class="auth-msg${isErr?" err":""}" id="authMsg"${msgText?"":" hidden"}>${esc(msgText||"")}</p>
+        <button class="auth-btn alt" type="button" id="frClose">Fertig</button>`,true);
+      $a("#frClose").onclick=()=>{ friendsOpen=false; frConfirm=null; hide(); };
+      $a("#frCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText(link); msg("Kopiert. Schick den Link an deine Freunde."); }catch(e){ $a("#frLink").select(); msg("Markiert. Jetzt kopieren und verschicken."); } };
+      $a("#frAdd").onsubmit=async e=>{ e.preventDefault(); try{ const r=await sendRequest($a("#frIn").value); friendsView(r.err||r.ok,!!r.err); }catch(err){ friendsView("Das hat nicht geklappt. Prüf die Regeln in Firebase.",true); } };
+      screen.querySelectorAll("[data-req-yes]").forEach(b=>b.onclick=async()=>{ try{ await acceptRequest(b.dataset.reqYes); }catch(e){ friendsView("Annehmen hat nicht geklappt.",true); } });
+      screen.querySelectorAll("[data-req-no]").forEach(b=>b.onclick=()=>db.ref(`requests/${user.uid}/${b.dataset.reqNo}`).remove().catch(()=>{}));
+      screen.querySelectorAll("[data-inv-no]").forEach(b=>b.onclick=()=>db.ref(`inbox/${user.uid}/${b.dataset.invNo}`).remove().catch(()=>{}));
+      screen.querySelectorAll("[data-inv-yes]").forEach(b=>b.onclick=async()=>{
+        const x=inbox[b.dataset.invYes]; if(!x) return; const p=pageOf(x.type);
+        await db.ref(`inbox/${user.uid}/${b.dataset.invYes}`).remove().catch(()=>{});
+        const target=`${p.file}#join-${x.sid}-${x.code}`;
+        if(p.type===type){ history.replaceState(null,"",target); location.reload(); } else location.href=target;
+      });
+      screen.querySelectorAll("[data-fr-rm]").forEach(b=>b.onclick=async()=>{
+        const id=b.dataset.frRm; if(frConfirm!==id){ frConfirm=id; friendsView(); return; }
+        frConfirm=null;
+        await db.ref(`friends/${user.uid}/${id}`).remove().catch(()=>{});
+        await db.ref(`friends/${id}/${user.uid}`).remove().catch(()=>{});
+      });
+    }
+    // Freund direkt zu dieser Liste einladen (landet bei ihm unter "Freunde")
+    async function inviteFriend(fid){
+      const code=rand(20);
+      await db.ref(`spaces/${sid}/invites/${code}`).set({by:user.uid,at:Date.now(),for:fid});
+      await db.ref(`inbox/${fid}`).push().set({type,sid,code,from:user.uid,fromName:myName(),at:Date.now()});
     }
 
     /* ---------- Seite ohne Bereich: neu anlegen ---------- */
@@ -791,7 +899,7 @@ header p{margin-top:4px;font-size:.88rem}
     }
 
     auth.onAuthStateChanged(async u=>{
-      if(!u){ if(user){ location.reload(); return; } loginView(parseJoin()?"register":"login"); return; }
+      if(!u){ if(user){ location.reload(); return; } loginView(parseJoin()||/^#friend-/.test(location.hash)?"register":"login"); return; }
       user=u;
       show(PAGE.label,"",`<p class="auth-note">Lädt …</p>`);
       try{
@@ -802,6 +910,9 @@ header p{margin-top:4px;font-size:.88rem}
           await db.ref(`users/${u.uid}/profile/name`).set(profile.name);
         }
         installMenu();
+        try{ await ensureFriendCode(); watchFriends(); }catch(e){}
+        const fr=location.hash.match(/^#friend-([A-Za-z0-9]{6,12})$/);
+        if(fr){ clearHash(); setTimeout(async()=>{ let r; try{ r=await sendRequest(fr[1]); }catch(e){ r={err:"Die Anfrage hat nicht geklappt."}; } friendsView(r.err||r.ok,!!r.err); },400); }
         const current=(await db.ref(`users/${u.uid}/spaces/${type}`).once("value")).val();
         const j=parseJoin();
         if(j){ await join(j,current); return; }
