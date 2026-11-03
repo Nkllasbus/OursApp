@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Ours · Rezepte</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600&family=Playfair+Display:wght@800;900&display=swap">
 <style>
 /* Layout: gleiche App-Form wie die Dateideen; Kopf steht, Rezeptkacheln scrollen; Detailansicht ersetzt die Liste */
 :root{
@@ -272,12 +272,15 @@ header p{margin-top:4px;font-size:.88rem}
 
 /* Kopf: Ours mittig, „Rezepte“ groß und blass dahinter */
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-#head{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:128px;overflow:hidden;padding-top:16px;padding-bottom:30px}
-#head .wordmark{position:absolute;left:0;right:0;top:calc(50% - 8px);transform:translateY(-50%);font-family:var(--display);font-size:clamp(3.6rem,17vw,5.6rem);line-height:1;letter-spacing:.01em;
-  color:var(--on-band);opacity:.13;pointer-events:none;user-select:none;white-space:nowrap}
-#head .ours-mark{position:relative;z-index:1;justify-content:center;font-size:2rem;margin:0;letter-spacing:.06em}
+#head{display:grid;place-items:center;text-align:center;min-height:0;overflow:hidden;padding:10px 64px 24px}
+#head>*{grid-area:1/1}
+#head .wordmark{font-family:"Playfair Display",var(--display);font-weight:900;font-size:clamp(3.2rem,15vw,4.8rem);line-height:1;letter-spacing:-.01em;
+  color:var(--on-band);opacity:.14;pointer-events:none;user-select:none;white-space:nowrap}
+#head .ours-mark{position:relative;z-index:1;justify-content:center;margin:0;font-family:"Playfair Display",var(--display);font-weight:800;font-size:2.1rem;line-height:1;letter-spacing:.02em}
 #head .ours-mark::before{display:none}
-#head .count{position:relative;z-index:1;margin-top:4px;letter-spacing:.14em}
+#head .pf-btn{top:calc(50% - 27px)}
+.fab-count{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:4;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 12px;white-space:nowrap;pointer-events:none}
 /* Reiter + Filter in einer Zeile, Swipen als Herz unten links */
 .srcrow{display:flex;align-items:stretch;gap:8px}
 .srcrow .seg{flex:1}
@@ -423,7 +426,6 @@ header p{margin-top:4px;font-size:.88rem}
   <header id="head">
     <div class="wordmark" aria-hidden="true">Rezepte</div>
     <h1 class="sr-only">Rezepte</h1>
-    <div class="count" id="count">Verbindet …</div>
   </header>
 
   <section class="panel" id="listView">
@@ -445,6 +447,7 @@ header p{margin-top:4px;font-size:.88rem}
         <span>Tipp unten rechts auf das Plus: Trag ein Rezept selbst ein, füg einen Video-Link ein oder fotografier ein Rezept.</span>
       </div>
     </div>
+    <div class="count fab-count" id="count" aria-live="polite">Verbindet …</div>
     <button class="fab fab-left" id="swipeBtn" type="button" aria-label="Rezepte zu zweit swipen" title="Swipen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="currentColor"/></svg></button>
     <div class="fab-menu" id="fabMenu" aria-hidden="true">
       <button class="fab-opt" type="button" id="newBtn" tabindex="-1"><span>Selbst eintragen</span><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19h4l10-10-4-4L5 15zM13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg></i></button>

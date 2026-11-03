@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Ours · Budget</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600;700&family=Playfair+Display:wght@800;900&display=swap">
 <style>
 /* Layout: dunkle App-Karte; oben die Monatsbilanz, darunter Abos, Ausgaben, Einnahmen und Kategorien */
 :root{
@@ -144,15 +144,27 @@ body{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/20
 
 .tile b{white-space:nowrap;font-size:clamp(.82rem,3.5vw,.98rem)}
 .tile span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Kopf: Ours fett und mittig, Seitenname groß und blass dahinter; Zählzeile unten */
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+header.brand{display:grid;place-items:center;text-align:center;overflow:hidden;padding:10px 64px 24px!important}
+header.brand>*{grid-area:1/1}
+header.brand .wordmark{font-family:"Playfair Display",var(--display);font-weight:900;font-size:clamp(3.2rem,15vw,4.8rem);line-height:1;letter-spacing:-.01em;
+  color:var(--on-band);opacity:.14;pointer-events:none;user-select:none;white-space:nowrap}
+header.brand .ours-mark{position:relative;z-index:1;justify-content:center;margin:0;font-family:"Playfair Display",var(--display);font-weight:800;font-size:2.1rem;line-height:1;letter-spacing:.02em}
+header.brand .ours-mark::before{display:none}
+header.brand .pf-btn{top:calc(50% - 27px)}
+.foot-count{order:99;flex:none;align-self:center;margin:0 0 4px;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+  background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 12px;white-space:nowrap}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header id="head">
-    <div class="count" id="count">Verbindet …</div>
-    <div class="switch"><h1>Unser Budget</h1></div>
-    <p>Einnahmen, Abos, Fixkosten und Ausgaben. Was bleibt im Monat übrig?</p>
+  <header class="brand" id="head">
+    <div class="wordmark" aria-hidden="true">Budget</div>
+    <h1 class="sr-only">Budget</h1>
   </header>
+  <div class="count foot-count" id="count">Verbindet …</div>
 
   <section class="panel">
     <div class="topbar">

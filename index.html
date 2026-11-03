@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Ours</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600&family=Playfair+Display:wght@800;900&display=swap">
 <style>
 /* Layout: eine schmale Spalte wie ein Notizzettel; offene Ideen oben, Erledigtes sinkt nach unten */
 :root{
@@ -164,16 +164,28 @@ header p{margin-top:4px;font-size:.88rem}
 .pagemenu a:hover{background:var(--accent-soft)}
 .pagemenu a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
 .pm-dot{width:10px;height:10px;border-radius:50%;flex:none}
+
+/* Kopf: Ours fett und mittig, Seitenname groß und blass dahinter; Zählzeile unten */
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+header.brand{display:grid;place-items:center;text-align:center;overflow:hidden;padding:10px 64px 24px!important}
+header.brand>*{grid-area:1/1}
+header.brand .wordmark{font-family:"Playfair Display",var(--display);font-weight:900;font-size:clamp(3.2rem,15vw,4.8rem);line-height:1;letter-spacing:-.01em;
+  color:var(--on-band);opacity:.14;pointer-events:none;user-select:none;white-space:nowrap}
+header.brand .ours-mark{position:relative;z-index:1;justify-content:center;margin:0;font-family:"Playfair Display",var(--display);font-weight:800;font-size:2.1rem;line-height:1;letter-spacing:.02em}
+header.brand .ours-mark::before{display:none}
+header.brand .pf-btn{top:calc(50% - 27px)}
+.foot-count{order:99;flex:none;align-self:center;margin:0 0 4px;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+  background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 12px;white-space:nowrap}
 </style>
 </head>
 <body>
 
 <div class="wrap">
-  <header>
-    <div class="count" id="count">Verbindet …</div>
-    <div class="switch"><h1>Unsere Dateideen</h1></div>
-    <p>Idee eintragen, antippen zum Planen. Abgehakte Dates rutschen nach unten.</p>
+  <header class="brand">
+    <div class="wordmark" aria-hidden="true">Dates</div>
+    <h1 class="sr-only">Dateideen</h1>
   </header>
+  <div class="count foot-count" id="count">Verbindet …</div>
 
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" id="tab-ideas" data-tab="ideas">Ideen<span class="n" id="n-ideas"></span></button>
