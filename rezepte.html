@@ -10,8 +10,8 @@
 /* Layout: gleiche App-Form wie die Dateideen; Kopf steht, Rezeptkacheln scrollen; Detailansicht ersetzt die Liste */
 :root{
   /* Weinrot wie Samt, dazu Oliv- und Salbeigrün als Akzent */
-  --page:#4e1622; --dots:rgba(255,255,255,.08); --frame-line:#3e111b; --shadow:rgba(35,6,14,.6);
-  --band:#6e1d2e; --on-band:#fbeef0; --on-band-muted:#dcb4bc;
+  --page:#330c15; --dots:rgba(255,255,255,.07); --frame-line:#28080f; --shadow:rgba(20,2,8,.7);
+  --band:#561522; --on-band:#fbeef0; --on-band-muted:#dcb4bc;
   --bg:#f6efec; --surface:#fffaf8; --ink:#2c1a1e; --muted:#7a6266; --line:#e8d8d5;
   --accent:#5c7448; --accent-soft:#e6ecdd; --btn:#efdfdc;
   --display:"Gloock", Georgia, serif; --body:"Figtree", system-ui, -apple-system, sans-serif;
@@ -345,6 +345,36 @@ header p{margin-top:4px;font-size:.88rem}
 .items.ro .num{margin-top:0}
 .items.ro .leaf{margin-top:0}
 .frx-copy{align-self:stretch;padding:13px 16px}
+
+/* Feed */
+.seg button{position:relative}
+.nbadge{display:inline-grid;place-items:center;min-width:18px;height:18px;margin-left:6px;padding:0 5px;border-radius:9px;background:#c0392b;color:#fff;font-size:.7rem;font-weight:700;vertical-align:1px}
+.feed{display:flex;flex-direction:column;gap:14px}
+.post{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.post-head{display:flex;align-items:center;gap:10px}
+.post-head .av,.c-av{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--band);color:var(--on-band);font-weight:700}
+.post-who{display:flex;flex-direction:column;font-size:.9rem;color:var(--muted)}
+.post-who b{color:var(--ink)}
+.post-who small{font-size:.75rem}
+.post-card{display:flex;gap:12px;align-items:stretch;width:100%;text-align:left;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg);cursor:pointer}
+.post-card:hover{border-color:var(--accent)}
+.post-img{flex:none;width:110px;aspect-ratio:1;position:relative;background:var(--accent-soft);display:grid;place-items:center;color:var(--accent)}
+.post-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.post-img svg{width:34px;height:34px;opacity:.6}
+.post-info{flex:1;min-width:0;padding:10px 12px 10px 0;display:flex;flex-direction:column;justify-content:center;gap:3px}
+.post-info b{font-family:var(--display);font-weight:400;font-size:1.25rem;line-height:1.15;color:var(--ink);overflow-wrap:anywhere}
+.post-info small{color:var(--accent);font-weight:600;font-size:.82rem}
+.comments{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.comments li{display:flex;gap:8px;align-items:flex-start}
+.c-av{width:26px;height:26px;font-size:.75rem}
+.c-body{flex:1;min-width:0;background:var(--bg);border-radius:12px;padding:6px 10px;font-size:.9rem;overflow-wrap:anywhere}
+.c-body b{font-weight:600}
+.c-body small{display:block;font-size:.72rem;color:var(--muted)}
+.c-del{flex:none;border:0;background:none;color:var(--muted);font-size:1rem;padding:4px}
+.cform{display:flex;gap:6px}
+.cform input{flex:1;min-width:0;font:inherit;font-size:.9rem;padding:9px 12px;border:1.5px solid var(--line);border-radius:999px;background:var(--bg);color:var(--ink)}
+.cform input:focus{outline:none;border-color:var(--accent)}
+.cform .btn{border-radius:999px;padding:8px 14px}
 </style>
 </head>
 <body>
@@ -357,7 +387,7 @@ header p{margin-top:4px;font-size:.88rem}
 
   <section class="panel" id="listView">
     <div class="row-end" id="newBar" style="justify-content:flex-start"><button class="btn primary" id="newBtn" type="button">+ Rezept<span class="wide"> hinzufügen</span></button><button class="btn" id="swipeBtn" type="button">♥ Swipen</button><button class="btn filter-btn" id="filterBtn" type="button" aria-expanded="false" aria-controls="filters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7.5V18l-4 2v-7.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span id="filterLabel">Filter</span></button></div>
-    <div class="seg" role="group" aria-label="Welche Rezepte"><button type="button" data-src="mine" aria-pressed="true">Meine Rezepte</button><button type="button" data-src="friends" aria-pressed="false">Von Freunden</button></div>
+    <div class="seg" role="group" aria-label="Welche Rezepte"><button type="button" data-src="mine" aria-pressed="true">Meine</button><button type="button" data-src="friends" aria-pressed="false">Freunde</button><button type="button" data-src="feed" aria-pressed="false">Feed<span class="nbadge" id="feedBadge" hidden></span></button></div>
     <form class="newform" id="newForm" hidden autocomplete="off">
       <button class="pick" type="button" id="pickCover"><span id="pickLabel">Titelbild auswählen</span></button>
       <input id="newName" placeholder="Name, z.B. Linsen-Curry mit Kokos" maxlength="120" aria-label="Name des Rezepts">
@@ -1138,9 +1168,14 @@ function cardHtml(r,showCat){
 }
 function renderList(){
   document.querySelectorAll("[data-src]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.src===src));
-  if(src==="friends"){
+  if(src==="friends"||src==="feed"){
     $("#filters").hidden=true; $("#filterBtn").hidden=true; $("#empty").hidden=true;
-    $("#grid").innerHTML=renderFriendsList(); return;
+    if(src==="friends"){ $("#grid").innerHTML=renderFriendsList(); return; }
+    // Feed: Eingabe beim Neuzeichnen behalten
+    const ae=document.activeElement, fk=ae&&ae.closest&&ae.closest("[data-cform]")?ae.closest("[data-cform]").dataset.cform:null;
+    $("#grid").innerHTML=renderFeed();
+    if(fk){ const inp=document.querySelector(`[data-cform="${CSS.escape(fk)}"] input`); if(inp){ inp.focus(); inp.setSelectionRange(inp.value.length,inp.value.length); } }
+    return;
   }
   $("#filterBtn").hidden=false;
   const list=[...recipes].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
@@ -1230,6 +1265,7 @@ $("#newForm").addEventListener("submit",async e=>{
     const cover=newBlob?await uploadPhoto(newBlob):null;
     const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
     await root.child("recipes/"+id).set({title,cover,category:newCat,ingredients:[],steps:[],createdAt:Date.now()});
+    postRecipe(id,{title,cover,category:newCat});
     $("#status").textContent=""; resetNew();
     // direkt ins neue Rezept, Cursor steht bei den Zutaten
     openRecipe(id);
@@ -1280,6 +1316,7 @@ $("#linkForm").addEventListener("submit",async e=>{
       ingredients:arrOf(data.ingredients), steps:arrOf(data.steps),
       source:/^https:\/\//.test(data.source||"")?data.source:url, createdAt:Date.now()
     });
+    postRecipe(id,{title:String(data.title||"Neues Rezept").slice(0,120),cover,category:catFromLabel(data.category)});
     $("#linkInput").value=""; btn.disabled=false; closeVideo();
     const n=arrOf(data.ingredients).length;
     $("#status").textContent = n?"":"Im Video stand kein Rezept. Trag Zutaten und Schritte selbst ein.";
@@ -1590,13 +1627,13 @@ $("#labelInput").addEventListener("change",async e=>{
 
 /* ---------- Rezepte von Freunden ---------- */
 let src="mine", myUid=null, mySid=null, isOwner=false, shareOn=false, frData=null, frLoading=false;
-try{ if(localStorage.getItem("rezepte.src")==="friends") src="friends"; }catch(e){}
+try{ const v=localStorage.getItem("rezepte.src"); if(v==="friends"||v==="feed") src=v; }catch(e){}
 const fdb=()=>firebase.database();
 const frPhotos=new Map(), frPhotoLoading=new Set();
 function friendPhoto(sid,id){
   const k=sid+"/"+id; if(frPhotos.has(k)) return frPhotos.get(k);
   if(!frPhotoLoading.has(k)){ frPhotoLoading.add(k);
-    fdb().ref(`spaces/${sid}/photos/${id}`).once("value").then(s=>{ const v=s.val(); if(typeof v==="string"&&v.startsWith("data:image/")){ frPhotos.set(k,v); if(src==="friends") renderList(); if(!$("#frx").hidden) frxRefresh(); } }).catch(()=>{}); }
+    fdb().ref(`spaces/${sid}/photos/${id}`).once("value").then(s=>{ const v=s.val(); if(typeof v==="string"&&v.startsWith("data:image/")){ frPhotos.set(k,v); if(src==="friends"||src==="feed") renderList(); if(!$("#frx").hidden) frxRefresh(); } }).catch(()=>{}); }
   return null;
 }
 async function loadFriendRecipes(){
@@ -1638,10 +1675,10 @@ function renderFriendsList(){
     </section>`; }).join("");
 }
 let frxCur=null;
-function openFriendRecipe(fid,rid){ frxCur={fid,rid}; frxRefresh(); $("#frx").hidden=false; $("#frx .frx-card").scrollTop=0; }
+function openFriendRecipe(fid,rid){ frxDirect=null; frxCur={fid,rid}; frxRefresh(); $("#frx").hidden=false; $("#frx .frx-card").scrollTop=0; }
 function frxRefresh(){
   if(!frxCur) return;
-  const f=frData&&frData.find(x=>x.fid===frxCur.fid), r=f&&f.recipes.find(x=>x.id===frxCur.rid); if(!r) return;
+  const f=frxDirect?frxDirect.f:frData&&frData.find(x=>x.fid===frxCur.fid), r=frxDirect?frxDirect.r:f&&f.recipes.find(x=>x.id===frxCur.rid); if(!r) return;
   const u=okId(r.cover)&&friendPhoto(f.sid,r.cover), c=catOf(r), ing=arr(r.ingredients), steps=arr(r.steps);
   let kc=""; if(showKcal){ const t=nutTotals(r); if(t.kcal&&!t.missing) kc=`<p class="frx-kcal"><b>${fmtN(t.kcal/servOf(r))} kcal</b> pro Portion · ${servOf(r)} Portionen${t.est?" · teils geschätzt":""}</p>`; }
   $("#frxBody").innerHTML=`
@@ -1679,6 +1716,7 @@ async function copyFriendRecipe(f,r){
 function setSrc(v){
   src=v; try{ localStorage.setItem("rezepte.src",v); }catch(e){}
   if(v==="friends") loadFriendRecipes();
+  if(v==="feed"){ markFeedSeen(); loadFeed(); }
   renderList();
 }
 async function setShare(on){
@@ -1698,7 +1736,7 @@ document.addEventListener("click",e=>{
 document.addEventListener("change",e=>{ if(e.target.id==="shareToggle") setShare(e.target.checked); });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !$("#frx").hidden){ $("#frx").hidden=true; frxCur=null; } });
 async function initSharing(info){
-  myUid=info.uid; mySid=info.sid;
+  myUid=info.uid; mySid=info.sid; myName=info.name||(info.email||"").split("@")[0]||"Ich";
   try{
     const meta=(await root.child("meta").once("value")).val()||{};
     isOwner=meta.owner===myUid;
@@ -1706,7 +1744,84 @@ async function initSharing(info){
     else { shareOn=meta.shareFriends===true; if(isOwner && shareOn) fdb().ref(`shelf/${myUid}`).set({recipes:mySid}).catch(()=>{}); }
   }catch(e){}
   if(src==="friends") loadFriendRecipes(); else renderList();
+  loadFeed(src!=="feed");   // für den Zähler am Reiter "Feed"
 }
+
+/* ---------- Feed: neue Rezepte von Freunden, mit Kommentaren ---------- */
+let feed=null, feedLoading=false, myName="Ich", frxDirect=null;
+const commentDraft={};
+let feedSeen=0; try{ feedSeen=+localStorage.getItem("rezepte.feedSeen")||0; }catch(e){}
+const agoText=t=>{ const m=Math.round((Date.now()-t)/60000);
+  if(m<1) return "gerade eben"; if(m<60) return `vor ${m} Min.`; const h=Math.round(m/60); if(h<24) return `vor ${h} Std.`;
+  const d=Math.round(h/24); return d<7?`vor ${d} ${d===1?"Tag":"Tagen"}`:new Date(t).toLocaleDateString("de-DE",{day:"numeric",month:"short"}); };
+// neues Rezept als Beitrag für Freunde veröffentlichen (nur wenn Teilen an ist)
+function postRecipe(id,data){
+  if(!isOwner || !shareOn || !myUid) return;
+  fdb().ref(`posts/${myUid}/${id}`).set({rid:id,sid:mySid,title:data.title||"Rezept",cover:data.cover||null,category:data.category||null,at:Date.now(),name:myName}).catch(()=>{});
+}
+function unpostRecipe(id){ if(myUid) fdb().ref(`posts/${myUid}/${id}`).remove().catch(()=>{}); }
+async function loadFeed(quiet){
+  if(!myUid || feedLoading) return;
+  feedLoading=true; if(!quiet) renderList();
+  const items=[];
+  try{
+    const fs=(await fdb().ref(`friends/${myUid}`).once("value")).val()||{};
+    const people=[[myUid,myName],...Object.entries(fs).map(([id,f])=>[id,f.name||"Freund"])];
+    for(const [uid,name] of people){
+      try{ const ps=(await fdb().ref(`posts/${uid}`).once("value")).val()||{};
+        Object.entries(ps).forEach(([pid,p])=>{ if(p && p.at) items.push({...p,uid,pid,name:uid===myUid?myName:(name||p.name)}); }); }catch(e){}
+    }
+  }catch(e){}
+  feed=items.sort((a,b)=>b.at-a.at).slice(0,80); feedLoading=false;
+  updateFeedBadge(); if(src==="feed"){ markFeedSeen(); } renderList();
+}
+function updateFeedBadge(){
+  const n=(feed||[]).filter(p=>p.uid!==myUid && p.at>feedSeen).length, b=$("#feedBadge");
+  if(b){ b.textContent=n; b.hidden=!n || src==="feed"; }
+}
+function markFeedSeen(){ const t=Math.max(Date.now(),...(feed||[]).map(p=>p.at)); feedSeen=t; try{ localStorage.setItem("rezepte.feedSeen",t); }catch(e){} updateFeedBadge(); }
+function renderFeed(){
+  if(feedLoading && !feed) return `<p class="card-meta">Feed wird geladen …</p>`;
+  if(!feed || !feed.length) return `<div class="empty"><strong>Noch nichts im Feed</strong><span>Sobald du oder deine Freunde neue Rezepte anlegen, erscheinen sie hier. Dafür muss bei der Person „Mit Freunden teilen“ an sein.</span></div>`;
+  return `<div class="feed">${feed.map(p=>{ const key=`${p.uid}|${p.pid}`, mine=p.uid===myUid, c=CATS.find(x=>x.id===p.category);
+    const u=okId(p.cover)&&(mine?photoUrl(p.cover):friendPhoto(p.sid,p.cover));
+    const cm=Object.entries(p.comments||{}).map(([id,x])=>({id,...x})).filter(x=>x&&x.text).sort((a,b)=>a.at-b.at);
+    return `<article class="post">
+      <div class="post-head"><span class="av">${esc((p.name||"?")[0].toUpperCase())}</span>
+        <span class="post-who"><b>${esc(mine?"Du":p.name)}</b> ${mine?"hast":"hat"} ein neues Rezept geteilt<small>${agoText(p.at)}</small></span></div>
+      <button type="button" class="post-card" data-feed-open="${esc(key)}">
+        <span class="post-img">${u?`<img src="${u}" alt="">`:LEAF}</span>
+        <span class="post-info">${c?`<span class="card-cat">${c.emoji} ${c.one}</span>`:""}<b>${esc(p.title||"Rezept")}</b><small>Ansehen →</small></span>
+      </button>
+      ${cm.length?`<ul class="comments">${cm.map(x=>`<li><span class="c-av">${esc((x.name||"?")[0].toUpperCase())}</span><span class="c-body"><b>${esc(x.by===myUid?"Du":x.name)}</b> ${esc(x.text)}<small>${agoText(x.at)}</small></span>
+        ${x.by===myUid||mine?`<button type="button" class="c-del" data-cdel="${esc(key)}|${esc(x.id)}" aria-label="Kommentar löschen">×</button>`:""}</li>`).join("")}</ul>`:""}
+      <form class="cform" data-cform="${esc(key)}" autocomplete="off"><input type="text" maxlength="500" placeholder="${cm.length?"Antworten …":"Kommentieren …"}" value="${esc(commentDraft[key]||"")}" aria-label="Kommentar"><button type="submit" class="btn">Senden</button></form>
+    </article>`; }).join("")}</div>`;
+}
+async function openFeedRecipe(key){
+  const p=(feed||[]).find(x=>`${x.uid}|${x.pid}`===key); if(!p) return;
+  if(p.uid===myUid){ if(recipes.some(r=>r.id===p.rid)){ setSrc("mine"); openRecipe(p.rid); } else $("#status").textContent="Dieses Rezept gibt es nicht mehr."; return; }
+  try{
+    const r=(await fdb().ref(`spaces/${p.sid}/recipes/${p.rid}`).once("value")).val();
+    if(!r){ $("#status").textContent=`${p.name} hat dieses Rezept gelöscht.`; return; }
+    frxDirect={f:{fid:p.uid,name:p.name,sid:p.sid},r:{id:p.rid,...r}}; frxCur={fid:p.uid,rid:p.rid}; frxRefresh(); $("#frx").hidden=false; $("#frx .frx-card").scrollTop=0;
+  }catch(e){ $("#status").textContent=`${p.name} teilt die Rezepte gerade nicht mehr.`; }
+}
+document.addEventListener("click",e=>{
+  const o=e.target.closest("[data-feed-open]"); if(o){ openFeedRecipe(o.dataset.feedOpen); return; }
+  const d=e.target.closest("[data-cdel]"); if(d){ const [uid,pid,cid]=d.dataset.cdel.split("|");
+    fdb().ref(`posts/${uid}/${pid}/comments/${cid}`).remove().then(()=>{ const p=feed.find(x=>x.uid===uid&&x.pid===pid); if(p&&p.comments) delete p.comments[cid]; renderList(); }).catch(()=>{}); }
+});
+document.addEventListener("input",e=>{ const f=e.target.closest("[data-cform]"); if(f) commentDraft[f.dataset.cform]=e.target.value; });
+document.addEventListener("submit",async e=>{
+  const f=e.target.closest("[data-cform]"); if(!f) return; e.preventDefault();
+  const key=f.dataset.cform, [uid,pid]=key.split("|"), text=(f.querySelector("input").value||"").trim(); if(!text) return;
+  const c={by:myUid,name:myName,text:text.slice(0,500),at:Date.now()};
+  try{ const ref=fdb().ref(`posts/${uid}/${pid}/comments`).push(); await ref.set(c);
+    const p=feed.find(x=>x.uid===uid&&x.pid===pid); if(p){ p.comments=p.comments||{}; p.comments[ref.key]=c; }
+    commentDraft[key]=""; renderList();
+  }catch(err){ $("#status").textContent="Der Kommentar konnte nicht gespeichert werden. Prüf die Regeln in Firebase."; }
+});
 
 /* ---------- Detail bearbeiten ---------- */
 document.addEventListener("click",e=>{
@@ -1737,7 +1852,7 @@ document.addEventListener("click",e=>{
   if(act==="del-recipe"){
     if(!confirmDel){ confirmDel=true; render(); return; }
     if(okId(r.cover)) root.child("photos/"+r.cover).remove().catch(()=>{});
-    root.child("recipes/"+r.id).remove().catch(showErr);
+    root.child("recipes/"+r.id).remove().catch(showErr); unpostRecipe(r.id);
     recipes=recipes.filter(x=>x.id!==r.id); confirmDel=false;
     if(history.state&&history.state.r) history.back(); else { view=null; render(); }
   }
