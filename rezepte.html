@@ -318,6 +318,32 @@ header p{margin-top:4px;font-size:.88rem}
 .cat-sec.shut .cat-fold svg{transform:rotate(-90deg)}
 .cat-sec.shut .cat-fold{background:var(--surface)}
 @media (prefers-reduced-motion:reduce){.cat-fold svg{transition:none}}
+
+/* Rezepte von Freunden */
+.seg{flex:none;display:flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:2px}
+.seg button{flex:1;border:0;background:none;border-radius:8px;padding:6px 10px;font-size:.88rem;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--band);color:var(--on-band)}
+.share-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.share-sw{display:flex;justify-content:space-between;width:100%;gap:12px}
+.share-sw > span:first-child{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.share-sw b{color:var(--ink);font-weight:600}
+.share-sw small{font-size:.8rem;color:var(--muted)}
+.share-sw input:disabled + .track{opacity:.4}
+.fr-av{font-family:var(--body);font-weight:700;font-size:1rem;color:var(--accent)}
+.frx{position:fixed;inset:0;z-index:45;background:rgba(20,35,18,.55);overflow-y:auto;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.frx-card{position:relative;max-width:620px;margin:0 auto;background:var(--bg);border-radius:22px;padding:16px 18px 22px;box-shadow:0 24px 60px -20px rgba(0,0,0,.6)}
+.frx-close{position:absolute;top:24px;right:26px;z-index:3;width:36px;height:36px;border-radius:50%;border:0;background:var(--surface);color:var(--ink);font-size:1.4rem;line-height:1;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.frx-from{margin:0;font-size:.85rem;color:var(--muted)}
+.frx-from b{color:var(--ink)}
+.frx-title{margin:-10px 0 0;font-family:var(--display);font-weight:400;font-size:clamp(1.8rem,6vw,2.4rem);line-height:1.1}
+.frx-kcal{margin:0;font-size:.9rem;color:var(--muted)}
+.frx-kcal b{color:var(--ink)}
+.items.ro li{align-items:center;padding:10px 12px}
+.items.ro li > span:last-child{flex:1;min-width:0}
+.items.ro .num{margin-top:0}
+.items.ro .leaf{margin-top:0}
+.frx-copy{align-self:stretch;padding:13px 16px}
 </style>
 </head>
 <body>
@@ -330,6 +356,7 @@ header p{margin-top:4px;font-size:.88rem}
 
   <section class="panel" id="listView">
     <div class="row-end" id="newBar" style="justify-content:flex-start"><button class="btn primary" id="newBtn" type="button">+ Rezept<span class="wide"> hinzufügen</span></button><button class="btn" id="swipeBtn" type="button">♥ Swipen</button><button class="btn filter-btn" id="filterBtn" type="button" aria-expanded="false" aria-controls="filters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7.5V18l-4 2v-7.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span id="filterLabel">Filter</span></button></div>
+    <div class="seg" role="group" aria-label="Welche Rezepte"><button type="button" data-src="mine" aria-pressed="true">Meine Rezepte</button><button type="button" data-src="friends" aria-pressed="false">Von Freunden</button></div>
     <form class="newform" id="newForm" hidden autocomplete="off">
       <button class="pick" type="button" id="pickCover"><span id="pickLabel">Titelbild auswählen</span></button>
       <input id="newName" placeholder="Name, z.B. Linsen-Curry mit Kokos" maxlength="120" aria-label="Name des Rezepts">
@@ -381,6 +408,8 @@ header p{margin-top:4px;font-size:.88rem}
       </div>
     </form>
   </div>
+  <div class="frx" id="frx" hidden><div class="frx-card" role="dialog" aria-modal="true" aria-label="Rezept von Freund">
+    <button class="frx-close" type="button" id="frxClose" aria-label="Schließen">×</button><div class="detail" id="frxBody"></div></div></div>
   <div class="modal" id="matchModal" hidden>
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="matchTitle">
       <div class="mimg" id="matchImg"></div>
@@ -1107,6 +1136,12 @@ function cardHtml(r,showCat){
     <span class="card-meta">${n} Zutaten · ${s} Schritte${(()=>{ const t=nutTotals(r); return showKcal&&t.kcal&&!t.missing?` · ${fmtN(t.kcal/servOf(r))} kcal`:""; })()}</span></div></button>`;
 }
 function renderList(){
+  document.querySelectorAll("[data-src]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.src===src));
+  if(src==="friends"){
+    $("#filters").hidden=true; $("#filterBtn").hidden=true; $("#empty").hidden=true;
+    $("#grid").innerHTML=renderFriendsList(); return;
+  }
+  $("#filterBtn").hidden=false;
   const list=[...recipes].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   const groups=[...CATS.map(c=>({...c,items:list.filter(r=>r.category===c.id)})),
                 {id:"ohne",label:"Noch ohne Kategorie",emoji:"🗂️",items:list.filter(r=>!catOf(r))}];
@@ -1552,6 +1587,126 @@ $("#labelInput").addEventListener("change",async e=>{
   }catch(err){ setNutMsg(err instanceof TypeError?"Keine Verbindung zum Rezept-Helfer.":err.message,true); }
 });
 
+/* ---------- Rezepte von Freunden ---------- */
+let src="mine", myUid=null, mySid=null, isOwner=false, shareOn=false, frData=null, frLoading=false;
+try{ if(localStorage.getItem("rezepte.src")==="friends") src="friends"; }catch(e){}
+const fdb=()=>firebase.database();
+const frPhotos=new Map(), frPhotoLoading=new Set();
+function friendPhoto(sid,id){
+  const k=sid+"/"+id; if(frPhotos.has(k)) return frPhotos.get(k);
+  if(!frPhotoLoading.has(k)){ frPhotoLoading.add(k);
+    fdb().ref(`spaces/${sid}/photos/${id}`).once("value").then(s=>{ const v=s.val(); if(typeof v==="string"&&v.startsWith("data:image/")){ frPhotos.set(k,v); if(src==="friends") renderList(); if(!$("#frx").hidden) frxRefresh(); } }).catch(()=>{}); }
+  return null;
+}
+async function loadFriendRecipes(){
+  if(!myUid || frLoading) return;
+  frLoading=true; renderList();
+  const out=[];
+  try{
+    const fs=(await fdb().ref(`friends/${myUid}`).once("value")).val()||{};
+    for(const [fid,f] of Object.entries(fs)){
+      let sh=null; try{ sh=(await fdb().ref(`shelf/${fid}`).once("value")).val(); }catch(e){}
+      if(sh && sh.recipes){
+        try{ const rs=(await fdb().ref(`spaces/${sh.recipes}/recipes`).once("value")).val()||{};
+          out.push({fid,name:f.name||"Freund",sid:sh.recipes,recipes:Object.entries(rs).map(([id,r])=>({id,...r})).sort((a,b)=>(a.title||"").localeCompare(b.title||""))}); }
+        catch(e){ out.push({fid,name:f.name||"Freund",sid:null,recipes:[]}); }
+      }else out.push({fid,name:f.name||"Freund",sid:null,recipes:[]});
+    }
+  }catch(e){}
+  frData=out.sort((a,b)=>b.recipes.length-a.recipes.length||a.name.localeCompare(b.name)); frLoading=false; renderList();
+}
+function renderFriendsList(){
+  const shareCard=`<div class="share-card">
+      <label class="kswitch share-sw" for="shareToggle"><span><b>Meine Rezepte mit Freunden teilen</b><small>${isOwner?(shareOn?"Deine Freunde sehen deine Sammlung und können Rezepte übernehmen.":"Im Moment sieht niemand außer euch deine Sammlung."):"Teilen kann nur, wer diese Sammlung angelegt hat."}</small></span>
+      <input type="checkbox" id="shareToggle" role="switch"${shareOn?" checked":""}${isOwner?"":" disabled"}><span class="track" aria-hidden="true"></span></label></div>`;
+  if(frLoading && !frData) return shareCard+`<p class="card-meta">Rezepte deiner Freunde werden geladen …</p>`;
+  if(!frData || !frData.length) return shareCard+`<div class="empty"><strong>Noch keine Freunde</strong><span>Füg über den Profil-Knopf unter „Freunde“ jemanden hinzu. Sobald ihr befreundet seid, siehst du hier seine Rezepte.</span></div>`;
+  return shareCard+frData.map(f=>{ const shut=folded.has("fr-"+f.fid);
+    return `<section class="cat-sec${shut?" shut":""}">
+      <button type="button" class="cat-fold" data-fold="fr-${esc(f.fid)}" aria-expanded="${!shut}">
+        <span class="cat-emo fr-av" aria-hidden="true">${esc((f.name||"?")[0].toUpperCase())}</span><span class="cat-name">${esc(f.name)}</span><span class="cat-n">${f.recipes.length}</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      ${shut?"":!f.sid?`<p class="card-meta">${esc(f.name)} teilt die eigenen Rezepte gerade nicht.</p>`
+        :f.recipes.length?`<div class="grid">${f.recipes.map(r=>{ const u=okId(r.cover)&&friendPhoto(f.sid,r.cover), c=catOf(r);
+          return `<button class="card" type="button" data-fopen="${esc(f.fid)}|${esc(r.id)}">
+            <div class="cover">${u?`<img src="${u}" alt="" style="object-position:50% ${coverY(r)}%">`:LEAF}${starsBadge(r)}</div>
+            <div class="card-body">${c?`<span class="card-cat">${c.emoji} ${c.one}</span>`:""}<span class="card-title">${esc(r.title||"Ohne Namen")}</span>
+            <span class="card-meta">${arr(r.ingredients).length} Zutaten · ${arr(r.steps).length} Schritte</span></div></button>`; }).join("")}</div>`
+        :`<p class="card-meta">${esc(f.name)} hat noch keine Rezepte.</p>`}
+    </section>`; }).join("");
+}
+let frxCur=null;
+function openFriendRecipe(fid,rid){ frxCur={fid,rid}; frxRefresh(); $("#frx").hidden=false; $("#frx .frx-card").scrollTop=0; }
+function frxRefresh(){
+  if(!frxCur) return;
+  const f=frData&&frData.find(x=>x.fid===frxCur.fid), r=f&&f.recipes.find(x=>x.id===frxCur.rid); if(!r) return;
+  const u=okId(r.cover)&&friendPhoto(f.sid,r.cover), c=catOf(r), ing=arr(r.ingredients), steps=arr(r.steps);
+  let kc=""; if(showKcal){ const t=nutTotals(r); if(t.kcal&&!t.missing) kc=`<p class="frx-kcal"><b>${fmtN(t.kcal/servOf(r))} kcal</b> pro Portion · ${servOf(r)} Portionen${t.est?" · teils geschätzt":""}</p>`; }
+  $("#frxBody").innerHTML=`
+    <div class="hero">${u?`<div class="blur" style="background-image:url('${u}')"></div><img src="${u}" alt="">`:LEAF}${starsBadge(r)}</div>
+    <p class="frx-from">Rezept von <b>${esc(f.name)}</b>${c?` · ${c.emoji} ${c.one}`:""}</p>
+    <h2 class="frx-title">${esc(r.title||"Ohne Namen")}</h2>
+    ${/^https:\/\/[^\s"]+$/.test(r.source||"")?`<a class="source" href="${esc(r.source)}" target="_blank" rel="noopener">Video ansehen ↗</a>`:""}
+    ${kc}
+    <div class="sec"><h2>Zutaten <span>${ing.length}</span></h2>${ing.length?`<ul class="items ro">${ing.map(t=>`<li><span class="leaf"></span><span>${esc(t)}</span></li>`).join("")}</ul>`:`<p class="card-meta">Keine Zutaten eingetragen.</p>`}</div>
+    <div class="sec"><h2>Zubereitung <span>${steps.length} Schritte</span></h2>${steps.length?`<ol class="items ro">${steps.map((t,k)=>`<li><span class="num">${k+1}</span><span>${esc(t)}</span></li>`).join("")}</ol>`:`<p class="card-meta">Keine Schritte eingetragen.</p>`}</div>
+    <p class="nutri-msg" id="frxMsg" hidden></p>
+    <button class="btn primary frx-copy" type="button" id="frxCopy">In meine Sammlung übernehmen</button>`;
+  $("#frxCopy").onclick=()=>copyFriendRecipe(f,r);
+}
+async function copyFriendRecipe(f,r){
+  if(!root) return;
+  const btn=$("#frxCopy"); btn.disabled=true; btn.textContent="Wird übernommen …";
+  try{
+    let cover=null;
+    if(okId(r.cover)){
+      const data=(await fdb().ref(`spaces/${f.sid}/photos/${r.cover}`).once("value")).val();
+      if(typeof data==="string" && data.startsWith("data:image/")){
+        cover=[...crypto.getRandomValues(new Uint8Array(16))].map(x=>x.toString(16).padStart(2,"0")).join("");
+        await root.child("photos/"+cover).set(data); photoCache.set(cover,data);
+      }
+    }
+    const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    const keep=k=>r[k]!=null?r[k]:null;
+    await root.child("recipes/"+id).set({title:r.title||"Rezept",cover,coverY:keep("coverY"),category:keep("category"),ingredients:arr(r.ingredients),steps:arr(r.steps),
+      nutri:keep("nutri"),servings:keep("servings"),source:keep("source"),from:f.name,createdAt:Date.now()});
+    $("#frx").hidden=true; frxCur=null; setSrc("mine"); openRecipe(id);
+    $("#status").textContent=`„${r.title}“ ist jetzt in deiner Sammlung.`;
+  }catch(err){ const m=$("#frxMsg"); m.textContent="Übernehmen hat nicht geklappt. Prüf die Internetverbindung."; m.hidden=false; btn.disabled=false; btn.textContent="In meine Sammlung übernehmen"; }
+}
+function setSrc(v){
+  src=v; try{ localStorage.setItem("rezepte.src",v); }catch(e){}
+  if(v==="friends") loadFriendRecipes();
+  renderList();
+}
+async function setShare(on){
+  if(!isOwner || !root) return;
+  shareOn=on;
+  try{
+    await root.child("meta/shareFriends").set(on);
+    await fdb().ref(`shelf/${myUid}`).set(on?{recipes:mySid}:null);
+  }catch(e){ $("#status").textContent="Das Teilen konnte nicht gespeichert werden. Prüf die Regeln in Firebase."; }
+  renderList();
+}
+document.addEventListener("click",e=>{
+  const s=e.target.closest("[data-src]"); if(s){ setSrc(s.dataset.src); return; }
+  const fo=e.target.closest("[data-fopen]"); if(fo){ const [fid,rid]=fo.dataset.fopen.split("|"); openFriendRecipe(fid,rid); return; }
+  if(e.target.closest("#frxClose") || e.target.id==="frx"){ $("#frx").hidden=true; frxCur=null; }
+});
+document.addEventListener("change",e=>{ if(e.target.id==="shareToggle") setShare(e.target.checked); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !$("#frx").hidden){ $("#frx").hidden=true; frxCur=null; } });
+async function initSharing(info){
+  myUid=info.uid; mySid=info.sid;
+  try{
+    const meta=(await root.child("meta").once("value")).val()||{};
+    isOwner=meta.owner===myUid;
+    if(isOwner && meta.shareFriends===undefined){ await setShare(true); }   // Standard: mit Freunden teilen
+    else { shareOn=meta.shareFriends===true; if(isOwner && shareOn) fdb().ref(`shelf/${myUid}`).set({recipes:mySid}).catch(()=>{}); }
+  }catch(e){}
+  if(src==="friends") loadFriendRecipes(); else renderList();
+}
+
 /* ---------- Detail bearbeiten ---------- */
 document.addEventListener("click",e=>{
   const o=e.target.closest("[data-open]"); if(o){ openRecipe(o.dataset.open); return; }
@@ -1626,6 +1781,7 @@ document.addEventListener("focusout",e=>{ if(e.target.matches("[data-ing],[data-
 /* ---------- Start ---------- */
 Auth.start(firebaseConfig,"recipes",(r,info)=>{
 root=r;
+if(info) initSharing(info);
 if(info) firebase.database().ref(`users/${info.uid}/settings/showKcal`).once("value").then(s=>{ const v=s.val(); if(typeof v==="boolean" && v!==showKcal) setShowKcal(v,false); }).catch(()=>{});
 history.replaceState(null,"",location.pathname);
 render();
