@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ours · Raumdesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600;700&family=Playfair+Display:wght@800;900&display=swap">
+<style>
+/* Raumdesign: Foto hochladen, leer räumen lassen, in einem Stil neu einrichten */
+:root{
+  --page:#3a2219; --dots:rgba(255,255,255,.07); --frame-line:#2a160f; --shadow:rgba(30,12,6,.65);
+  --band:#8a4a30; --on-band:#fbefe8; --on-band-muted:#e6c7b8;
+  --bg:#f7f1ec; --surface:#fffaf6; --ink:#2d211b; --muted:#7d6a60; --line:#e8dbd1;
+  --accent:#8a4a30; --accent-soft:#f1e2d8; --btn:#efe3da; --sage:#6f7d5c;
+  --display:"Gloock", Georgia, serif; --body:"Figtree", system-ui, -apple-system, sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{height:100%}
+body{margin:0;overflow:hidden;color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;padding-block:16px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  background-color:var(--page);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420' viewBox='0 0 420 420' fill='none' stroke='rgba%28255,255,255,0.14%29' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M60 60h50l-12 34H72z'/%3E%3Cpath d='M85 94v80m-20 0h40'/%3E%3Cpath d='M260 120c0-30 10-50 30-60c-4 24 2 44 10 60'/%3E%3Cpath d='M300 120c6-26 22-40 40-44c-10 20-14 36-14 44'/%3E%3Cpath d='M262 120h70l-8 52h-54z'/%3E%3Cpath d='M70 280v-40c0-10 8-16 18-16h64c10 0 18 6 18 16v40'/%3E%3Cpath d='M56 280h128v26H56zM66 306v18m108-18v18'/%3E%3Cpath d='M270 260h80v100h-80zM270 300h80M310 260v100'/%3E%3Cpath d='M200 200a6 6 0 1 0 1 0M380 220a5 5 0 1 0 1 0M30 200a5 5 0 1 0 1 0'/%3E%3C/svg%3E"),radial-gradient(var(--dots) 1.2px,transparent 1.2px);
+  background-size:420px 420px,18px 18px}
+button{font:inherit;cursor:pointer;color:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.wrap{max-width:620px;height:100%;margin:0 auto;display:flex;flex-direction:column;gap:12px;background:var(--bg);border-radius:26px;overflow:hidden;
+  padding:0 22px 12px;border:1px solid var(--frame-line);box-shadow:0 18px 40px -18px var(--shadow),0 2px 6px -2px var(--shadow);position:relative}
+header{flex:none;margin:0 -22px;padding:16px 22px 18px;background:var(--band);color:var(--on-band);position:relative;transition:margin-top .3s ease}
+header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:14px;background:var(--bg);border-radius:14px 14px 0 0}
+.wrap.compact header{margin-top:calc(24px - var(--headH, 110px))}
+.count{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){header{transition:none}}
+@media (max-width:480px){.wrap{padding:0 16px 12px} header{margin:0 -16px}}
+
+.panel{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
+.topbar{flex:none;display:flex;align-items:center;gap:8px}
+.btn{background:var(--btn);color:var(--ink);border:0;border-radius:10px;padding:9px 14px;font-weight:600;font-size:.92rem}
+.btn.primary{background:var(--band);color:var(--on-band)}
+.btn:disabled{opacity:.6;cursor:progress}
+.ghost{background:none;border:0;color:var(--muted);padding:8px 4px}
+.back{display:inline-flex;align-items:center;gap:4px;background:none;border:0;padding:6px 0;color:var(--accent);font-weight:600}
+.back svg{width:20px;height:20px}
+.scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:2px 2px 28px;margin:0 -2px;display:flex;flex-direction:column;gap:16px}
+.scroll>*{flex:none}
+.status{flex:none;font-size:.82rem;color:var(--muted);min-height:1.2em}
+.status:empty{display:none}
+
+/* Übersicht */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.rcard{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;padding:0;text-align:left}
+.rcard .img{aspect-ratio:4/3;background:var(--accent-soft);position:relative;display:grid;place-items:center;color:var(--accent)}
+.rcard .img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.rcard .img svg{width:38px;height:38px;opacity:.55}
+.rcard .txt{padding:10px 12px 12px;display:flex;flex-direction:column;gap:1px}
+.rcard b{font-weight:600}
+.rcard small{font-size:.78rem;color:var(--muted)}
+.empty{border:1.5px dashed var(--line);border-radius:16px;padding:20px;color:var(--muted);display:flex;flex-direction:column;gap:8px}
+.empty strong{color:var(--ink);font-family:var(--display);font-weight:400;font-size:1.35rem}
+.steps{margin:4px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+
+/* Raum */
+.viewer{position:relative;border-radius:18px;overflow:hidden;background:#d9cbc0;aspect-ratio:4/3;display:grid;place-items:center}
+.viewer img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#241510}
+.viewer .busy{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(36,21,16,.55);color:#fff;font-weight:600;text-align:center;padding:20px}
+.spin{width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
+.vtag{position:absolute;left:10px;top:10px;background:rgba(255,250,246,.92);color:var(--ink);border-radius:999px;padding:3px 10px;font-size:.78rem;font-weight:600}
+.vact{position:absolute;right:10px;bottom:10px;display:flex;gap:6px}
+.vact a,.vact button{background:rgba(255,250,246,.92);color:var(--ink);border:0;border-radius:999px;padding:5px 11px;font-size:.8rem;font-weight:600;text-decoration:none}
+.vact .hold{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none}
+.tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:.85rem;font-weight:600;white-space:nowrap}
+.tab[aria-pressed="true"]{background:var(--band);border-color:var(--band);color:var(--on-band)}
+.tab small{font-weight:500;opacity:.7}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.card h2{margin:0;font-family:var(--display);font-weight:400;font-size:1.35rem}
+.flabel{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.field{display:flex;flex-direction:column;gap:6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:.86rem;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--band);border-color:var(--band);color:var(--on-band)}
+.styles{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px}
+.style{display:flex;flex-direction:column;gap:6px;text-align:left;border:1.5px solid var(--line);background:var(--bg);border-radius:14px;padding:10px;color:var(--ink)}
+.style[aria-pressed="true"]{border-color:var(--band);background:var(--accent-soft);box-shadow:0 0 0 1px var(--band) inset}
+.style .sw{display:flex;height:16px;border-radius:6px;overflow:hidden}
+.style .sw span{flex:1}
+.style b{font-weight:600;font-size:.9rem}
+.style small{font-size:.74rem;color:var(--muted);line-height:1.3}
+textarea{font:inherit;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);resize:vertical;min-height:64px;width:100%}
+textarea:focus{outline:none;border-color:var(--accent)}
+.row-end{display:flex;justify-content:flex-end;align-items:center;gap:10px;flex-wrap:wrap}
+.note{font-size:.84rem;color:var(--muted);margin:0}
+.note.err{color:#a8402a}
+.danger{background:none;border:0;color:var(--muted);font-size:.85rem;text-decoration:underline;padding:4px 0}
+.danger.sure{color:#a8402a;font-weight:600}
+.title-in{font:inherit;font-family:var(--display);font-size:1.5rem;border:0;border-bottom:1.5px dashed transparent;background:none;color:var(--ink);padding:2px 0;width:100%}
+.title-in:hover,.title-in:focus{outline:none;border-bottom-color:var(--line)}
+
+/* Kopf: „Ours“ klein oben, der Seitenname im Fokus */
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+header.brand{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center;overflow:hidden;padding:12px 64px 25px!important}
+header.brand .wordmark{font-family:"Playfair Display",var(--display);font-weight:900;font-size:clamp(2.1rem,9.5vw,2.7rem);line-height:1;color:var(--on-band);user-select:none;white-space:nowrap}
+header.brand .ours-mark{position:relative;z-index:1;justify-content:center;margin:0;font-family:"Playfair Display",var(--display);font-weight:800;line-height:1;
+  font-size:.82rem;letter-spacing:.24em;text-transform:uppercase;opacity:.8;padding-left:.24em}
+header.brand .ours-mark::before{display:none}
+header.brand .pf-btn{top:calc(50% - 27px)}
+.foot-count{order:99;flex:none;align-self:center;margin:0 0 4px;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+  background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 12px;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="brand" id="head">
+    <div class="wordmark" aria-hidden="true">Räume</div>
+    <h1 class="sr-only">Raumdesign</h1>
+  </header>
+  <div class="count foot-count" id="count">Verbindet …</div>
+
+  <section class="panel" id="listView">
+    <div class="topbar"><button class="btn primary" type="button" id="newBtn">+ Raum fotografieren</button></div>
+    <div class="scroll" id="list"></div>
+  </section>
+
+  <section class="panel" id="roomView" hidden>
+    <div class="topbar">
+      <button class="back" type="button" id="backBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Alle Räume</button>
+    </div>
+    <div class="scroll" id="room"></div>
+  </section>
+  <div class="status" id="status" aria-live="polite"></div>
+</div>
+<input type="file" id="photoIn" accept="image/*" hidden>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+/* Anmeldung, Profil und Bereiche für alle Seiten
+   - E-Mail und Passwort über Firebase Authentication
+   - Jede Seite hat ihren eigenen Bereich unter spaces/<id> mit eigenen Personen (access/<uid>)
+   - users/<uid>/spaces/<typ> merkt sich, welcher Bereich zu welcher Seite gehört
+   Seiten rufen Auth.start(firebaseConfig, "dates" | "recipes" | "chores" | "budget" | "rooms", (ref, info) => { ... }) auf. */
+(function(){
+  const PAGES = [
+    {type:"dates",   file:"index.html",    label:"Dateideen", color:"#8c7559", noun:"Dateideen-Liste",
+     empty:"Noch keine Dateideen-Liste", hint:"Leg eine Liste an und lad danach deine Freundin oder deinen Freund ein. Nur eingeladene Personen sehen sie.",
+     keys:["ideas"]},
+    {type:"recipes", file:"rezepte.html",  label:"Rezepte",   color:"#7a2434", noun:"Rezeptsammlung",
+     empty:"Noch keine Rezeptsammlung", hint:"Leg eine Sammlung an und lad Freunde oder Familie ein. Nur eingeladene Personen sehen sie.",
+     keys:["recipes","people","swipe"]},
+    {type:"chores",  file:"haushalt.html", label:"Haushalt",  color:"#3f6f8c", noun:"Haushalt",
+     empty:"Noch kein Haushalt", hint:"Leg einen Haushalt an und lad deine Mitbewohner ein.",
+     keys:["chores","choreLog","members","rooms","people"]},
+    {type:"budget",  file:"budget.html",   label:"Budget",    color:"#1b1b1d", noun:"Budget",
+     empty:"Noch kein Budget", hint:"Dein Budget ist privat. Später kannst du jemanden dazuholen, zum Beispiel deine Freundin oder deinen Freund.",
+     keys:null},
+    {type:"rooms",   file:"raum.html",     label:"Raumdesign", color:"#8a4a30", noun:"Raumsammlung",
+     empty:"Noch keine Raumsammlung", hint:"Leg eine Sammlung an, fotografier deine Räume und probier Einrichtungsstile aus. Später kannst du jemanden dazuholen.",
+     keys:[]},
+  ];
+  const CSS = `
+  .auth-screen{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow-y:auto;background:var(--page);
+    padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+  .auth-screen.dim{background:rgba(10,12,14,.55)}
+  .auth-card{width:100%;max-width:390px;background:var(--bg);color:var(--ink);border:1px solid var(--frame-line,var(--line));border-radius:24px;overflow:hidden;
+    box-shadow:0 18px 40px -18px var(--shadow,rgba(0,0,0,.4))}
+  .auth-head{background:var(--band);color:var(--on-band);padding:18px 22px 22px;position:relative}
+  .auth-head::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:14px;background:var(--bg);border-radius:14px 14px 0 0}
+  .auth-head h2{margin:0;font-family:var(--display);font-weight:400;font-size:1.8rem;line-height:1.1}
+  .auth-head p{margin:4px 0 0;font-size:.88rem;opacity:.8}
+  .auth-body{padding:10px 22px 22px;display:flex;flex-direction:column;gap:12px}
+  .auth-tabs{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:2px}
+  .auth-tabs button{flex:1;border:0;background:none;border-radius:8px;padding:7px 10px;font:inherit;font-size:.9rem;font-weight:600;color:var(--muted);cursor:pointer}
+  .auth-tabs button[aria-pressed="true"]{background:var(--band);color:var(--on-band)}
+  .auth-body label{display:flex;flex-direction:column;gap:5px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .auth-body input[type=email],.auth-body input[type=password],.auth-body input[type=text]{font:inherit;font-size:1rem;text-transform:none;letter-spacing:0;padding:11px 12px;
+    border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);min-width:0}
+  .auth-body input:focus{outline:none;border-color:var(--accent)}
+  .auth-btn{border:0;border-radius:10px;padding:12px 16px;font:inherit;font-weight:700;cursor:pointer;background:var(--band);color:var(--on-band)}
+  .auth-btn.alt{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+  .auth-btn:disabled{opacity:.6;cursor:progress}
+  .auth-or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.8rem;margin:2px 0}
+  .auth-or::before,.auth-or::after{content:"";flex:1;height:1px;background:var(--line)}
+  .auth-google{display:flex;align-items:center;justify-content:center;gap:10px}
+  .auth-link{align-self:center;background:none;border:0;padding:4px;font:inherit;font-size:.85rem;color:var(--muted);text-decoration:underline;cursor:pointer}
+  .auth-link.danger{color:#c0533f}
+  .auth-msg{margin:0;font-size:.88rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .auth-msg.err{border-color:#c0533f;color:#c0533f}
+  .auth-note{margin:0;font-size:.88rem;color:var(--muted)}
+  .auth-check{flex-direction:row!important;align-items:center;gap:8px!important;text-transform:none!important;letter-spacing:0!important;font-size:.9rem!important;color:var(--ink)!important;font-weight:500!important}
+  .auth-check input{accent-color:var(--band);width:18px;height:18px}
+  .auth-copy{display:flex;gap:6px}
+  .auth-copy input{flex:1;font-size:.82rem!important;padding:9px 10px!important}
+  .auth-people{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .auth-people li{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+  .auth-people .av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.85rem;background:var(--band);color:var(--on-band);flex:none}
+  .auth-people .nm{flex:1;min-width:0;display:flex;flex-direction:column}
+  .auth-people .nm b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .auth-people .nm small{font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .auth-people .rm{border:1px solid var(--line);background:none;color:var(--muted);border-radius:999px;padding:3px 10px;font:inherit;font-size:.8rem;cursor:pointer}
+  .auth-people .rm.sure{color:#c0533f;border-color:#c0533f;font-weight:600}
+  .auth-sec{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 -4px}
+
+  /* Profil-Knopf und Menü */
+  header{padding-right:64px!important}
+  .pf-btn{position:absolute;top:14px;right:16px;z-index:31;width:40px;height:40px;border-radius:50%;cursor:pointer;
+    border:1.5px solid color-mix(in srgb,var(--on-band) 40%,transparent);background:color-mix(in srgb,var(--on-band) 16%,transparent);
+    color:var(--on-band);font:inherit;font-weight:700;font-size:1rem;display:grid;place-items:center}
+  .pf-btn:focus-visible{outline:2px solid var(--on-band);outline-offset:2px}
+  .pf-menu{position:absolute;top:60px;right:12px;z-index:32;min-width:230px;display:flex;flex-direction:column;gap:2px;padding:6px;
+    background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 36px -14px rgba(0,0,0,.4)}
+  .pf-menu a,.pf-menu button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border:0;border-radius:10px;background:none;
+    color:inherit;font:inherit;font-weight:500;text-decoration:none;cursor:pointer}
+  .pf-menu a:hover,.pf-menu button:hover{background:var(--accent-soft)}
+  .pf-menu a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+  .pf-menu .dot{width:10px;height:10px;border-radius:50%;flex:none;box-shadow:0 0 0 1px rgba(128,128,128,.4) inset}
+  .pf-menu svg{width:17px;height:17px;flex:none;opacity:.75}
+  .pf-sep{height:1px;background:var(--line);margin:4px 6px}
+  .pf-who{padding:6px 12px 4px;display:flex;flex-direction:column}
+  .pf-who b{font-weight:600}
+  .pf-who small{font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pf-menu button:disabled{opacity:.45;cursor:not-allowed}
+
+  /* Freunde */
+  .pf-badge{margin-left:auto;min-width:20px;height:20px;border-radius:10px;padding:0 6px;background:#d9534f;color:#fff;font-size:.72rem;font-weight:700;display:inline-grid;place-items:center}
+  .pf-dot{position:absolute;top:-1px;right:-1px;width:12px;height:12px;border-radius:50%;background:#d9534f;border:2px solid var(--band)}
+  .ours-mark{display:flex;align-items:center;gap:7px;font-family:var(--display);font-size:1.05rem;line-height:1;letter-spacing:.04em;color:var(--on-band);margin-bottom:6px}
+  .ours-mark::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;opacity:.7}
+  .pf-brand{font-family:var(--display);font-size:1.15rem;line-height:1;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+  .fr-code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.5rem;font-weight:700;letter-spacing:.18em;text-align:center;padding:10px;border-radius:12px;
+    background:var(--surface);border:1.5px dashed var(--line);color:var(--ink)}
+  .auth-people .rm.yes{background:var(--band);color:var(--on-band);border-color:var(--band);font-weight:600}
+  .auth-people .rm.done{opacity:.6;cursor:default}
+
+  /* Seite ohne Bereich */
+  .auth-setup{position:absolute;left:0;right:0;bottom:0;z-index:20;background:var(--bg);overflow-y:auto;padding:18px 22px 22px;display:flex;flex-direction:column;align-items:stretch}
+  .auth-setup .box{margin:auto 0;display:flex;flex-direction:column;gap:12px;max-width:420px;align-self:center;width:100%;color:var(--ink)}
+  .auth-setup h3{margin:0;font-family:var(--display);font-weight:400;font-size:1.6rem;line-height:1.15}
+  `;
+  const IC = {
+    people:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M16.5 6.2a2.8 2.8 0 0 1 0 5.4M17 14.3c2 .5 3.2 2 3.5 4.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    gear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    heart:'<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    out:'<svg viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 16l4-4-4-4M14 12H4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  };
+  const ERR = {
+    "auth/invalid-email":"Die E-Mail-Adresse sieht nicht richtig aus.",
+    "auth/user-not-found":"E-Mail oder Passwort stimmt nicht.",
+    "auth/wrong-password":"E-Mail oder Passwort stimmt nicht.",
+    "auth/invalid-credential":"E-Mail oder Passwort stimmt nicht.",
+    "auth/invalid-login-credentials":"E-Mail oder Passwort stimmt nicht.",
+    "auth/email-already-in-use":"Mit dieser E-Mail gibt es schon ein Konto. Melde dich an.",
+    "auth/weak-password":"Das Passwort ist zu kurz.",
+    "auth/too-many-requests":"Zu viele Versuche. Warte ein paar Minuten und versuch es dann noch einmal.",
+    "auth/network-request-failed":"Keine Verbindung. Prüf dein Internet.",
+    "auth/operation-not-allowed":"Diese Anmeldeart ist in Firebase noch nicht eingeschaltet.",
+    "auth/unauthorized-domain":"Diese Seite ist in Firebase noch nicht als erlaubte Domain eingetragen (Authentication → Einstellungen → Autorisierte Domains).",
+    "auth/account-exists-with-different-credential":"Mit dieser E-Mail gibt es schon ein Konto mit Passwort. Melde dich mit E-Mail und Passwort an.",
+    "auth/popup-blocked":"Das Anmeldefenster wurde blockiert. Erlaube Pop-ups für diese Seite und versuch es noch einmal.",
+  };
+  const errText = e => ERR[e && e.code] || "Das hat nicht geklappt. Versuch es noch einmal.";
+  const rand = n => { const a="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    return [...crypto.getRandomValues(new Uint8Array(n))].map(x=>a[x%a.length]).join(""); };
+  const esc = t => String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const parseJoin = () => { const m=location.hash.match(/^#join-([A-Za-z0-9]{12,40})-([A-Za-z0-9]{12,40})$/); return m?{sid:m[1],code:m[2]}:null; };
+  const clearHash = () => history.replaceState(history.state,"",location.pathname);
+  const initial = n => (String(n||"?").trim()[0]||"?").toUpperCase();
+  const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
+
+  window.Auth = { start(config, type, cb){
+    const PAGE = PAGES.find(p=>p.type===type);
+    const st=document.createElement("style"); st.textContent=CSS; document.head.appendChild(st);
+    // Name der App oben in jeder Seite
+    const hd=document.querySelector("header");
+    if(hd && !hd.querySelector(".ours-mark")) hd.insertAdjacentHTML("afterbegin",'<div class="ours-mark">Ours</div>');
+    let auth, db;
+    try{ if(!firebase.apps.length) firebase.initializeApp(config); auth=firebase.auth(); db=firebase.database(); }
+    catch(e){ cb(null); return; }
+    let user=null, profile={}, sid=null, started=false, setupEl=null;
+
+    /* ---------- Fenster (Anmelden und Pop-ups) ---------- */
+    let screen=null;
+    function show(title,sub,html,dim){
+      if(!screen){ screen=document.createElement("div"); screen.className="auth-screen"; document.body.appendChild(screen);
+        screen.addEventListener("click",e=>{ if(e.target===screen && screen.classList.contains("dim")) hide(); }); }
+      screen.classList.toggle("dim",!!dim);
+      screen.innerHTML=`<div class="auth-card" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="auth-head"><h2>${esc(title)}</h2>${sub?`<p>${esc(sub)}</p>`:""}</div><div class="auth-body">${html}</div></div>`;
+      screen.hidden=false; return screen;
+    }
+    function hide(){ if(screen) screen.hidden=true; }
+    const $a = s => screen.querySelector(s);
+    function msg(t,err,root){ const m=(root||screen).querySelector("#authMsg"); if(!m) return; m.textContent=t||""; m.hidden=!t; m.classList.toggle("err",!!err); }
+    document.addEventListener("keydown",e=>{ if(e.key==="Escape" && screen && !screen.hidden && screen.classList.contains("dim")) hide(); });
+
+    /* ---------- Anmelden / Konto erstellen ---------- */
+    function loginView(mode){
+      const reg=mode==="register", join=parseJoin();
+      show("Ours",
+        join?`Du wurdest zu ${PAGE.label} eingeladen. Melde dich an oder erstell ein Konto.`:/^#friend-/.test(location.hash)?"Du wurdest als Freund eingeladen. Melde dich an oder erstell ein Konto.":reg?"Neues Konto erstellen.":"Bitte melde dich an.",
+        `<div class="auth-tabs" role="group"><button type="button" data-mode="login" aria-pressed="${!reg}">Anmelden</button><button type="button" data-mode="register" aria-pressed="${reg}">Konto erstellen</button></div>
+        <form id="authForm" style="display:flex;flex-direction:column;gap:12px" novalidate>
+          ${reg?`<label>Dein Name<input type="text" id="authName" autocomplete="given-name" maxlength="30" placeholder="So sehen dich die anderen"></label>`:""}
+          <label>E-Mail<input type="email" id="authMail" autocomplete="email"></label>
+          <label>Passwort<input type="password" id="authPw" autocomplete="${reg?"new-password":"current-password"}"></label>
+          ${reg?`<label>Passwort wiederholen<input type="password" id="authPw2" autocomplete="new-password"></label>
+            <p class="auth-note">Mindestens 10 Zeichen. Am besten ein Passwort, das du nirgends sonst benutzt.</p>`:""}
+          <p class="auth-msg" id="authMsg" hidden></p>
+          <button class="auth-btn" type="submit" id="authGo">${reg?"Konto erstellen":"Anmelden"}</button>
+        </form>
+        ${reg?"":`<button class="auth-link" type="button" id="authForgot">Passwort vergessen?</button>`}
+        <div class="auth-or"><span>oder</span></div>
+        <button class="auth-btn alt auth-google" type="button" id="authGoogle">${GOOGLE}Mit Google ${reg?"registrieren":"anmelden"}</button>`);
+      screen.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>loginView(b.dataset.mode));
+      (reg?$a("#authName"):$a("#authMail")).focus();
+      $a("#authForm").onsubmit=async e=>{
+        e.preventDefault();
+        const mail=$a("#authMail").value.trim(), pw=$a("#authPw").value;
+        if(!mail || !pw) return msg("Gib E-Mail und Passwort ein.",true);
+        if(reg){
+          if(pw.length<10) return msg("Das Passwort braucht mindestens 10 Zeichen.",true);
+          if(pw!==$a("#authPw2").value) return msg("Die beiden Passwörter sind nicht gleich.",true);
+          try{ sessionStorage.setItem("auth.newName",$a("#authName").value.trim().slice(0,30)); }catch(err){}
+        }
+        $a("#authGo").disabled=true; msg("");
+        try{ reg ? await auth.createUserWithEmailAndPassword(mail,pw) : await auth.signInWithEmailAndPassword(mail,pw); }
+        catch(err){ msg(errText(err),true); $a("#authGo").disabled=false; }
+      };
+      $a("#authGoogle").onclick=async()=>{
+        msg(""); const prov=new firebase.auth.GoogleAuthProvider(); prov.setCustomParameters({prompt:"select_account"});
+        try{ await auth.signInWithPopup(prov); }
+        catch(err){
+          if(err && (err.code==="auth/popup-closed-by-user"||err.code==="auth/cancelled-popup-request")) return;
+          if(err && err.code==="auth/popup-blocked"){ try{ await auth.signInWithRedirect(prov); return; }catch(e){} }
+          msg(errText(err),true);
+        }
+      };
+      const f=$a("#authForgot");
+      if(f) f.onclick=async()=>{
+        const mail=$a("#authMail").value.trim();
+        if(!mail) return msg("Trag oben deine E-Mail ein, dann schicken wir dir einen Link zum Zurücksetzen.",true);
+        try{ await auth.sendPasswordResetEmail(mail); msg("Wenn es ein Konto mit dieser E-Mail gibt, ist eine Mail zum Zurücksetzen unterwegs. Schau auch im Spam nach."); }
+        catch(err){ msg(errText(err),true); }
+      };
+    }
+
+    /* ---------- Profil-Knopf mit Menü ---------- */
+    function installMenu(){
+      const head=document.querySelector("header"); if(!head || head.querySelector(".pf-btn")) { updateMenu(); return; }
+      head.insertAdjacentHTML("beforeend",`<button class="pf-btn" type="button" id="pfBtn" aria-haspopup="true" aria-expanded="false" aria-controls="pfMenu" aria-label="Profil und Seiten"><span id="pfInit"></span><span class="pf-dot" id="pfDot" hidden></span></button>
+        <nav class="pf-menu" id="pfMenu" hidden aria-label="Profil und Seiten">
+          <div class="pf-who"><span class="pf-brand">Ours</span><b id="pfName"></b><small id="pfMail"></small></div>
+          <div class="pf-sep"></div>
+          ${PAGES.map(p=>`<a href="${p.file}" data-page="${p.type}"${p.type===type?' aria-current="page"':""}><span class="dot" style="background:${p.color}"></span>${p.label}</a>`).join("")}
+          <div class="pf-sep"></div>
+          <button type="button" data-pf="people">${IC.people}Personen bei ${esc(PAGE.label)}</button>
+          <button type="button" data-pf="friends">${IC.heart}Freunde<span class="pf-badge" id="pfFriendBadge" hidden></span></button>
+          <button type="button" data-pf="profile">${IC.user}Profil bearbeiten</button>
+          <button type="button" data-pf="settings">${IC.gear}Einstellungen</button>
+          <button type="button" data-pf="logout">${IC.out}Abmelden</button>
+        </nav>`);
+      const btn=document.getElementById("pfBtn"), menu=document.getElementById("pfMenu");
+      const toggle=open=>{ menu.hidden=!open; btn.setAttribute("aria-expanded",open); };
+      btn.onclick=e=>{ e.stopPropagation(); toggle(menu.hidden); };
+      document.addEventListener("click",e=>{ if(!menu.hidden && !menu.contains(e.target)) toggle(false); });
+      document.addEventListener("keydown",e=>{ if(e.key==="Escape") toggle(false); });
+      menu.querySelectorAll("[data-pf]").forEach(b=>b.onclick=()=>{ toggle(false);
+        ({people:peopleView,friends:()=>friendsView(),profile:profileView,settings:settingsView,logout:()=>auth.signOut()})[b.dataset.pf](); });
+      updateMenu();
+    }
+    function updateMenu(){
+      const name=profile.name||user.email.split("@")[0];
+      const b=document.getElementById("pfBtn"); if(!b) return;
+      document.getElementById("pfInit").textContent=initial(name); updateFriendBadge();
+      document.getElementById("pfName").textContent=name;
+      document.getElementById("pfMail").textContent=user.email;
+      document.querySelector('[data-pf="people"]').disabled=!sid;
+    }
+
+    /* ---------- Profil, Einstellungen ---------- */
+    function profileView(){
+      show("Profil bearbeiten","",`<label>Dein Name<input type="text" id="pfIn" maxlength="30" value="${esc(profile.name||"")}"></label>
+        <p class="auth-note">So sehen dich die anderen in euren Listen.</p>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <button class="auth-btn" type="button" id="pfSave">Speichern</button>
+        <button class="auth-link" type="button" id="pfClose">Abbrechen</button>`,true);
+      $a("#pfIn").focus();
+      $a("#pfClose").onclick=hide;
+      $a("#pfSave").onclick=async()=>{
+        const name=$a("#pfIn").value.trim().slice(0,30); if(!name) return msg("Gib einen Namen ein.",true);
+        try{
+          await db.ref(`users/${user.uid}/profile/name`).set(name); profile.name=name;
+          const ptr=(await db.ref(`users/${user.uid}/spaces`).once("value")).val()||{};
+          for(const s of Object.values(ptr)) await db.ref(`spaces/${s}/profiles/${user.uid}/name`).set(name).catch(()=>{});
+          updateMenu(); hide();
+        }catch(err){ msg("Speichern hat nicht geklappt.",true); }
+      };
+    }
+    function settingsView(){
+      show("Einstellungen","",`<p class="auth-sec">Konto</p>
+        <p class="auth-note">Angemeldet als <b>${esc(user.email)}</b></p>
+        <button class="auth-btn alt" type="button" id="stPw">Passwort ändern</button>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <p class="auth-sec">Diese Seite</p>
+        <p class="auth-note">${sid?`Du bist in einer ${esc(PAGE.noun)}. Wer sie sieht, steht unter „Personen bei ${esc(PAGE.label)}“.`:`Für ${esc(PAGE.label)} gibt es noch keine Liste.`}</p>
+        <button class="auth-btn alt" type="button" id="stOut">Abmelden</button>
+        <button class="auth-link" type="button" id="stClose">Schließen</button>`,true);
+      $a("#stClose").onclick=hide;
+      $a("#stOut").onclick=()=>auth.signOut();
+      $a("#stPw").onclick=async()=>{
+        try{ await auth.sendPasswordResetEmail(user.email); msg(`Wir haben dir eine Mail an ${user.email} geschickt. Darüber legst du ein neues Passwort fest.`); }
+        catch(err){ msg(errText(err),true); }
+      };
+    }
+
+    /* ---------- Personen und Einladungen für diese Seite ---------- */
+    let rmConfirm=null;
+    async function peopleView(){
+      if(!sid) return;
+      let profiles={}, access={}, meta={}, invites={};
+      try{
+        [profiles,access,meta,invites]=(await Promise.all(["profiles","access","meta","invites"].map(k=>db.ref(`spaces/${sid}/${k}`).once("value")))).map(s=>s.val()||{});
+      }catch(err){ return; }
+      const coOwn=id=>meta.owner===id || (meta.owners&&meta.owners[id]);
+      const owner=!!coOwn(user.uid), ids=Object.keys(access);
+      const list=ids.map(id=>({id,name:(profiles[id]&&profiles[id].name)||"Ohne Namen",mail:profiles[id]&&profiles[id].email||"",own:!!coOwn(id)}))
+        .sort((a,b)=>(b.own-a.own)||(a.id===user.uid?-1:b.id===user.uid?1:0));
+      const nInv=Object.keys(invites).length;
+      show(`Personen bei ${PAGE.label}`,
+        PAGE.type==="budget"&&ids.length<=1?"Im Moment siehst nur du dein Budget.":`${ids.length} ${ids.length===1?"Person sieht":"Personen sehen"} diese ${PAGE.noun}.`,
+        `<ul class="auth-people">${list.map(p=>`<li><span class="av">${esc(initial(p.name))}</span>
+            <span class="nm"><b>${esc(p.name)}${p.id===user.uid?" (du)":""}</b><small>${p.own?(type==="recipes"&&ids.length>1?"Besitzer":"Hat die Liste angelegt"):esc(p.mail)}</small></span>
+            ${owner&&p.id!==user.uid?`<button type="button" class="rm${rmConfirm===p.id?" sure":""}" data-rm="${esc(p.id)}">${rmConfirm===p.id?"Entfernen?":"Entfernen"}</button>`:""}</li>`).join("")}</ul>
+        ${(()=>{ const fl=Object.entries(friends).filter(([id])=>!access[id]); return fl.length?`<p class="auth-sec">Freunde einladen</p>
+          <ul class="auth-people">${fl.map(([id,f])=>`<li><span class="av">${esc(initial(f.name))}</span><span class="nm"><b>${esc(f.name||"Freund")}</b><small>bekommt die Einladung unter „Freunde“</small></span>
+          <button type="button" class="rm yes" data-fr-inv="${esc(id)}">Einladen</button></li>`).join("")}</ul>`:""; })()}
+        <p class="auth-sec">Per Link einladen</p>
+        <p class="auth-note">Der Link gilt nur für ${esc(PAGE.label)} und nur für eine Person. Wer ihn öffnet, tritt mit eigenem Konto bei. Deine anderen Seiten sieht die Person nicht.</p>
+        <button class="auth-btn" type="button" id="invNew">Einladungslink erstellen</button>
+        <div class="auth-copy" id="invBox" hidden><input type="text" id="invLink" readonly aria-label="Einladungslink"><button class="auth-btn" type="button" id="invCopy">Kopieren</button></div>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        ${nInv?`<button class="auth-link" type="button" id="invRevoke">${nInv} offene${nInv===1?"r Link":" Links"} · alle zurückziehen</button>`:""}
+        ${(type==="recipes"?ids.length>1:!owner)?`<button class="auth-link danger" type="button" id="leave">Diese ${esc(PAGE.noun)} verlassen</button>`:""}
+        <button class="auth-btn alt" type="button" id="ppClose">Fertig</button>`,true);
+      $a("#ppClose").onclick=()=>{ rmConfirm=null; hide(); };
+      $a("#invNew").onclick=async()=>{
+        const code=rand(20);
+        try{
+          await db.ref(`spaces/${sid}/invites/${code}`).set({by:user.uid,at:Date.now()});
+          const base=location.href.split("#")[0].replace(/[^/]*$/,"");
+          $a("#invLink").value=`${base}${PAGE.file}#join-${sid}-${code}`; $a("#invBox").hidden=false; msg("");
+        }catch(err){ msg("Der Link konnte nicht erstellt werden.",true); }
+      };
+      $a("#invCopy").onclick=async()=>{
+        try{ await navigator.clipboard.writeText($a("#invLink").value); msg("Kopiert. Jetzt per WhatsApp oder Mail verschicken."); }
+        catch(e){ $a("#invLink").select(); msg("Markiert. Jetzt kopieren und verschicken."); }
+      };
+      screen.querySelectorAll("[data-fr-inv]").forEach(b=>b.onclick=async()=>{
+        b.disabled=true; b.textContent="…";
+        try{ await inviteFriend(b.dataset.frInv); b.textContent="Eingeladen ✓"; b.classList.remove("yes"); b.classList.add("done"); }
+        catch(err){ b.disabled=false; b.textContent="Einladen"; msg("Die Einladung hat nicht geklappt. Prüf die Regeln in Firebase.",true); }
+      });
+      const rv=$a("#invRevoke"); if(rv) rv.onclick=async()=>{ await db.ref(`spaces/${sid}/invites`).remove().catch(()=>{}); peopleView(); };
+      screen.querySelectorAll("[data-rm]").forEach(b=>b.onclick=async()=>{
+        const id=b.dataset.rm;
+        if(rmConfirm!==id){ rmConfirm=id; peopleView(); return; }
+        rmConfirm=null;
+        await db.ref(`spaces/${sid}/access/${id}`).remove().catch(()=>{});
+        await db.ref(`spaces/${sid}/profiles/${id}`).remove().catch(()=>{});
+        peopleView();
+      });
+      const lv=$a("#leave"); if(lv) lv.onclick=async()=>{
+        if(lv.dataset.sure!=="1"){ lv.dataset.sure="1"; lv.textContent=type==="recipes"?"Wirklich austreten? Du behältst alle Rezepte als eigene Sammlung, neue teilt ihr nicht mehr.":"Wirklich verlassen? Du kommst nur mit einer neuen Einladung zurück."; return; }
+        if(type==="recipes"){
+          // alle Rezepte in eine eigene, neue Sammlung mitnehmen
+          lv.textContent="Rezepte werden mitgenommen …"; lv.disabled=true;
+          const nid=rand(20);
+          try{
+            await db.ref(`spaces/${nid}/access/${user.uid}`).set("owner");
+            await db.ref(`spaces/${nid}/meta`).set({type,owner:user.uid,createdAt:Date.now()});
+            await copyRecipes(sid,nid);
+            await db.ref(`users/${user.uid}/spaces/${type}`).set(nid);
+            const rd=(await db.ref(`spaces/${sid}/readers`).once("value")).val()||{};
+            for(const [k,v] of Object.entries(rd)) if(v&&v.by===user.uid) await db.ref(`spaces/${sid}/readers/${k}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/share/${user.uid}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/meta/owners/${user.uid}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/profiles/${user.uid}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/access/${user.uid}`).remove().catch(()=>{});
+          }catch(err){ lv.disabled=false; lv.textContent="Austreten hat nicht geklappt. Versuch es noch einmal."; return; }
+          location.reload(); return;
+        }
+        await db.ref(`spaces/${sid}/profiles/${user.uid}`).remove().catch(()=>{});
+        await db.ref(`spaces/${sid}/access/${user.uid}`).remove().catch(()=>{});
+        await db.ref(`users/${user.uid}/spaces/${type}`).remove().catch(()=>{});
+        location.reload();
+      };
+    }
+
+
+    /* ---------- Freunde ---------- */
+    let friends={}, requestsIn={}, inbox={}, friendCode=null, friendsOpen=false, frConfirm=null;
+    const frBadge=()=>Object.keys(requestsIn).length+Object.keys(inbox).length;
+    function updateFriendBadge(){
+      const n=frBadge(), b=document.getElementById("pfFriendBadge"), d=document.getElementById("pfDot");
+      if(b){ b.textContent=n; b.hidden=!n; } if(d) d.hidden=!n;
+    }
+    async function ensureFriendCode(){
+      friendCode=(await db.ref(`users/${user.uid}/friendCode`).once("value")).val();
+      if(friendCode) return;
+      for(let i=0;i<5 && !friendCode;i++){
+        const c=rand(8).toUpperCase().replace(/[^A-Z0-9]/g,"X");
+        try{ await db.ref(`friendCodes/${c}`).set(user.uid); await db.ref(`users/${user.uid}/friendCode`).set(c); friendCode=c; }catch(e){}
+      }
+    }
+    function watchFriends(){
+      db.ref(`friends/${user.uid}`).on("value",s=>{ friends=s.val()||{}; if(friendsOpen) friendsView(); },()=>{});
+      db.ref(`requests/${user.uid}`).on("value",s=>{ requestsIn=s.val()||{}; updateFriendBadge(); if(friendsOpen) friendsView(); },()=>{});
+      db.ref(`inbox/${user.uid}`).on("value",s=>{ inbox=s.val()||{}; updateFriendBadge(); if(friendsOpen) friendsView(); },()=>{});
+    }
+    const myName=()=>profile.name||user.email.split("@")[0];
+    async function sendRequest(code){
+      code=String(code||"").trim().toUpperCase().replace(/^.*#FRIEND-/,"").replace(/[^A-Z0-9]/g,"");
+      if(code.length<6) return {err:"Gib einen Freundescode ein. Er hat 8 Zeichen."};
+      const uid=(await db.ref(`friendCodes/${code}`).once("value")).val();
+      if(!uid) return {err:"Zu diesem Code gibt es niemanden. Prüf die Schreibweise."};
+      if(uid===user.uid) return {err:"Das ist dein eigener Code."};
+      if(friends[uid]) return {ok:`${friends[uid].name||"Diese Person"} ist schon dein Freund.`};
+      if(requestsIn[uid]){ await acceptRequest(uid); return {ok:`Ihr seid jetzt befreundet.`}; }
+      await db.ref(`requests/${uid}/${user.uid}`).set({name:myName(),at:Date.now()});
+      return {ok:"Freundschaftsanfrage gesendet. Sobald sie angenommen ist, erscheint die Person hier."};
+    }
+    async function acceptRequest(from){
+      const req=requestsIn[from]||{}, now=Date.now();
+      await db.ref(`friends/${user.uid}/${from}`).set({name:req.name||"Freund",since:now});
+      await db.ref(`friends/${from}/${user.uid}`).set({name:myName(),since:now});
+      await db.ref(`requests/${user.uid}/${from}`).remove();
+    }
+    function friendsView(msgText,isErr){
+      friendsOpen=true;
+      const base=location.href.split("#")[0].replace(/[^/]*$/,"");
+      const link=friendCode?`${base}index.html#friend-${friendCode}`:"";
+      const reqs=Object.entries(requestsIn), inv=Object.entries(inbox), fl=Object.entries(friends).sort((a,b)=>(a[1].name||"").localeCompare(b[1].name||""));
+      const pageOf=t=>PAGES.find(p=>p.type===(t==="swipe"?"recipes":t))||PAGES[0];
+      show("Freunde",fl.length?`${fl.length} ${fl.length===1?"Freund":"Freunde"}`:"Füg Freunde hinzu, um sie schnell zu deinen Listen einzuladen.",`
+        ${inv.length?`<p class="auth-sec">Einladungen</p><ul class="auth-people">${inv.map(([id,x])=>`<li><span class="av" style="background:${pageOf(x.type).color}">${esc(initial(x.fromName))}</span>
+          <span class="nm"><b>${esc(x.fromName||"Jemand")}</b><small>${x.type==="swipe"?"will mit dir Rezepte swipen":`lädt dich zu ${esc(pageOf(x.type).label)} ein`}</small></span>
+          <button type="button" class="rm" data-inv-no="${esc(id)}">Nein</button><button type="button" class="rm yes" data-inv-yes="${esc(id)}">Annehmen</button></li>`).join("")}</ul>`:""}
+        ${reqs.length?`<p class="auth-sec">Anfragen</p><ul class="auth-people">${reqs.map(([id,x])=>`<li><span class="av">${esc(initial(x.name))}</span>
+          <span class="nm"><b>${esc(x.name||"Jemand")}</b><small>möchte mit dir befreundet sein</small></span>
+          <button type="button" class="rm" data-req-no="${esc(id)}">Ablehnen</button><button type="button" class="rm yes" data-req-yes="${esc(id)}">Annehmen</button></li>`).join("")}</ul>`:""}
+        <p class="auth-sec">Deine Freunde</p>
+        ${fl.length?`<ul class="auth-people">${fl.map(([id,f])=>`<li><span class="av">${esc(initial(f.name))}</span><span class="nm"><b>${esc(f.name||"Freund")}</b><small>befreundet seit ${new Date(f.since||Date.now()).toLocaleDateString("de-DE")}</small></span>
+          <button type="button" class="rm${frConfirm===id?" sure":""}" data-fr-rm="${esc(id)}">${frConfirm===id?"Entfernen?":"Entfernen"}</button></li>`).join("")}</ul>`
+          :`<p class="auth-note">Noch keine Freunde. Schick deinen Code oder Link, oder gib unten einen Code ein.</p>`}
+        <p class="auth-sec">Dein Freundescode</p>
+        <div class="fr-code">${esc(friendCode||"…")}</div>
+        <div class="auth-copy"><input type="text" id="frLink" readonly value="${esc(link)}" aria-label="Dein Freundes-Link"><button class="auth-btn" type="button" id="frCopy">Link kopieren</button></div>
+        <p class="auth-sec">Freund hinzufügen</p>
+        <form class="auth-copy" id="frAdd" autocomplete="off"><input type="text" id="frIn" maxlength="40" placeholder="Code, z.B. K7M2QX9A" aria-label="Freundescode"><button class="auth-btn" type="submit">Senden</button></form>
+        <p class="auth-msg${isErr?" err":""}" id="authMsg"${msgText?"":" hidden"}>${esc(msgText||"")}</p>
+        <button class="auth-btn alt" type="button" id="frClose">Fertig</button>`,true);
+      $a("#frClose").onclick=()=>{ friendsOpen=false; frConfirm=null; hide(); };
+      $a("#frCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText(link); msg("Kopiert. Schick den Link an deine Freunde."); }catch(e){ $a("#frLink").select(); msg("Markiert. Jetzt kopieren und verschicken."); } };
+      $a("#frAdd").onsubmit=async e=>{ e.preventDefault(); try{ const r=await sendRequest($a("#frIn").value); friendsView(r.err||r.ok,!!r.err); }catch(err){ friendsView("Das hat nicht geklappt. Prüf die Regeln in Firebase.",true); } };
+      screen.querySelectorAll("[data-req-yes]").forEach(b=>b.onclick=async()=>{ try{ await acceptRequest(b.dataset.reqYes); }catch(e){ friendsView("Annehmen hat nicht geklappt.",true); } });
+      screen.querySelectorAll("[data-req-no]").forEach(b=>b.onclick=()=>db.ref(`requests/${user.uid}/${b.dataset.reqNo}`).remove().catch(()=>{}));
+      screen.querySelectorAll("[data-inv-no]").forEach(b=>b.onclick=()=>db.ref(`inbox/${user.uid}/${b.dataset.invNo}`).remove().catch(()=>{}));
+      screen.querySelectorAll("[data-inv-yes]").forEach(b=>b.onclick=async()=>{
+        const x=inbox[b.dataset.invYes]; if(!x) return; const p=pageOf(x.type);
+        if(x.type==="swipe"){ friendsOpen=false; hide(); const t=`${p.file}#swipe-${x.sid}`; if(p.type===type){ history.replaceState(null,"",t); location.reload(); } else location.href=t; return; }
+        await db.ref(`inbox/${user.uid}/${b.dataset.invYes}`).remove().catch(()=>{});
+        const target=`${p.file}#join-${x.sid}-${x.code}`;
+        if(p.type===type){ history.replaceState(null,"",target); location.reload(); } else location.href=target;
+      });
+      screen.querySelectorAll("[data-fr-rm]").forEach(b=>b.onclick=async()=>{
+        const id=b.dataset.frRm; if(frConfirm!==id){ frConfirm=id; friendsView(); return; }
+        frConfirm=null;
+        await db.ref(`friends/${user.uid}/${id}`).remove().catch(()=>{});
+        await db.ref(`friends/${id}/${user.uid}`).remove().catch(()=>{});
+      });
+    }
+    // Freund direkt zu dieser Liste einladen (landet bei ihm unter "Freunde")
+    async function inviteFriend(fid){
+      const code=rand(20);
+      await db.ref(`spaces/${sid}/invites/${code}`).set({by:user.uid,at:Date.now(),for:fid});
+      await db.ref(`inbox/${fid}`).push().set({type,sid,code,from:user.uid,fromName:myName(),at:Date.now()});
+    }
+
+    /* ---------- Seite ohne Bereich: neu anlegen ---------- */
+    function setupView(problem){
+      hide();
+      const wrap=document.querySelector(".wrap"), head=document.querySelector("header");
+      if(!setupEl){ setupEl=document.createElement("div"); setupEl.className="auth-setup"; wrap.style.position="relative"; wrap.appendChild(setupEl); }
+      setupEl.style.top=(head.offsetTop+head.offsetHeight)+"px";
+      const cnt=document.getElementById("count"); if(cnt) cnt.textContent="";
+      let oldCode=null; try{ oldCode=localStorage.getItem("dateideen.code"); }catch(e){}
+      setupEl.innerHTML=`<div class="box">
+        <h3>${esc(PAGE.empty)}</h3>
+        ${problem?`<p class="auth-msg err">${esc(problem)}</p>`:""}
+        <p class="auth-note">${esc(PAGE.hint)}</p>
+        ${oldCode?`<label class="auth-check"><input type="checkbox" id="setMig" checked> Bisherige ${esc(PAGE.label)} von diesem Gerät übernehmen</label>`:""}
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <button class="auth-btn" type="button" id="setNew">${PAGE.type==="chores"?"Neuen Haushalt anlegen":PAGE.type==="budget"?"Budget anlegen":`${esc(PAGE.noun)} anlegen`}</button>
+        <p class="auth-note">Hat dich jemand eingeladen? Dann öffne einfach den Einladungslink.</p>
+      </div>`;
+      setupEl.hidden=false;
+      setupEl.querySelector("#setNew").onclick=async()=>{
+        const btn=setupEl.querySelector("#setNew"); btn.disabled=true; msg("Wird angelegt …",false,setupEl);
+        const id=rand(20);
+        try{
+          await db.ref(`spaces/${id}/access/${user.uid}`).set("owner");
+          await db.ref(`spaces/${id}/meta`).set({type,owner:user.uid,createdAt:Date.now()});
+          const mig=setupEl.querySelector("#setMig");
+          if(mig && mig.checked && oldCode){ msg("Bisherige Daten werden übernommen …",false,setupEl); await migrate(oldCode,id); }
+          await db.ref(`users/${user.uid}/spaces/${type}`).set(id);
+          ready(id);
+        }catch(err){ msg("Das Anlegen hat nicht geklappt. Prüf die Internetverbindung und die Regeln in Firebase.",true,setupEl); btn.disabled=false; }
+      };
+    }
+    // alte Daten vom geheimen Link übernehmen, nur was zu dieser Seite gehört
+    async function migrate(code,id){
+      if(type==="budget"){
+        const b=(await db.ref(`lists/${code}/budget`).once("value")).val();
+        if(b) await db.ref(`spaces/${id}`).update(b);
+        return;
+      }
+      const out={};
+      for(const k of PAGE.keys){ const v=(await db.ref(`lists/${code}/${k}`).once("value")).val(); if(v!=null) out[k]=v; }
+      const ids=new Set();
+      if(out.ideas) Object.values(out.ideas).forEach(i=>(Array.isArray(i.photos)?i.photos:[]).forEach(p=>ids.add(p)));
+      if(out.recipes) Object.values(out.recipes).forEach(r=>{ if(r.cover) ids.add(r.cover); });
+      if(ids.size){ out.photos={}; for(const p of ids){ const v=(await db.ref(`lists/${code}/photos/${p}`).once("value")).val(); if(v) out.photos[p]=v; } }
+      if(Object.keys(out).length) await db.ref(`spaces/${id}`).update(out);
+    }
+
+    /* ---------- Einladung annehmen ---------- */
+    async function join(j,current){
+      if(current && current!==j.sid && !confirm_ && type==="recipes"){
+        let n=0; try{ n=Object.keys((await db.ref(`spaces/${current}/recipes`).once("value")).val()||{}).length; }catch(e){}
+        show("Sammlungen zusammenlegen?","",`<p class="auth-note">Du hast schon eine eigene Rezeptsammlung${n?` mit ${n} ${n===1?"Rezept":"Rezepten"}`:""}. Beim Beitreten werden deine Rezepte in die gemeinsame Sammlung übernommen. Die Sammlung gehört dann euch beiden.</p>
+          <p class="auth-note">Wenn du später austrittst, behältst du alle Rezepte.</p>
+          <button class="auth-btn" type="button" id="jYes">Zusammenlegen</button>
+          <button class="auth-btn alt" type="button" id="jNo">Abbrechen</button>`);
+        $a("#jYes").onclick=()=>{ confirm_=true; $a("#jYes").disabled=true; $a("#jYes").textContent="Wird zusammengelegt …"; join(j,current); };
+        $a("#jNo").onclick=()=>{ clearHash(); hide(); open(current); };
+        return;
+      }
+      if(current && current!==j.sid && !confirm_){
+        show(`Einladung zu ${PAGE.label}`,"",`<p class="auth-note">Du bist schon in einer anderen ${esc(PAGE.noun)}. Möchtest du zur neuen wechseln? Die alte bleibt bestehen, du siehst sie dann aber nicht mehr.</p>
+          <button class="auth-btn" type="button" id="jYes">Zur neuen wechseln</button>
+          <button class="auth-btn alt" type="button" id="jNo">Bei meiner bleiben</button>`);
+        $a("#jYes").onclick=()=>{ confirm_=true; join(j,current); };
+        $a("#jNo").onclick=()=>{ clearHash(); hide(); open(current); };
+        return;
+      }
+      try{
+        await db.ref(`spaces/${j.sid}/access/${user.uid}`).set(j.code);
+        if(type==="recipes"){
+          await db.ref(`spaces/${j.sid}/meta/owners/${user.uid}`).set(true);   // gehört dann allen gemeinsam
+          if(current && current!==j.sid){
+            await copyRecipes(current,j.sid);
+            // alte Sammlung aufräumen, wenn sonst niemand drin war
+            try{ const acc=(await db.ref(`spaces/${current}/access`).once("value")).val()||{};
+              if(Object.keys(acc).length<=1) await db.ref(`spaces/${current}`).remove();
+              else { await db.ref(`spaces/${current}/profiles/${user.uid}`).remove(); await db.ref(`spaces/${current}/access/${user.uid}`).remove(); } }catch(e){}
+          }
+        }
+        await db.ref(`users/${user.uid}/spaces/${type}`).set(j.sid);
+        await db.ref(`spaces/${j.sid}/invites/${j.code}`).remove().catch(()=>{});   // Link gilt nur einmal
+        clearHash(); ready(j.sid);
+      }catch(err){ clearHash(); if(current) open(current); else setupView("Der Einladungslink ist ungültig oder wurde zurückgezogen."); }
+    }
+    let confirm_=false;
+    // Rezepte samt Titelbildern von einer Sammlung in eine andere kopieren (vorhandene bleiben)
+    async function copyRecipes(from,to){
+      const rs=(await db.ref(`spaces/${from}/recipes`).once("value")).val()||{};
+      const have=(await db.ref(`spaces/${to}/recipes`).once("value")).val()||{};
+      const out={};
+      for(const [id,r] of Object.entries(rs)){
+        if(have[id] || !r) continue;
+        if(r.cover && /^[0-9a-f]{32}$/.test(r.cover)){
+          const ph=(await db.ref(`spaces/${from}/photos/${r.cover}`).once("value")).val();
+          if(ph) await db.ref(`spaces/${to}/photos/${r.cover}`).set(ph);
+        }
+        out[id]=r;
+      }
+      if(Object.keys(out).length) await db.ref(`spaces/${to}/recipes`).update(out);
+    }
+
+    async function open(id){
+      try{ await db.ref(`spaces/${id}/meta`).once("value"); ready(id); }
+      catch(err){ await db.ref(`users/${user.uid}/spaces/${type}`).remove().catch(()=>{}); setupView("Du hast keinen Zugriff mehr auf diese Liste. Leg eine neue an oder lass dich wieder einladen."); }
+    }
+    function ready(id){
+      sid=id; hide(); if(setupEl) setupEl.hidden=true; updateMenu();
+      db.ref(`spaces/${id}/profiles/${user.uid}`).update({name:profile.name||user.email.split("@")[0],email:user.email}).catch(()=>{});
+      if(started) return; started=true;
+      cb(db.ref("spaces/"+id),{uid:user.uid,sid:id,email:user.email,name:profile.name});
+    }
+
+    auth.onAuthStateChanged(async u=>{
+      if(!u){ if(user){ location.reload(); return; } loginView(parseJoin()||/^#friend-/.test(location.hash)?"register":"login"); return; }
+      user=u;
+      show(PAGE.label,"",`<p class="auth-note">Lädt …</p>`);
+      try{
+        profile=(await db.ref(`users/${u.uid}/profile`).once("value")).val()||{};
+        if(!profile.name){
+          let n=""; try{ n=sessionStorage.getItem("auth.newName")||""; sessionStorage.removeItem("auth.newName"); }catch(e){}
+          profile.name=n||u.displayName||u.email.split("@")[0];
+          await db.ref(`users/${u.uid}/profile/name`).set(profile.name);
+        }
+        installMenu();
+        try{ await ensureFriendCode(); watchFriends(); }catch(e){}
+        const fr=location.hash.match(/^#friend-([A-Za-z0-9]{6,12})$/);
+        if(fr){ clearHash(); setTimeout(async()=>{ let r; try{ r=await sendRequest(fr[1]); }catch(e){ r={err:"Die Anfrage hat nicht geklappt."}; } friendsView(r.err||r.ok,!!r.err); },400); }
+        const current=(await db.ref(`users/${u.uid}/spaces/${type}`).once("value")).val();
+        const j=parseJoin();
+        if(j){ await join(j,current); return; }
+        if(current){ await open(current); return; }
+        setupView();
+      }catch(err){
+        show(PAGE.label,"",`<p class="auth-msg err">Die Daten konnten nicht geladen werden. Prüf die Internetverbindung und die Regeln in Firebase.</p>
+          <button class="auth-btn" type="button" onclick="location.reload()">Neu laden</button>
+          <button class="auth-link" type="button" id="authOut">Abmelden</button>`);
+        $a("#authOut").onclick=()=>auth.signOut();
+      }
+    });
+  }};
+})();
+
+</script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=t=>String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const firebaseConfig = {
+  apiKey: "AIzaSyD6JNwGczfmHYTqHp9qI5bnutz-JLphgGI",
+  authDomain: "oursapp-ff4cf.firebaseapp.com",
+  databaseURL: "https://oursapp-ff4cf-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "oursapp-ff4cf",
+  storageBucket: "oursapp-ff4cf.firebasestorage.app",
+  messagingSenderId: "509984933255",
+  appId: "1:509984933255:web:1f2e8b0850c94056f87f22"
+};
+// Adresse deines Cloudflare-Helfers (derselbe wie bei den Rezepten)
+const WORKER_URL = "https://oursapp.niklasbergnerbus.workers.dev";
+
+/* ---------- Einrichtungsstile ---------- */
+const STYLES=[
+  {id:"skandi",     name:"Skandinavisch", desc:"Helles Holz, Weiß, gemütliche Stoffe", sw:["#f4efe6","#d8c3a5","#9fb0a0","#ffffff"]},
+  {id:"modern",     name:"Modern",        desc:"Klare Linien, ruhige Farben, ein Akzent", sw:["#e9e9e7","#8f9396","#2f3133","#c7593b"]},
+  {id:"minimal",    name:"Minimalistisch",desc:"Wenige Stücke, viel freie Fläche", sw:["#f7f6f3","#e2ded7","#bdb8ae","#4a4844"]},
+  {id:"industrial", name:"Industrial",    desc:"Schwarzer Stahl, Leder, altes Holz", sw:["#3b3b3b","#8a5a3b","#a9a39a","#1f1f1f"]},
+  {id:"boho",       name:"Boho",          desc:"Rattan, Muster, viele Pflanzen", sw:["#e7c9a5","#c26b45","#6d7f4f","#f3e6d3"]},
+  {id:"landhaus",   name:"Landhaus",      desc:"Rustikales Holz, Creme, Salbeigrün", sw:["#efe6d3","#a7b39a","#9c7b55","#ffffff"]},
+  {id:"midcentury", name:"Mid-Century",   desc:"Nussholz, runde Formen, Senfgelb", sw:["#6b4a33","#d4a03b","#2f6f73","#efe4d2"]},
+  {id:"japandi",    name:"Japandi",       desc:"Niedrige Holzmöbel, Leinen, sehr ruhig", sw:["#e8e0d2","#b9a58a","#5d5a52","#2c2b28"]},
+  {id:"klassisch",  name:"Klassisch",     desc:"Stuck, Symmetrie, Kronleuchter", sw:["#f2ede4","#c9b38a","#6e5a49","#2d3b4f"]},
+  {id:"artdeco",    name:"Art déco",      desc:"Samt, Messing, geometrische Muster", sw:["#1f4a3f","#c9a24a","#1c2a44","#efe6d6"]},
+  {id:"mediterran", name:"Mediterran",    desc:"Terrakotta, Kalkputz, blaue Akzente", sw:["#f5ede0","#c8744d","#3f6e9a","#8f8f5a"]},
+];
+const ROOMS=[["wohnen","Wohnzimmer"],["schlafen","Schlafzimmer"],["kueche","Küche"],["essen","Esszimmer"],["bad","Bad"],["arbeiten","Arbeitszimmer"],["kind","Kinderzimmer"],["flur","Flur"],["balkon","Balkon"]];
+const styleOf=id=>STYLES.find(s=>s.id===id);
+const roomName=id=>(ROOMS.find(r=>r[0]===id)||[,"Raum"])[1];
+const ROOM_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18v-5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5M3 18h18M6 11V8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+/* ---------- Zustand ---------- */
+let root=null, designs={}, view=null, shown={}, busy={}, form={room:"wohnen",style:null,wish:""}, delConfirm=false, resDelConfirm=null;
+const photoCache=new Map();
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const okId=p=>typeof p==="string" && /^[A-Za-z0-9_-]{6,64}$/.test(p);
+function showErr(e){ $("#status").textContent=/permission/i.test(String(e&&(e.code||e.message)))?"Keine Berechtigung. Prüf die Regeln in Firebase.":"Speichern hat nicht geklappt. Prüf die Internetverbindung."; }
+function photoUrl(id){
+  if(!okId(id)) return null;
+  if(photoCache.has(id)) return photoCache.get(id);
+  photoCache.set(id,null);
+  root && root.child("photos/"+id).once("value").then(s=>{ const v=s.val(); if(typeof v==="string" && v.startsWith("data:image/")){ photoCache.set(id,v); render(); } }).catch(()=>{});
+  return null;
+}
+async function toJpeg(src,max,q){
+  const img=new Image(); img.src=src; await img.decode();
+  const s=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight)), c=document.createElement("canvas");
+  c.width=Math.round(img.naturalWidth*s); c.height=Math.round(img.naturalHeight*s); c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+  return c.toDataURL("image/jpeg",q);
+}
+async function savePhoto(dataUrl){
+  const id=[...crypto.getRandomValues(new Uint8Array(16))].map(x=>x.toString(16).padStart(2,"0")).join("");
+  await root.child("photos/"+id).set(dataUrl); photoCache.set(id,dataUrl); return id;
+}
+async function askWorker(body){
+  if(!WORKER_URL) throw new Error("In dieser Vorschau kann die Bild-KI nicht arbeiten. Auf deiner echten Seite schon.");
+  let res; try{ res=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}); }
+  catch(e){ throw new Error("Keine Verbindung zum Helfer in Cloudflare."); }
+  const d=await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(d.error||"Der Helfer in Cloudflare hat nicht geantwortet.");
+  if(typeof d.image!=="string" || !d.image.startsWith("data:image/")) throw new Error("Der Helfer kennt Raumdesign noch nicht. Aktualisier den Code in Cloudflare.");
+  return d.image;
+}
+
+/* ---------- Anzeige ---------- */
+const sorted=()=>Object.entries(designs).map(([id,d])=>({id,...d})).filter(d=>d&&d.at).sort((a,b)=>b.at-a.at);
+const resultsOf=d=>Object.entries(d.results||{}).map(([id,r])=>({id,...r})).filter(r=>okId(r.photo)).sort((a,b)=>a.at-b.at);
+function render(){
+  const list=sorted();
+  $("#count").textContent=list.length===1?"1 Raum":`${list.length} Räume`;
+  const d=view&&designs[view];
+  if(view && !d) view=null;
+  if($("#listView").hidden!==!!view) $(".wrap").classList.remove("compact");
+  $("#listView").hidden=!!view; $("#roomView").hidden=!view;
+  if(!view) renderList(list); else renderRoom({id:view,...d});
+}
+function renderList(list){
+  $("#list").innerHTML=list.length?`<div class="grid">${list.map(d=>{ const rs=resultsOf(d), last=rs[rs.length-1];
+      const u=photoUrl(last?last.photo:(d.empty||d.orig));
+      return `<button type="button" class="rcard" data-open="${esc(d.id)}"><span class="img">${u?`<img src="${u}" alt="">`:ROOM_ICON}</span>
+        <span class="txt"><b>${esc(d.title||roomName(d.room))}</b><small>${busy[d.id]?"wird bearbeitet …":rs.length?`${rs.length} ${rs.length===1?"Entwurf":"Entwürfe"}`:d.empty?"leer geräumt":"noch nicht leer"}</small></span></button>`; }).join("")}</div>`
+    :`<div class="empty"><strong>Noch keine Räume</strong>
+      <span>So geht's:</span>
+      <ol class="steps"><li>Tipp auf „+ Raum fotografieren“ und mach ein Foto vom Raum, am besten aus einer Ecke.</li>
+      <li>Die Bild-KI räumt alles raus, was im Raum steht.</li><li>Such dir einen Einrichtungsstil aus und schreib dazu, was du dir wünschst.</li></ol></div>`;
+}
+function renderRoom(d){
+  const rs=resultsOf(d), cur=shown[d.id]||(rs.length?rs[rs.length-1].id:d.empty?"empty":"orig");
+  const pick=cur==="orig"?{photo:d.orig,tag:"Vorher"}:cur==="empty"?{photo:d.empty,tag:"Leer geräumt"}:(()=>{ const r=rs.find(x=>x.id===cur); return r?{photo:r.photo,tag:(styleOf(r.style)||{}).name||"Entwurf",res:r}:{photo:d.orig,tag:"Vorher"}; })();
+  const u=photoUrl(pick.photo), b=busy[d.id];
+  const html=`
+    <input class="title-in" id="titleIn" maxlength="40" value="${esc(d.title||roomName(d.room))}" aria-label="Name des Raums">
+    <div class="viewer">${u?`<img src="${u}" alt="${esc(pick.tag)}" id="viewImg">`:ROOM_ICON}
+      <span class="vtag">${esc(pick.tag)}</span>
+      ${u&&cur!=="orig"?`<div class="vact"><button type="button" class="hold" id="holdBtn">Vorher zeigen</button><a href="${u}" download="${esc((d.title||"Raum")+" - "+pick.tag)}.jpg">Speichern</a></div>`:""}
+      ${b?`<div class="busy"><span class="spin" aria-hidden="true"></span><span>${esc(b)}</span><small>Das dauert meist 10 bis 30 Sekunden.</small></div>`:""}</div>
+    <div class="tabs" role="group" aria-label="Ansicht">
+      <button type="button" class="tab" data-show="orig" aria-pressed="${cur==="orig"}">Vorher</button>
+      ${d.empty?`<button type="button" class="tab" data-show="empty" aria-pressed="${cur==="empty"}">Leer</button>`:""}
+      ${rs.map(r=>`<button type="button" class="tab" data-show="${esc(r.id)}" aria-pressed="${cur===r.id}">${esc((styleOf(r.style)||{}).name||"Entwurf")}${r.wish?" <small>✎</small>":""}</button>`).join("")}
+    </div>
+    ${d.err?`<p class="note err">${esc(d.err)}</p>`:""}
+    ${!d.empty&&!b?`<div class="row-end"><span class="note">Der Raum ist noch nicht leer geräumt.</span><button class="btn" type="button" id="emptyBtn">Leer räumen</button></div>`:""}
+    ${pick.res?`<p class="note">${esc(roomName(pick.res.room))} · ${esc((styleOf(pick.res.style)||{}).name||"")}${pick.res.wish?` · „${esc(pick.res.wish)}“`:""}
+      · <button type="button" class="danger${resDelConfirm===pick.res.id?" sure":""}" data-resdel="${esc(pick.res.id)}">${resDelConfirm===pick.res.id?"Wirklich löschen?":"Entwurf löschen"}</button></p>`:""}
+    <section class="card">
+      <h2>Neu einrichten</h2>
+      <div class="field"><span class="flabel">Raum</span><div class="chips">${ROOMS.map(([id,n])=>`<button type="button" class="chip" data-room="${id}" aria-pressed="${form.room===id}">${n}</button>`).join("")}</div></div>
+      <div class="field"><span class="flabel">Stil</span><div class="styles">${STYLES.map(s=>`<button type="button" class="style" data-style="${s.id}" aria-pressed="${form.style===s.id}">
+        <span class="sw" aria-hidden="true">${s.sw.map(c=>`<span style="background:${c}"></span>`).join("")}</span><b>${s.name}</b><small>${s.desc}</small></button>`).join("")}</div></div>
+      <div class="field"><label class="flabel" for="wishIn">Deine Wünsche (optional)</label>
+        <textarea id="wishIn" maxlength="300" placeholder="z.B. grünes Sofa, viel Holz, großer Esstisch für 6, Platz für ein Klavier">${esc(form.wish)}</textarea></div>
+      <p class="note" id="formMsg" hidden></p>
+      <div class="row-end"><button class="btn primary" type="button" id="styleBtn"${b?" disabled":""}>Einrichten</button></div>
+    </section>
+    <div class="row-end" style="justify-content:space-between"><span class="note">${d.empty?"Eingerichtet wird immer der leer geräumte Raum.":"Solange der Raum nicht leer ist, wird das Originalfoto eingerichtet."}</span>
+      <button type="button" class="danger${delConfirm?" sure":""}" id="delBtn">${delConfirm?"Wirklich löschen?":"Raum löschen"}</button></div>`;
+  // was gerade bearbeitet wird (Name, Wünsche), bleibt beim Neuzeichnen erhalten
+  const act=document.activeElement, keep=act&&act.id&&$("#room").contains(act)&&act.matches("input,textarea")?act:null;
+  $("#room").innerHTML=html;
+  if(keep){ const n=document.getElementById(keep.id); if(n){ n.replaceWith(keep); keep.focus(); } }
+}
+
+/* ---------- Ablauf ---------- */
+$("#newBtn").addEventListener("click",()=>$("#photoIn").click());
+$("#photoIn").addEventListener("change",async e=>{
+  const f=e.target.files[0]; e.target.value=""; if(!f||!root) return;
+  $("#status").textContent="Foto wird gespeichert …";
+  try{
+    const src=URL.createObjectURL(f), jpg=await toJpeg(src,1600,.85); URL.revokeObjectURL(src);
+    const pid=await savePhoto(jpg), id=uid(), n=sorted().length+1;
+    designs[id]={at:Date.now(),orig:pid,room:form.room,title:`${roomName(form.room)}${n>1?" "+n:""}`};
+    await root.child("designs/"+id).set(designs[id]);
+    $("#status").textContent=""; openRoom(id); emptyRoom(id);
+  }catch(err){ $("#status").textContent="Das Foto konnte nicht gelesen werden. Nimm ein JPG oder PNG oder mach einen Screenshot davon."; }
+});
+async function emptyRoom(id){
+  const d=designs[id]; if(!d||busy[id]) return;
+  busy[id]="Alles im Raum wird ausgeräumt …"; root.child(`designs/${id}/err`).remove().catch(()=>{}); render();
+  try{
+    const src=photoUrl(d.orig)||(await root.child("photos/"+d.orig).once("value")).val();
+    const out=await askWorker({mode:"room-empty",image:await toJpeg(src,1536,.88)});
+    const pid=await savePhoto(await toJpeg(out,1600,.85));
+    await root.child(`designs/${id}/empty`).set(pid); shown[id]="empty";
+  }catch(err){ root.child(`designs/${id}/err`).set(err.message).catch(()=>{}); if(designs[id]) designs[id].err=err.message; }
+  delete busy[id]; render();
+}
+async function styleRoom(id){
+  const d=designs[id]; if(!d||busy[id]) return;
+  const msg=t=>{ const m=$("#formMsg"); if(m){ m.textContent=t; m.hidden=!t; m.classList.toggle("err",!!t); } };
+  if(!form.style) return msg("Such dir zuerst einen Stil aus.");
+  const st=styleOf(form.style), job={style:form.style,room:form.room,wish:form.wish.trim().slice(0,300)};
+  busy[id]=`Der Raum wird im Stil „${st.name}“ eingerichtet …`; render(); $("#room").scrollTo({top:0,behavior:"smooth"});
+  try{
+    const base=d.empty||d.orig, src=photoUrl(base)||(await root.child("photos/"+base).once("value")).val();
+    const out=await askWorker({mode:"room-style",image:await toJpeg(src,1536,.88),...job});
+    const pid=await savePhoto(await toJpeg(out,1600,.85)), rid=uid();
+    await root.child(`designs/${id}/results/${rid}`).set({...job,photo:pid,at:Date.now()});
+    shown[id]=rid; form.wish="";
+  }catch(err){ delete busy[id]; render(); msg(err.message); return; }
+  delete busy[id]; render(); if(view===id) $("#room").scrollTo({top:0,behavior:"smooth"});
+}
+function openRoom(id){ view=id; delConfirm=false; resDelConfirm=null; const d=designs[id]; if(d&&d.room) form.room=d.room;
+  history.pushState({room:id},"",location.pathname); render(); $("#roomView .scroll").scrollTop=0; }
+addEventListener("popstate",e=>{ view=e.state&&e.state.room||null; delConfirm=false; render(); });
+$("#backBtn").addEventListener("click",()=>{ if(history.state&&history.state.room) history.back(); else { view=null; render(); } });
+
+document.addEventListener("click",e=>{
+  const o=e.target.closest("[data-open]"); if(o) return openRoom(o.dataset.open);
+  if(!view) return;
+  const s=e.target.closest("[data-show]"); if(s){ shown[view]=s.dataset.show; resDelConfirm=null; return render(); }
+  const r=e.target.closest("[data-room]"); if(r){ const d=designs[view], old=roomName(d.room);
+    form.room=r.dataset.room; const upd={room:form.room};
+    if(!d.title || d.title===old || d.title.startsWith(old+" ")) upd.title=(d.title||old).replace(old,roomName(form.room));   // Standardname mitziehen
+    root.child(`designs/${view}`).update(upd).catch(()=>{}); return render(); }
+  const st=e.target.closest("[data-style]"); if(st){ form.style=st.dataset.style; return render(); }
+  if(e.target.closest("#styleBtn")) return styleRoom(view);
+  if(e.target.closest("#emptyBtn")) return emptyRoom(view);
+  const rd=e.target.closest("[data-resdel]"); if(rd){ const rid=rd.dataset.resdel;
+    if(resDelConfirm!==rid){ resDelConfirm=rid; return render(); }
+    const r=(designs[view].results||{})[rid]; resDelConfirm=null; shown[view]=null;
+    root.child(`designs/${view}/results/${rid}`).remove().catch(showErr); if(r&&okId(r.photo)) root.child("photos/"+r.photo).remove().catch(()=>{}); return; }
+  if(e.target.closest("#delBtn")){
+    if(!delConfirm){ delConfirm=true; return render(); }
+    const d=designs[view], id=view; delConfirm=false;
+    const ids=[d.orig,d.empty,...resultsOf(d).map(r=>r.photo)].filter(okId);
+    root.child("designs/"+id).remove().catch(showErr); ids.forEach(p=>root.child("photos/"+p).remove().catch(()=>{}));
+    if(history.state&&history.state.room) history.back(); else { view=null; render(); }
+  }
+});
+document.addEventListener("input",e=>{
+  if(e.target.id==="wishIn") form.wish=e.target.value;
+  if(e.target.id==="titleIn" && view){ const v=e.target.value.trim().slice(0,40); clearTimeout(form.tt); form.tt=setTimeout(()=>root.child(`designs/${view}/title`).set(v||null).catch(showErr),500); }
+});
+document.addEventListener("focusout",e=>{ if(e.target.id==="titleIn") setTimeout(render,0); });
+// „Vorher zeigen“ gedrückt halten
+document.addEventListener("pointerdown",e=>{
+  if(!e.target.closest("#holdBtn")) return; const d=designs[view], img=$("#viewImg"); if(!d||!img) return;
+  const u=photoUrl(d.orig); if(!u) return; const back=img.src; img.src=u; e.target.closest("#holdBtn").textContent="Vorher";
+  const up=()=>{ if(img.isConnected) img.src=back; const b=$("#holdBtn"); if(b) b.textContent="Vorher zeigen"; removeEventListener("pointerup",up); removeEventListener("pointercancel",up); };
+  addEventListener("pointerup",up); addEventListener("pointercancel",up);
+});
+document.addEventListener("contextmenu",e=>{ if(e.target.closest("#holdBtn")) e.preventDefault(); });
+// Beim Runterscrollen schiebt sich der helle Bereich über den Kopf
+(()=>{
+  const wrap=$(".wrap"), head=$("#head");
+  const measure=()=>{ if(!wrap.classList.contains("compact")) wrap.style.setProperty("--headH",head.offsetHeight+"px"); };
+  [$("#list"),$("#room")].forEach(sc=>sc.addEventListener("scroll",()=>{ measure(); if(sc.scrollTop>24) wrap.classList.add("compact"); else if(sc.scrollTop<=2) wrap.classList.remove("compact"); },{passive:true}));
+  addEventListener("resize",measure); measure();
+})();
+
+/* ---------- Start ---------- */
+Auth.start(firebaseConfig,"rooms",r=>{
+  root=r; history.replaceState(null,"",location.pathname); render();
+  if(!root){ $("#count").textContent="Keine Verbindung"; $("#status").textContent="Die Datenbank konnte nicht geladen werden. Prüf die Internetverbindung und lade die Seite neu."; return; }
+  root.child("designs").on("value",s=>{ designs=s.val()||{}; render(); },err=>{ $("#count").textContent="Keine Verbindung"; showErr(err); });
+});
+</script>
+</body>
+</html>

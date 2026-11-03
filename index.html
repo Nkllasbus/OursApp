@@ -254,7 +254,7 @@ header.brand .wordmark{opacity:1;font-size:clamp(2.1rem,9.5vw,2.7rem);letter-spa
    - E-Mail und Passwort über Firebase Authentication
    - Jede Seite hat ihren eigenen Bereich unter spaces/<id> mit eigenen Personen (access/<uid>)
    - users/<uid>/spaces/<typ> merkt sich, welcher Bereich zu welcher Seite gehört
-   Seiten rufen Auth.start(firebaseConfig, "dates" | "recipes" | "chores" | "budget", (ref, info) => { ... }) auf. */
+   Seiten rufen Auth.start(firebaseConfig, "dates" | "recipes" | "chores" | "budget" | "rooms", (ref, info) => { ... }) auf. */
 (function(){
   const PAGES = [
     {type:"dates",   file:"index.html",    label:"Dateideen", color:"#8c7559", noun:"Dateideen-Liste",
@@ -269,6 +269,9 @@ header.brand .wordmark{opacity:1;font-size:clamp(2.1rem,9.5vw,2.7rem);letter-spa
     {type:"budget",  file:"budget.html",   label:"Budget",    color:"#1b1b1d", noun:"Budget",
      empty:"Noch kein Budget", hint:"Dein Budget ist privat. Später kannst du jemanden dazuholen, zum Beispiel deine Freundin oder deinen Freund.",
      keys:null},
+    {type:"rooms",   file:"raum.html",     label:"Raumdesign", color:"#8a4a30", noun:"Raumsammlung",
+     empty:"Noch keine Raumsammlung", hint:"Leg eine Sammlung an, fotografier deine Räume und probier Einrichtungsstile aus. Später kannst du jemanden dazuholen.",
+     keys:[]},
   ];
   const CSS = `
   .auth-screen{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow-y:auto;background:var(--page);
