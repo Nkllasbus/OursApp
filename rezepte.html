@@ -1834,6 +1834,13 @@ function postRecipe(id,data){
   if(!isOwner || !shareOn || !myUid) return;
   fdb().ref(`posts/${myUid}/${id}`).set({rid:id,sid:mySid,title:data.title||"Rezept",cover:data.cover||null,category:data.category||null,at:Date.now(),name:myName}).catch(()=>{});
 }
+let pdelPending=null;
+// eigenen Beitrag aus dem Feed nehmen (das Rezept bleibt)
+async function deletePost(pid){
+  const keep=feed; feed=(feed||[]).filter(x=>!(x.uid===myUid&&x.pid===pid)); renderList();
+  try{ await fdb().ref(`posts/${myUid}/${pid}`).remove(); }
+  catch(e){ feed=keep; renderList(); $("#status").textContent="Der Beitrag konnte nicht entfernt werden. Prüf die Regeln in Firebase."; }
+}
 function unpostRecipe(id){ if(myUid) fdb().ref(`posts/${myUid}/${id}`).remove().catch(()=>{}); }
 async function loadFeed(quiet){
   if(!myUid || feedLoading) return;
@@ -1863,7 +1870,7 @@ function renderFeed(){
     const cm=Object.entries(p.comments||{}).map(([id,x])=>({id,...x})).filter(x=>x&&x.text).sort((a,b)=>a.at-b.at);
     return `<article class="post">
       <div class="post-head"><span class="av">${esc((p.name||"?")[0].toUpperCase())}</span>
-        <span class="post-who"><b>${esc(mine?"Du":p.name)}</b> ${mine?"hast":"hat"} ein neues Rezept geteilt<small>${agoText(p.at)}</small></span>${mine?`<button type="button" class="post-del" data-pdel="${esc(p.pid)}" aria-label="Beitrag aus dem Feed entfernen" title="Aus dem Feed entfernen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`:""}</div>
+        <span class="post-who"><b>${esc(mine?"Du":p.name)}</b> ${mine?"hast":"hat"} ein neues Rezept geteilt<small>${agoText(p.at)}</small></span>${mine?(pdelPending===p.pid?`<button type="button" class="post-del sure" data-pdel="${esc(p.pid)}">Entfernen?</button>`:`<button type="button" class="post-del" data-pdel="${esc(p.pid)}" aria-label="Beitrag aus dem Feed entfernen" title="Aus dem Feed entfernen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`):""}</div>
       <button type="button" class="post-card" data-feed-open="${esc(key)}">
         <span class="post-img">${u?`<img src="${u}" alt="">`:LEAF}</span>
         <span class="post-info">${c?`<span class="card-cat">${c.emoji} ${c.one}</span>`:""}<b>${esc(p.title||"Rezept")}</b><small>Ansehen →</small></span>
@@ -1884,9 +1891,11 @@ async function openFeedRecipe(key){
 }
 document.addEventListener("click",e=>{
   const o=e.target.closest("[data-feed-open]"); if(o){ openFeedRecipe(o.dataset.feedOpen); return; }
-  const pd=e.target.closest("[data-pdel]"); if(pd){
-    if(!pd.classList.contains("sure")){ pd.classList.add("sure"); pd.textContent="Entfernen?"; setTimeout(()=>{ if(pd.isConnected) renderList(); },3500); return; }
-    const pid=pd.dataset.pdel; unpostRecipe(pid); feed=(feed||[]).filter(x=>!(x.uid===myUid&&x.pid===pid)); renderList(); return; }
+  const pd=e.target.closest("[data-pdel]");
+  if(!pd && pdelPending){ pdelPending=null; renderList(); }
+  if(pd){ const pid=pd.dataset.pdel;
+    if(pdelPending!==pid){ pdelPending=pid; renderList(); return; }
+    pdelPending=null; deletePost(pid); return; }
   const d=e.target.closest("[data-cdel]"); if(d){ const [uid,pid,cid]=d.dataset.cdel.split("|");
     fdb().ref(`posts/${uid}/${pid}/comments/${cid}`).remove().then(()=>{ const p=feed.find(x=>x.uid===uid&&x.pid===pid); if(p&&p.comments) delete p.comments[cid]; renderList(); }).catch(()=>{}); }
 });
