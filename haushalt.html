@@ -249,6 +249,11 @@ header.brand .pf-btn{top:calc(50% - 27px)}
 
 /* Umrandung um „Ours“ */
 header.brand .ours-mark{-webkit-text-stroke:6px #1d3140;paint-order:stroke fill;text-shadow:0 3px 12px rgba(0,0,0,.28)}
+
+/* Kopf: „Ours“ klein oben, der Seitenname im Fokus */
+header.brand{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:12px 64px 25px!important}
+header.brand .ours-mark{font-size:.82rem;font-weight:800;letter-spacing:.24em;text-transform:uppercase;opacity:.8;-webkit-text-stroke:0;text-shadow:none;padding-left:.24em}
+header.brand .wordmark{opacity:1;font-size:clamp(2.1rem,9.5vw,2.7rem);letter-spacing:0;color:var(--on-band)}
 </style>
 </head>
 <body>
@@ -715,10 +720,10 @@ header.brand .ours-mark{-webkit-text-stroke:6px #1d3140;paint-order:stroke fill;
       const base=location.href.split("#")[0].replace(/[^/]*$/,"");
       const link=friendCode?`${base}index.html#friend-${friendCode}`:"";
       const reqs=Object.entries(requestsIn), inv=Object.entries(inbox), fl=Object.entries(friends).sort((a,b)=>(a[1].name||"").localeCompare(b[1].name||""));
-      const pageOf=t=>PAGES.find(p=>p.type===t)||PAGES[0];
+      const pageOf=t=>PAGES.find(p=>p.type===(t==="swipe"?"recipes":t))||PAGES[0];
       show("Freunde",fl.length?`${fl.length} ${fl.length===1?"Freund":"Freunde"}`:"Füg Freunde hinzu, um sie schnell zu deinen Listen einzuladen.",`
         ${inv.length?`<p class="auth-sec">Einladungen</p><ul class="auth-people">${inv.map(([id,x])=>`<li><span class="av" style="background:${pageOf(x.type).color}">${esc(initial(x.fromName))}</span>
-          <span class="nm"><b>${esc(x.fromName||"Jemand")}</b><small>lädt dich zu ${esc(pageOf(x.type).label)} ein</small></span>
+          <span class="nm"><b>${esc(x.fromName||"Jemand")}</b><small>${x.type==="swipe"?"will mit dir Rezepte swipen":`lädt dich zu ${esc(pageOf(x.type).label)} ein`}</small></span>
           <button type="button" class="rm" data-inv-no="${esc(id)}">Nein</button><button type="button" class="rm yes" data-inv-yes="${esc(id)}">Annehmen</button></li>`).join("")}</ul>`:""}
         ${reqs.length?`<p class="auth-sec">Anfragen</p><ul class="auth-people">${reqs.map(([id,x])=>`<li><span class="av">${esc(initial(x.name))}</span>
           <span class="nm"><b>${esc(x.name||"Jemand")}</b><small>möchte mit dir befreundet sein</small></span>
@@ -742,6 +747,7 @@ header.brand .ours-mark{-webkit-text-stroke:6px #1d3140;paint-order:stroke fill;
       screen.querySelectorAll("[data-inv-no]").forEach(b=>b.onclick=()=>db.ref(`inbox/${user.uid}/${b.dataset.invNo}`).remove().catch(()=>{}));
       screen.querySelectorAll("[data-inv-yes]").forEach(b=>b.onclick=async()=>{
         const x=inbox[b.dataset.invYes]; if(!x) return; const p=pageOf(x.type);
+        if(x.type==="swipe"){ friendsOpen=false; hide(); const t=`${p.file}#swipe-${x.sid}`; if(p.type===type){ history.replaceState(null,"",t); location.reload(); } else location.href=t; return; }
         await db.ref(`inbox/${user.uid}/${b.dataset.invYes}`).remove().catch(()=>{});
         const target=`${p.file}#join-${x.sid}-${x.code}`;
         if(p.type===type){ history.replaceState(null,"",target); location.reload(); } else location.href=target;

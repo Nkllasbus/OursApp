@@ -287,6 +287,36 @@ header p{margin-top:4px;font-size:.88rem}
 .srcrow .filter-btn{margin:0;padding:0 12px;border-radius:10px;gap:4px;min-width:44px;justify-content:center}
 .srcrow .filter-btn span:empty{display:none}
 .fab-left{right:auto;left:0}
+#swipeBtn{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;transition:transform .5s ease}
+#swipeBtn.holding{transform:scale(1.12)}
+#swipeBtn.dot::after{content:"";position:absolute;top:4px;right:4px;width:12px;height:12px;border-radius:50%;background:#e8a33d;border:2px solid var(--bg)}
+.swchips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;margin-bottom:8px}
+.swchips::-webkit-scrollbar{display:none}
+.swchip{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:.85rem;font-weight:600;white-space:nowrap}
+.swchip small{font-weight:500;color:var(--muted);font-size:.75rem}
+.swchip.on{background:var(--band);border-color:var(--band);color:var(--on-band)}
+.swchip.on small{color:var(--on-band-muted)}
+.swchip.inv{border-color:#e8a33d;background:#fdf1dc;color:#7a4b0a}
+.swchip.add{color:var(--accent);border-style:dashed}
+.swinv .vrow{justify-content:center;margin-top:8px}
+.sfrom{position:absolute;left:10px;bottom:10px;background:rgba(255,255,255,.9);color:var(--ink);border-radius:999px;padding:3px 10px;font-size:.78rem;font-weight:600}
+.mlist{display:flex;flex-direction:column;gap:8px}
+.mrow{display:flex;align-items:center;gap:12px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px;color:var(--ink)}
+.mth{flex:none;width:56px;height:56px;border-radius:10px;overflow:hidden;background:var(--accent-soft);display:grid;place-items:center;color:var(--accent)}
+.mth img{width:100%;height:100%;object-fit:cover}
+.mth svg{width:26px;height:26px;opacity:.6}
+.mtt{display:flex;flex-direction:column;min-width:0}
+.mtt b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mtt small{color:var(--muted);font-size:.8rem}
+#pickList{max-height:50vh;overflow-y:auto}
+#pickList .auth-people{margin:0;padding:0}
+#pickList .auth-people li{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:6px;list-style:none}
+#pickList .av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.85rem;background:var(--band);color:var(--on-band);flex:none}
+#pickList .nm{flex:1;min-width:0;display:flex;flex-direction:column}
+#pickList .nm b{font-weight:600}
+#pickList .nm small{font-size:.75rem;color:var(--muted)}
+.pk-btn{border:0;background:var(--band);color:var(--on-band);border-radius:999px;padding:6px 14px;font:inherit;font-size:.85rem;font-weight:600}
+.pk-btn:disabled{opacity:.6}
 
 /* Seitenmenü hinter dem Titel */
 .switch{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;text-align:left}
@@ -422,6 +452,11 @@ header p{margin-top:4px;font-size:.88rem}
 
 /* Umrandung um „Ours“ */
 #head .ours-mark{-webkit-text-stroke:6px #22050c;paint-order:stroke fill;text-shadow:0 3px 12px rgba(0,0,0,.28)}
+
+/* Kopf: „Ours“ klein oben, der Seitenname im Fokus */
+#head{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:12px 64px 25px!important}
+#head .ours-mark{font-size:.82rem;font-weight:800;letter-spacing:.24em;text-transform:uppercase;opacity:.8;-webkit-text-stroke:0;text-shadow:none;padding-left:.24em}
+#head .wordmark{opacity:1;font-size:clamp(2.1rem,9.5vw,2.7rem);letter-spacing:0;color:var(--on-band)}
 </style>
 </head>
 <body>
@@ -451,7 +486,7 @@ header p{margin-top:4px;font-size:.88rem}
       </div>
     </div>
     <div class="count fab-count" id="count" aria-live="polite">Verbindet …</div>
-    <button class="fab fab-left" id="swipeBtn" type="button" aria-label="Rezepte zu zweit swipen" title="Swipen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="currentColor"/></svg></button>
+    <button class="fab fab-left" id="swipeBtn" type="button" aria-label="Swipen. Gedrückt halten, um mit einem Freund zu swipen" title="Swipen – gedrückt halten für Freunde"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="currentColor"/></svg></button>
     <div class="fab-menu" id="fabMenu" aria-hidden="true">
       <button class="fab-opt" type="button" id="newBtn" tabindex="-1"><span>Selbst eintragen</span><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19h4l10-10-4-4L5 15zM13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg></i></button>
       <button class="fab-opt" type="button" id="optLink" tabindex="-1"><span>Per Link</span><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.2 1.2M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.2-1.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></i></button>
@@ -506,6 +541,14 @@ header p{margin-top:4px;font-size:.88rem}
   </div>
   <div class="frx" id="frx" hidden><div class="frx-card" role="dialog" aria-modal="true" aria-label="Rezept von Freund">
     <button class="frx-close" type="button" id="frxClose" aria-label="Schließen">×</button><div class="detail" id="frxBody"></div></div></div>
+  <div class="modal" id="pickModal" hidden>
+    <div class="sheet vsheet" role="dialog" aria-modal="true" aria-labelledby="pickTitle">
+      <h3 id="pickTitle">Mit wem swipen?</h3>
+      <p>Wähl einen Freund. Du kannst sofort losswipen, die Einladung kann später angenommen werden.</p>
+      <div id="pickList"></div>
+      <div class="vrow"><button class="ghost" type="button" id="pickClose">Schließen</button></div>
+    </div>
+  </div>
   <div class="modal" id="matchModal" hidden>
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="matchTitle">
       <div class="mimg" id="matchImg"></div>
@@ -925,10 +968,10 @@ header p{margin-top:4px;font-size:.88rem}
       const base=location.href.split("#")[0].replace(/[^/]*$/,"");
       const link=friendCode?`${base}index.html#friend-${friendCode}`:"";
       const reqs=Object.entries(requestsIn), inv=Object.entries(inbox), fl=Object.entries(friends).sort((a,b)=>(a[1].name||"").localeCompare(b[1].name||""));
-      const pageOf=t=>PAGES.find(p=>p.type===t)||PAGES[0];
+      const pageOf=t=>PAGES.find(p=>p.type===(t==="swipe"?"recipes":t))||PAGES[0];
       show("Freunde",fl.length?`${fl.length} ${fl.length===1?"Freund":"Freunde"}`:"Füg Freunde hinzu, um sie schnell zu deinen Listen einzuladen.",`
         ${inv.length?`<p class="auth-sec">Einladungen</p><ul class="auth-people">${inv.map(([id,x])=>`<li><span class="av" style="background:${pageOf(x.type).color}">${esc(initial(x.fromName))}</span>
-          <span class="nm"><b>${esc(x.fromName||"Jemand")}</b><small>lädt dich zu ${esc(pageOf(x.type).label)} ein</small></span>
+          <span class="nm"><b>${esc(x.fromName||"Jemand")}</b><small>${x.type==="swipe"?"will mit dir Rezepte swipen":`lädt dich zu ${esc(pageOf(x.type).label)} ein`}</small></span>
           <button type="button" class="rm" data-inv-no="${esc(id)}">Nein</button><button type="button" class="rm yes" data-inv-yes="${esc(id)}">Annehmen</button></li>`).join("")}</ul>`:""}
         ${reqs.length?`<p class="auth-sec">Anfragen</p><ul class="auth-people">${reqs.map(([id,x])=>`<li><span class="av">${esc(initial(x.name))}</span>
           <span class="nm"><b>${esc(x.name||"Jemand")}</b><small>möchte mit dir befreundet sein</small></span>
@@ -952,6 +995,7 @@ header p{margin-top:4px;font-size:.88rem}
       screen.querySelectorAll("[data-inv-no]").forEach(b=>b.onclick=()=>db.ref(`inbox/${user.uid}/${b.dataset.invNo}`).remove().catch(()=>{}));
       screen.querySelectorAll("[data-inv-yes]").forEach(b=>b.onclick=async()=>{
         const x=inbox[b.dataset.invYes]; if(!x) return; const p=pageOf(x.type);
+        if(x.type==="swipe"){ friendsOpen=false; hide(); const t=`${p.file}#swipe-${x.sid}`; if(p.type===type){ history.replaceState(null,"",t); location.reload(); } else location.href=t; return; }
         await db.ref(`inbox/${user.uid}/${b.dataset.invYes}`).remove().catch(()=>{});
         const target=`${p.file}#join-${x.sid}-${x.code}`;
         if(p.type===type){ history.replaceState(null,"",target); location.reload(); } else location.href=target;
@@ -1509,113 +1553,261 @@ $("#photoGo").addEventListener("click",async()=>{
   photoBusy=false; btn.textContent="Erstellen"; renderPhotos();
 });
 
-/* ---------- Swipen: zwei Personen, Matches werden vorgeschlagen ---------- */
-let people={a:"",b:""}, swipe={round:null,votes:{}}, roundConfirm=false, dragging=false, swipePending=false;
-let me=null; try{ me=localStorage.getItem("rezepte.me"); }catch(e){}
-if(me!=="a" && me!=="b") me=null;
-const other=p=>p==="a"?"b":"a";
-const nameOf=p=>(people[p]||"").trim()||(p==="a"?"Person 1":"Person 2");
-const roundVotes=p=>(swipe.votes&&swipe.votes[swipe.round]&&swipe.votes[swipe.round][p])||{};
-// gleiche Reihenfolge auf beiden Handys, pro Runde neu gemischt
-const seeded=(t)=>{ let h=2166136261; for(const c of t){ h^=c.charCodeAt(0); h=Math.imul(h,16777619); } return h>>>0; };
-const deck=()=>[...recipes].sort((x,y)=>seeded(swipe.round+x.id)-seeded(swipe.round+y.id));
-const matches=()=>{ const A=roundVotes("a"), B=roundVotes("b"); return recipes.filter(r=>A[r.id]===1 && B[r.id]===1); };
+/* ---------- Swipen: mit der Sammlung oder mit einem Freund ---------- */
+// ctx "space": alle, die die Sammlung teilen, swipen über eure Rezepte
+// ctx <id>:    eine Swipe-Runde mit einem Freund unter swipes/<id> (Karten + kleine Vorschaubilder liegen dort)
+let swipe={round:null,votes:{}}, roundConfirm=false, dragging=false, swipePending=false;
+let swCtx="space", spaceProfiles={}, spaceAccess={}, sessions={}, sessionRefs={}, swInvites={}, swPick=false, swInvConfirm=null;
+const swHash=(location.hash.match(/^#swipe-([A-Za-z0-9_-]{6,40})$/)||[])[1]||null;
 const HEART='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="currentColor"/></svg>';
 const CROSS='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
+// gleiche Reihenfolge auf beiden Handys, pro Runde neu gemischt
+const seeded=(t)=>{ let h=2166136261; for(const c of t){ h^=c.charCodeAt(0); h=Math.imul(h,16777619); } return h>>>0; };
+const firstName=n=>String(n||"").trim().split(/\s+/)[0]||"Freund";
 
-function openSwipe(){
+// Was gerade geswipet wird, einheitlich für Sammlung und Freund
+function ctxData(){
+  if(swCtx!=="space" && sessions[swCtx]){
+    const s=sessions[swCtx], other=s.a===myUid?s.b:s.a;
+    const cards=Object.entries(s.cards||{}).map(([key,c])=>({key,...c}));
+    return {kind:"friend", id:swCtx, s, round:s.round, votes:s.votes||{}, me:myUid, others:[other],
+      names:{[s.a]:s.aName||"Freund",[s.b]:s.bName||"Freund"}, cards, ref:fdb().ref("swipes/"+swCtx)};
+  }
+  const others=Object.keys(spaceAccess).filter(id=>id!==myUid), names={};
+  Object.keys(spaceAccess).forEach(id=>names[id]=(spaceProfiles[id]&&spaceProfiles[id].name)||"Jemand");
+  names[myUid]=myName;
+  const cards=recipes.map(r=>({key:r.id,rid:r.id,owner:myUid,sid:mySid,title:r.title,category:r.category,cover:r.cover,nI:arr(r.ingredients).length,nS:arr(r.steps).length,r}));
+  return {kind:"space", round:swipe.round, votes:swipe.votes||{}, me:myUid, others, names, cards, ref:root&&root.child("swipe")};
+}
+const votesOf=(d,uid)=>(d.votes&&d.votes[d.round]&&d.votes[d.round][uid])||{};
+const deckOf=d=>[...d.cards].sort((x,y)=>seeded(d.round+x.key)-seeded(d.round+y.key));
+const matchesOf=d=>{ const mine=votesOf(d,d.me); return d.cards.filter(c=>mine[c.key]===1 && d.others.some(o=>votesOf(d,o)[c.key]===1)); };
+const cardImg=(d,c)=>{
+  if(c.owner===myUid){ const r=recipes.find(x=>x.id===c.rid); if(r&&okId(r.cover)) return photoUrl(r.cover); }
+  return d.kind==="friend" && d.s.thumbs && typeof d.s.thumbs[c.key]==="string" && d.s.thumbs[c.key].startsWith("data:image/") ? d.s.thumbs[c.key] : null;
+};
+const ensureRound=()=>{ const d=ctxData(); if(d.ref && !d.round) d.ref.child("round").set("r"+Date.now().toString(36)).catch(()=>{}); };
+
+function openSwipe(ctx){
+  if(ctx) swCtx=ctx;
+  if(swCtx!=="space" && !sessions[swCtx]) swCtx="space";
   swipeOpen=true; view=null; roundConfirm=false;
   history.pushState({swipe:true},"",location.pathname);
-  if(root && !swipe.round) root.child("swipe/round").set("r"+Date.now().toString(36)).catch(showErr);
-  render();
+  ensureRound(); render();
 }
-$("#swipeBtn").addEventListener("click",openSwipe);
 $("#swipeBack").addEventListener("click",()=>{ if(history.state&&history.state.swipe) history.back(); else { swipeOpen=false; render(); } });
 $("#newRound").addEventListener("click",()=>{
   if(!roundConfirm){ roundConfirm=true; $("#newRound").textContent="Wirklich neu starten?"; return; }
   roundConfirm=false; $("#newRound").textContent="Neue Runde";
-  root.child("swipe").set({round:"r"+Date.now().toString(36)}).catch(showErr);
+  const d=ctxData(); if(!d.ref) return;
+  d.ref.child("round").set("r"+Date.now().toString(36)).catch(showErr);
   $("#status").textContent="Neue Runde gestartet. Alle Rezepte kommen wieder.";
 });
+
+// Herz: kurz tippen = mit der Sammlung, gedrückt halten = mit einem Freund
+(()=>{
+  const b=$("#swipeBtn"); let t=null, long=false;
+  const cancel=()=>{ clearTimeout(t); t=null; b.classList.remove("holding"); };
+  b.addEventListener("pointerdown",e=>{ if(e.button>0) return; long=false; b.classList.add("holding");
+    t=setTimeout(()=>{ t=null; long=true; b.classList.remove("holding"); if(navigator.vibrate) navigator.vibrate(15); openPicker(); },500); });
+  ["pointerup","pointerleave","pointercancel"].forEach(ev=>b.addEventListener(ev,cancel));
+  b.addEventListener("contextmenu",e=>e.preventDefault());
+  b.addEventListener("click",e=>{ if(long){ long=false; e.preventDefault(); return; } openSwipe("space"); });
+})();
+
+/* Freund auswählen */
+async function openPicker(){
+  if(!myUid) return;
+  swPick=true; $("#pickModal").hidden=false; $("#pickList").innerHTML=`<p class="card-meta">Freunde werden geladen …</p>`;
+  let fs={}; try{ fs=(await fdb().ref(`friends/${myUid}`).once("value")).val()||{}; }catch(e){}
+  const list=Object.entries(fs).sort((a,b)=>(a[1].name||"").localeCompare(b[1].name||""));
+  const sessWith=fid=>Object.entries(sessions).find(([id,s])=>s && (s.a===fid||s.b===fid));
+  $("#pickList").innerHTML=list.length?`<ul class="auth-people">${list.map(([fid,f])=>{ const s=sessWith(fid);
+      return `<li><span class="av">${esc((f.name||"?")[0].toUpperCase())}</span><span class="nm"><b>${esc(f.name||"Freund")}</b><small>${s?(s[1].accepted?"Ihr swipet schon zusammen":"Einladung verschickt"):"Einladen und gleich losswipen"}</small></span>
+        <button type="button" class="pk-btn" data-pk="${esc(fid)}" data-pkname="${esc(f.name||"Freund")}"${s?` data-pkopen="${esc(s[0])}"`:""}>${s?"Öffnen":"Swipen"}</button></li>`; }).join("")}</ul>`
+    :`<p class="card-meta">Du hast noch keine Freunde. Füg sie über den Profil-Knopf unter „Freunde“ hinzu.</p>`;
+}
+const closePicker=()=>{ swPick=false; $("#pickModal").hidden=true; };
+$("#pickClose").addEventListener("click",closePicker);
+$("#pickModal").addEventListener("click",async e=>{
+  if(e.target.id==="pickModal") return closePicker();
+  const b=e.target.closest("[data-pk]"); if(!b || b.disabled) return;
+  if(b.dataset.pkopen){ closePicker(); return openSwipe(b.dataset.pkopen); }
+  b.disabled=true; b.textContent="Lädt ein …";
+  try{ const id=await startSession(b.dataset.pk,b.dataset.pkname); closePicker(); openSwipe(id); }
+  catch(err){ b.disabled=false; b.textContent="Swipen"; $("#pickList").insertAdjacentHTML("beforeend",`<p class="vmsg">Das hat nicht geklappt. Prüf die Regeln in Firebase.</p>`); }
+});
+
+/* Swipe-Runde mit einem Freund */
+const cardOf=(r,owner,sid)=>({rid:r.id,owner,sid,title:String(r.title||"Ohne Namen").slice(0,120),category:r.category||null,nI:arr(r.ingredients).length,nS:arr(r.steps).length});
+async function startSession(fid,fname){
+  const ref=fdb().ref("swipes").push(), id=ref.key, cards={};
+  recipes.forEach(r=>cards["a_"+r.id]=cardOf(r,myUid,mySid));
+  await ref.set({a:myUid,b:fid,aName:myName,bName:fname,at:Date.now(),round:"r"+Date.now().toString(36),accepted:false,cards});
+  await fdb().ref(`users/${myUid}/swipes/${id}`).set(true);
+  await fdb().ref(`inbox/${fid}`).push().set({type:"swipe",sid:id,code:"",from:myUid,fromName:myName,at:Date.now()});
+  watchSession(id); sessions[id]=sessions[id]||{a:myUid,b:fid,aName:myName,bName:fname,round:null,cards};
+  addThumbs(id,"a_",recipes);
+  return id;
+}
+// kleine Vorschaubilder, damit der Freund die Bilder sieht, auch ohne eure Sammlung lesen zu dürfen
+async function addThumbs(id,prefix,list){
+  for(const r of list){
+    if(!okId(r.cover)) continue;
+    try{
+      let src=photoCache.get(r.cover); if(!src) src=(await root.child("photos/"+r.cover).once("value")).val();
+      if(typeof src!=="string" || !src.startsWith("data:image/")) continue;
+      const img=new Image(); img.src=src; await img.decode();
+      const s=Math.min(1,420/Math.max(img.width,img.height)), c=document.createElement("canvas");
+      c.width=Math.round(img.width*s); c.height=Math.round(img.height*s); c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+      await fdb().ref(`swipes/${id}/thumbs/${prefix}${r.id}`).set(c.toDataURL("image/jpeg",.72));
+    }catch(e){}
+  }
+}
+async function acceptSession(invId){
+  const x=swInvites[invId]; if(!x) return; const id=x.sid;
+  try{
+    const ref=fdb().ref("swipes/"+id), s=(await ref.once("value")).val();
+    if(!s){ await fdb().ref(`inbox/${myUid}/${invId}`).remove(); $("#status").textContent="Diese Einladung gibt es nicht mehr."; return; }
+    const upd={accepted:true,bName:myName};
+    const mine=Object.entries((await root.child("recipes").once("value")).val()||{}).map(([id,r])=>({id,...r}));
+    mine.forEach(r=>upd["cards/b_"+r.id]=cardOf(r,myUid,mySid));
+    await ref.update(upd);
+    await fdb().ref(`users/${myUid}/swipes/${id}`).set(true);
+    await fdb().ref(`inbox/${myUid}/${invId}`).remove(); delete swInvites[invId]; updateSwipeDot();
+    watchSession(id); addThumbs(id,"b_",mine);
+    swCtx=id; if(swipeOpen) renderSwipe(); else openSwipe(id);
+  }catch(e){ $("#status").textContent="Annehmen hat nicht geklappt. Prüf die Regeln in Firebase."; }
+}
+async function declineSession(invId){
+  const x=swInvites[invId]; if(!x) return;
+  fdb().ref(`swipes/${x.sid}/declined`).set(true).catch(()=>{});
+  await fdb().ref(`inbox/${myUid}/${invId}`).remove().catch(()=>{}); delete swInvites[invId]; updateSwipeDot();
+}
+async function endSession(id){
+  delete sessions[id]; if(sessionRefs[id]){ sessionRefs[id].off(); delete sessionRefs[id]; }
+  if(swCtx===id) swCtx="space";
+  await fdb().ref(`users/${myUid}/swipes/${id}`).remove().catch(()=>{});
+  await fdb().ref(`swipes/${id}`).remove().catch(()=>{});
+  renderSwipe(); updateSwipeDot();
+}
+function watchSession(id){
+  if(sessionRefs[id]) return;
+  const ref=fdb().ref("swipes/"+id); sessionRefs[id]=ref;
+  ref.on("value",snap=>{
+    const v=snap.val();
+    if(!v){ ref.off(); delete sessionRefs[id]; delete sessions[id]; fdb().ref(`users/${myUid}/swipes/${id}`).remove().catch(()=>{}); if(swCtx===id) swCtx="space"; }
+    else sessions[id]=v;
+    if(swipeOpen && !view) renderSwipe();
+    if(swipeOpen && swCtx===id) checkMatches();
+  },()=>{ delete sessionRefs[id]; delete sessions[id]; fdb().ref(`users/${myUid}/swipes/${id}`).remove().catch(()=>{}); if(swCtx===id){ swCtx="space"; if(swipeOpen) renderSwipe(); } });
+}
+function updateSwipeDot(){ const n=Object.keys(swInvites).length; $("#swipeBtn").classList.toggle("dot",n>0); }
+function initSwipe(){
+  root.child("access").on("value",s=>{ spaceAccess=s.val()||{}; if(swipeOpen&&!view) renderSwipe(); },()=>{});
+  root.child("profiles").on("value",s=>{ spaceProfiles=s.val()||{}; if(swipeOpen&&!view) renderSwipe(); },()=>{});
+  fdb().ref(`users/${myUid}/swipes`).on("value",s=>{ Object.keys(s.val()||{}).forEach(watchSession); },()=>{});
+  fdb().ref(`inbox/${myUid}`).on("value",s=>{
+    const v=s.val()||{}; swInvites={};
+    Object.entries(v).forEach(([k,x])=>{ if(x && x.type==="swipe" && x.sid) swInvites[k]=x; });
+    updateSwipeDot(); if(swipeOpen&&!view) renderSwipe();
+    if(swHash){ const k=Object.keys(swInvites).find(k=>swInvites[k].sid===swHash); if(k && !swHashDone){ swHashDone=true; acceptSession(k); } }
+  },()=>{});
+  if(swHash && !swHashDone) setTimeout(()=>{ if(!swHashDone){ swHashDone=true; watchSession(swHash); openSwipe("space"); } },1500);
+}
+let swHashDone=false;
 
 function renderSwipe(){
   if(dragging){ swipePending=true; return; }
   const body=$("#swipeBody");
-  $("#newRound").hidden=!me;
   if(!roundConfirm) $("#newRound").textContent="Neue Runde";
-  // Wer swipet hier?
-  if(!me){
-    const a=document.activeElement;
-    if(a && body.contains(a) && a.matches(".who-names input")) return;
-    body.innerHTML=`<div class="who-pick">
-      <h3>Wer swipet hier?</h3>
-      <p>Tragt eure Namen ein und wähl aus, wer du bist. Das Handy merkt sich das.</p>
-      <div class="who-names">
-        <input id="nameA" maxlength="20" placeholder="Person 1" aria-label="Name Person 1" value="${esc(people.a)}">
-        <input id="nameB" maxlength="20" placeholder="Person 2" aria-label="Name Person 2" value="${esc(people.b)}">
-      </div>
-      <div class="who-btns">
-        <button class="btn primary" type="button" data-me="a">Ich bin ${esc(nameOf("a"))}</button>
-        <button class="btn primary" type="button" data-me="b">Ich bin ${esc(nameOf("b"))}</button>
-      </div></div>`;
+  // Auswahl oben: Sammlung, Freunde, Einladungen
+  const sess=Object.entries(sessions).filter(([,s])=>s&&s.a);
+  const spaceOthers=Object.keys(spaceAccess).filter(id=>id!==myUid);
+  const spaceName=spaceOthers.length?"Mit "+spaceOthers.map(id=>firstName(spaceProfiles[id]&&spaceProfiles[id].name)).join(", "):"Unsere Sammlung";
+  let chips=`<div class="swchips" role="tablist">
+    <button type="button" class="swchip${swCtx==="space"?" on":""}" data-swctx="space">${esc(spaceName)}</button>
+    ${sess.map(([id,s])=>{ const o=s.a===myUid?s.bName:s.aName; return `<button type="button" class="swchip${swCtx===id?" on":""}" data-swctx="${esc(id)}">Mit ${esc(firstName(o))}${s.accepted?"":` <small>wartet</small>`}</button>`; }).join("")}
+    ${Object.entries(swInvites).map(([k,x])=>`<button type="button" class="swchip inv${swCtx==="inv:"+k?" on":""}" data-swctx="inv:${esc(k)}">${esc(firstName(x.fromName))} lädt ein</button>`).join("")}
+    <button type="button" class="swchip add" data-swadd aria-label="Mit einem Freund swipen">+ Freund</button></div>`;
+  // Einladung ansehen
+  if(swCtx.startsWith("inv:")){
+    const k=swCtx.slice(4), x=swInvites[k];
+    if(!x){ swCtx="space"; return renderSwipe(); }
+    $("#newRound").hidden=true;
+    body.innerHTML=chips+`<div class="swipe-done swinv"><strong>${esc(x.fromName||"Jemand")} will mit dir swipen</strong>
+      <span>Wenn du annimmst, kommen deine Rezepte mit in den Stapel. Wenn ihr beide dasselbe Rezept liked, seht ihr es sofort.</span>
+      <div class="vrow"><button class="ghost" type="button" data-swno="${esc(k)}">Ablehnen</button><button class="btn primary" type="button" data-swyes="${esc(k)}">Annehmen</button></div></div>`;
     return;
   }
-  const mine=roundVotes(me), theirs=roundVotes(other(me));
-  const left=deck().filter(r=>mine[r.id]===undefined);
-  const theirCount=recipes.filter(r=>theirs[r.id]!==undefined).length;
-  const m=matches();
-  let html=`<div class="swipe-who"><span>Du bist <b>${esc(nameOf(me))}</b> · <button class="linkish" type="button" data-me="">wechseln</button></span>
-    <span>${esc(nameOf(other(me)))}: ${theirCount} von ${recipes.length}</span></div>`;
-  if(!recipes.length){
+  const d=ctxData();
+  $("#newRound").hidden=!d.round;
+  const mine=votesOf(d,d.me), deck=deckOf(d), left=deck.filter(c=>mine[c.key]===undefined), m=matchesOf(d);
+  let who;
+  if(d.kind==="space"){
+    who=d.others.length?d.others.map(o=>`${esc(firstName(d.names[o]))}: ${d.cards.filter(c=>votesOf(d,o)[c.key]!==undefined).length} von ${d.cards.length}`).join(" · ")
+      :`Du bist allein in dieser Sammlung. Halt das Herz gedrückt, um mit einem Freund zu swipen.`;
+  }else{
+    const o=d.others[0], on=firstName(d.names[o]);
+    who=d.s.declined?`${esc(on)} hat abgelehnt.`:!d.s.accepted?`${esc(on)} hat noch nicht angenommen. Du kannst schon losswipen.`
+      :`${esc(on)}: ${d.cards.filter(c=>votesOf(d,o)[c.key]!==undefined).length} von ${d.cards.length}`;
+    who+=` · <button class="linkish" type="button" data-swend="${esc(d.id)}">${swInvConfirm===d.id?"Wirklich beenden?":"Beenden"}</button>`;
+  }
+  let html=chips+`<div class="swipe-who"><span>${who}</span></div>`;
+  if(!d.cards.length){
     html+=`<div class="swipe-done"><strong>Noch keine Rezepte</strong><span>Legt zuerst ein paar Rezepte an, dann könnt ihr swipen.</span></div>`;
   }else if(left.length){
-    const card=(r,cls)=>{ const u=okId(r.cover)&&photoUrl(r.cover); const c=catOf(r);
-      return `<div class="scard ${cls}" data-sid="${esc(r.id)}">
+    const card=(c,cls)=>{ const u=cardImg(d,c), cat=CATS.find(x=>x.id===(catFromLabel(c.category)||c.category));
+      const from=c.owner!==myUid?`<span class="sfrom">von ${esc(firstName(d.names[c.owner]))}</span>`:"";
+      const ypos=c.r?coverY(c.r):50;
+      return `<div class="scard ${cls}" data-sid="${esc(c.key)}">
         <span class="stamp like">LECKER</span><span class="stamp nope">NÖ</span>
-        <div class="simg">${u?`<img src="${u}" alt="" style="object-position:50% ${coverY(r)}%">`:LEAF}${starsBadge(r)}</div>
-        <div class="sbody">${c?`<span class="card-cat">${c.one}</span>`:""}<span class="stitle">${esc(r.title||"Ohne Namen")}</span>
-        <span class="card-meta">${arr(r.ingredients).length} Zutaten · ${arr(r.steps).length} Schritte · noch ${left.length}</span></div></div>`; };
+        <div class="simg">${u?`<img src="${u}" alt="" style="object-position:50% ${ypos}%">`:LEAF}${c.r?starsBadge(c.r):""}${from}</div>
+        <div class="sbody">${cat?`<span class="card-cat">${cat.one}</span>`:""}<span class="stitle">${esc(c.title||"Ohne Namen")}</span>
+        <span class="card-meta">${c.nI||0} Zutaten · ${c.nS||0} Schritte · noch ${left.length}</span></div></div>`; };
     html+=`<div class="stack">${left[1]?card(left[1],"under"):""}${card(left[0],"top")}</div>
       <div class="votes"><button class="vbtn no" type="button" data-vote="0" aria-label="Nö">${CROSS}</button>
       <button class="vbtn yes" type="button" data-vote="1" aria-label="Lecker">${HEART}</button></div>`;
   }else{
-    const waiting=theirCount<recipes.length;
-    html+=`<div class="swipe-done"><strong>Du bist durch</strong><span>${waiting?`Warte auf ${esc(nameOf(other(me)))}. Matches erscheinen sofort.`:"Ihr seid beide fertig."}</span></div>`;
+    const waiting=d.others.some(o=>d.cards.some(c=>votesOf(d,o)[c.key]===undefined));
+    html+=`<div class="swipe-done"><strong>Du bist durch</strong><span>${!d.others.length?"Sobald jemand mitswipet, siehst du hier eure Matches.":waiting?`Warte auf ${esc(d.others.map(o=>firstName(d.names[o])).join(" und "))}. Matches erscheinen sofort.`:"Ihr seid alle fertig."}</span></div>`;
   }
   html+=`<div class="match-sec"><h3>Das kocht ihr<span>${m.length}</span></h3>${m.length
-    ?`<div class="grid">${m.map(r=>cardHtml(r,true)).join("")}</div>`
+    ?`<div class="mlist">${m.map(c=>{ const u=cardImg(d,c); return `<button type="button" class="mrow" data-swopen="${esc(c.key)}"><span class="mth">${u?`<img src="${u}" alt="">`:LEAF}</span><span class="mtt"><b>${esc(c.title||"Rezept")}</b><small>${c.owner===myUid?"dein Rezept":"von "+esc(firstName(d.names[c.owner]))}</small></span></button>`; }).join("")}</div>`
     :`<p class="card-meta">Noch keine Matches. Wenn ihr beide dasselbe Rezept liked, steht es hier.</p>`}</div>`;
   body.innerHTML=html;
 }
-
-// Namen und Auswahl
-document.addEventListener("input",e=>{
-  if(e.target.id!=="nameA" && e.target.id!=="nameB") return;
-  const p=e.target.id==="nameA"?"a":"b";
-  people[p]=e.target.value;
-  const btn=document.querySelector(`[data-me="${p}"]`); if(btn) btn.textContent="Ich bin "+nameOf(p);
-  clearTimeout(timers["name"+p]);
-  const v=e.target.value.trim().slice(0,20);
-  timers["name"+p]=setTimeout(()=>root&&root.child("people/"+p).set(v).catch(showErr),500);
-});
 document.addEventListener("click",e=>{
-  const w=e.target.closest("[data-me]"); if(!w) return;
-  me=w.dataset.me||null;
-  try{ me?localStorage.setItem("rezepte.me",me):localStorage.removeItem("rezepte.me"); }catch(err){}
-  renderSwipe();
+  const c=e.target.closest("[data-swctx]"); if(c){ swCtx=c.dataset.swctx; swInvConfirm=null; roundConfirm=false; ensureRound(); renderSwipe(); checkMatches(); return; }
+  if(e.target.closest("[data-swadd]")) return openPicker();
+  const y=e.target.closest("[data-swyes]"); if(y){ y.disabled=true; return acceptSession(y.dataset.swyes); }
+  const n=e.target.closest("[data-swno]"); if(n){ declineSession(n.dataset.swno); swCtx="space"; return renderSwipe(); }
+  const en=e.target.closest("[data-swend]"); if(en){ const id=en.dataset.swend; if(swInvConfirm!==id){ swInvConfirm=id; return renderSwipe(); } swInvConfirm=null; return endSession(id); }
+  const o=e.target.closest("[data-swopen]"); if(o) return openSwipeCard(o.dataset.swopen);
 });
+// Karte öffnen: eigenes Rezept normal, Rezept vom Freund in der Vorschau
+async function openSwipeCard(key){
+  const d=ctxData(), c=d.cards.find(x=>x.key===key); if(!c) return;
+  if(c.owner===myUid && recipes.some(r=>r.id===c.rid)) return openRecipe(c.rid);
+  try{
+    const r=(await fdb().ref(`spaces/${c.sid}/recipes/${c.rid}`).once("value")).val();
+    if(!r){ $("#status").textContent="Dieses Rezept gibt es nicht mehr."; return; }
+    const name=d.names[c.owner]||"Freund";
+    frxDirect={f:{fid:c.owner,name,sid:c.sid},r:{id:c.rid,...r}}; frxCur={fid:c.owner,rid:c.rid}; frxRefresh(); $("#frx").hidden=false; $("#frx .frx-card").scrollTop=0;
+  }catch(e){ $("#status").textContent=`${firstName(d.names[c.owner])} teilt die eigenen Rezepte gerade nicht, deshalb siehst du nur den Namen.`; }
+}
 
 // Abstimmen
 function vote(val){
-  const top=document.querySelector(".scard.top"); if(!top||!me||!swipe.round) return;
+  const top=document.querySelector(".scard.top"), d=ctxData(); if(!top||!d.round||!d.ref||!myUid) return;
   const id=top.dataset.sid;
   top.classList.add("fly");
   top.style.transform=`translateX(${val?140:-140}%) rotate(${val?24:-24}deg)`;
   top.style.opacity="0";
-  if(!swipe.votes[swipe.round]) swipe.votes[swipe.round]={};
-  if(!swipe.votes[swipe.round][me]) swipe.votes[swipe.round][me]={};
-  swipe.votes[swipe.round][me][id]=val;
-  root.child(`swipe/votes/${swipe.round}/${me}/${id}`).set(val).catch(showErr);
+  const tgt=d.kind==="space"?swipe:sessions[swCtx];
+  tgt.votes=tgt.votes||{}; tgt.votes[d.round]=tgt.votes[d.round]||{}; tgt.votes[d.round][myUid]=tgt.votes[d.round][myUid]||{};
+  tgt.votes[d.round][myUid][id]=val;
+  d.ref.child(`votes/${d.round}/${myUid}/${id}`).set(val).catch(showErr);
   setTimeout(()=>{ renderSwipe(); checkMatches(); },300);
 }
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-vote]"); if(b) vote(+b.dataset.vote); });
@@ -1645,7 +1837,7 @@ document.addEventListener("keydown",e=>{
     else{
       c.classList.add("back"); c.style.transform="";
       c.querySelector(".like").style.opacity=0; c.querySelector(".nope").style.opacity=0;
-      if(Math.abs(dx)<6 && e.type==="pointerup") openRecipe(c.dataset.sid);   // antippen öffnet das Rezept
+      if(Math.abs(dx)<6 && e.type==="pointerup") openSwipeCard(c.dataset.sid);   // antippen öffnet das Rezept
       else if(swipePending){ swipePending=false; setTimeout(renderSwipe,220); }
     }
   };
@@ -1655,21 +1847,22 @@ document.addEventListener("keydown",e=>{
 
 // Match-Fenster
 let matchShowing=null;
-function seenKey(){ return "rezepte.seen."+swipe.round; }
 function checkMatches(){
-  if(!me || !swipe.round || matchShowing) return;
-  let seen=[]; try{ seen=JSON.parse(localStorage.getItem(seenKey())||"[]"); }catch(e){}
-  const r=matches().find(r=>!seen.includes(r.id)); if(!r) return;
-  seen.push(r.id); try{ localStorage.setItem(seenKey(),JSON.stringify(seen)); }catch(e){}
-  matchShowing=r.id;
-  const u=okId(r.cover)&&photoUrl(r.cover);
-  $("#matchImg").innerHTML=u?`<img src="${u}" alt="" style="object-position:50% ${coverY(r)}%">`:LEAF;
-  $("#matchText").innerHTML=`${esc(nameOf("a"))} und ${esc(nameOf("b"))} wollen beide <b>${esc(r.title||"dieses Rezept")}</b> kochen.`;
+  if(!myUid || matchShowing || swCtx.startsWith("inv:")) return;
+  const d=ctxData(); if(!d.round) return;
+  const key="rezepte.seen."+(d.kind==="space"?"":d.id+".")+d.round;
+  let seen=[]; try{ seen=JSON.parse(localStorage.getItem(key)||"[]"); }catch(e){}
+  const c=matchesOf(d).find(c=>!seen.includes(c.key)); if(!c) return;
+  seen.push(c.key); try{ localStorage.setItem(key,JSON.stringify(seen)); }catch(e){}
+  matchShowing=c.key;
+  const u=cardImg(d,c), who=d.others.filter(o=>votesOf(d,o)[c.key]===1).map(o=>firstName(d.names[o])).join(" und ");
+  $("#matchImg").innerHTML=u?`<img src="${u}" alt="">`:LEAF;
+  $("#matchText").innerHTML=`Du und ${esc(who)} wollt beide <b>${esc(c.title||"dieses Rezept")}</b> kochen.`;
   $("#matchModal").hidden=false;
 }
 const closeMatch=()=>{ $("#matchModal").hidden=true; matchShowing=null; setTimeout(checkMatches,250); };
 $("#matchClose").addEventListener("click",closeMatch);
-$("#matchOpen").addEventListener("click",()=>{ const id=matchShowing; closeMatch(); if(id) openRecipe(id); });
+$("#matchOpen").addEventListener("click",()=>{ const id=matchShowing; closeMatch(); if(id) openSwipeCard(id); });
 $("#matchModal").addEventListener("click",e=>{ if(e.target.id==="matchModal") closeMatch(); });
 
 /* ---------- Kalorien und Nährwerte ---------- */
@@ -2105,6 +2298,7 @@ document.addEventListener("focusout",e=>{ if(e.target.matches("[data-ing],[data-
 Auth.start(firebaseConfig,"recipes",(r,info)=>{
 root=r;
 if(info) initSharing(info);
+if(info && r){ myUid=info.uid; mySid=info.sid; initSwipe(); }
 if(info) firebase.database().ref(`users/${info.uid}/settings/showKcal`).once("value").then(s=>{ const v=s.val(); if(typeof v==="boolean" && v!==showKcal) setShowKcal(v,false); }).catch(()=>{});
 history.replaceState(null,"",location.pathname);
 render();
@@ -2112,15 +2306,9 @@ if(!root){
   $("#count").textContent="Keine Verbindung";
   $("#status").textContent="Die Datenbank konnte nicht geladen werden. Prüf die Internetverbindung und lade die Seite neu.";
 }else{
-  root.child("people").on("value",snap=>{
-    const v=snap.val()||{}, typing=document.activeElement&&document.activeElement.id;
-    // was gerade getippt wird, nicht mit älterem Stand überschreiben
-    people={a:typing==="nameA"?people.a:(v.a||""), b:typing==="nameB"?people.b:(v.b||"")};
-    if(swipeOpen && !view) renderSwipe();
-  });
   root.child("swipe").on("value",snap=>{
     swipe={round:null,votes:{},...(snap.val()||{})};
-    if(swipeOpen && !swipe.round) root.child("swipe/round").set("r"+Date.now().toString(36)).catch(()=>{});
+    if(swipeOpen && swCtx==="space" && !swipe.round) root.child("swipe/round").set("r"+Date.now().toString(36)).catch(()=>{});
     if(swipeOpen && !view) renderSwipe();
     if(swipeOpen) checkMatches();
   });
