@@ -96,6 +96,39 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
 .gdot{flex:none;width:9px;height:9px;border-radius:50%}
 .day-actions{display:flex;justify-content:space-between;align-items:center;gap:8px}
 
+/* Wochenplan als Kalender */
+.wsum{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.88rem;color:var(--muted)}
+.wsum b{color:var(--ink)}
+.cal-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;font-size:.86rem}
+.cal-btn svg{width:17px;height:17px}
+.plan{display:flex;flex-direction:column;gap:8px}
+.prow{display:flex;gap:10px;align-items:stretch}
+.pdate{flex:none;width:44px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:10px;line-height:1.1}
+.pdate small{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.pdate b{font-size:1.25rem;font-weight:700}
+.tdy{margin-top:3px;font-size:.62rem;font-weight:700;color:#fff;background:var(--band);border-radius:999px;padding:1px 6px}
+.prow.past .pdate{opacity:.55}
+.pblock{flex:1;min-width:0;background:color-mix(in srgb,var(--tc) 9%,var(--surface));border:1px solid color-mix(in srgb,var(--tc) 28%,var(--line));border-left:5px solid var(--tc);border-radius:14px;overflow:hidden}
+.prow.today .pblock{box-shadow:0 0 0 2px color-mix(in srgb,var(--tc) 35%,transparent)}
+.pb-head{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:10px 12px 4px;text-align:left;color:var(--ink)}
+.pb-emo{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--tc) 18%,#fff);font-size:1.1rem}
+.pb-txt{flex:1;min-width:0;display:flex;flex-direction:column}
+.pb-txt b{font-weight:700;font-size:1.02rem}
+.pb-txt small{font-size:.8rem;color:var(--muted)}
+.pb-prog{flex:none;font-size:.78rem;font-weight:700;border-radius:999px;padding:3px 9px;background:#fff;color:var(--tc)}
+.pb-prog.ok{background:var(--ok);color:#fff}
+.pb-groups{display:flex;flex-wrap:wrap;gap:4px;padding:2px 12px 10px 56px}
+.pb-groups span{font-size:.7rem;font-weight:600;color:color-mix(in srgb,var(--gc) 80%,#000);background:color-mix(in srgb,var(--gc) 14%,#fff);border-radius:999px;padding:2px 8px}
+.pb-body{padding:0 12px 12px;display:flex;flex-direction:column;gap:8px;border-top:1px dashed color-mix(in srgb,var(--tc) 30%,var(--line));padding-top:10px}
+.pb-title{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;border:1px solid color-mix(in srgb,var(--tc) 30%,var(--line));background:var(--surface);border-radius:10px;padding:9px 12px;font-weight:600;color:var(--ink);text-align:left}
+.pb-title svg{width:18px;height:18px;color:var(--muted);transition:transform .2s}
+.pb-title[aria-expanded="true"] svg{transform:rotate(180deg)}
+.prest{flex:1;display:flex;align-items:center;justify-content:space-between;gap:8px;border:1.5px dashed var(--line);background:none;border-radius:14px;padding:12px 14px;color:var(--muted);text-align:left}
+.prest span{font-weight:500}
+.prest small{color:var(--accent);font-weight:600;font-size:.82rem}
+.prow.today .prest{border-color:var(--band)}
+.timerow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.timerow input[type=time]{font:inherit;font-size:1.05rem;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
 /* Übungen */
 .grp{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
 .grp-head{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:12px 14px;text-align:left;color:var(--ink)}
@@ -195,6 +228,8 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
     <h3 id="dayTitle">Montag</h3>
     <div class="field"><label class="flabel" for="dayName">Name des Trainings</label><input type="text" id="dayName" maxlength="30" placeholder="z.B. Push, Beine, Oberkörper">
       <div class="chips" id="daySug"></div></div>
+    <div class="field"><span class="flabel">Wann gehst du ins Gym?</span>
+      <div class="timerow"><input type="time" id="dayTime" value="18:00" aria-label="Uhrzeit"><div class="chips" id="dayDur"></div></div></div>
     <div class="field"><span class="flabel">Übungen an diesem Tag</span><div class="picks" id="dayPicks"></div></div>
     <div class="sheet-actions"><button class="del" type="button" id="dayRest">Ruhetag</button>
       <div class="right"><button class="ghost" type="button" id="dayCancel">Abbrechen</button><button class="btn primary" type="submit">Speichern</button></div></div>
@@ -387,7 +422,7 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-04-222102";
+  const APP_VERSION="2026-11-04-223138";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -984,6 +1019,7 @@ const NEXT='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" f
 const PREV='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 /* ---------- Zustand ---------- */
+let showEx=false;   // Übungen eines Tages erst nach Tipp auf den Trainingsnamen
 let root=null, exercises={}, week={}, log={}, view="week", weekOff=0, openDay=null, openGrp=new Set(), exForm=null, delSure=false;
 try{ view=localStorage.getItem("gym.view")==="ex"?"ex":"week"; }catch(e){}
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -999,40 +1035,60 @@ function render(){
   document.querySelectorAll("[data-view]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.view===view));
   if(view==="week") renderWeek(); else renderEx();
 }
+/* Trainingsart: Farbe und Symbol aus dem Namen oder den Muskelgruppen */
+const TYPES=[
+  {re:/push|brust|drück/i, name:"Push", col:"#c8574a", emo:"🔥"},
+  {re:/pull|rücken|zieh/i, name:"Pull", col:"#3f7a8c", emo:"🧗"},
+  {re:/bein|leg|unterkörper|po\b|glute/i, name:"Beine", col:"#2f6f9f", emo:"🦵"},
+  {re:/oberkörper|upper|arm|schulter/i, name:"Oberkörper", col:"#8a6bbf", emo:"💪"},
+  {re:/ganzkörper|full/i, name:"Ganzkörper", col:"#4f8a5b", emo:"⚡"},
+  {re:/cardio|lauf|run|rad|ausdauer/i, name:"Cardio", col:"#4a7f7a", emo:"🏃"},
+];
+function typeOf(i){
+  const w=week[i]||{}, ex=dayEx(i); if(!ex.length) return null;
+  const t=TYPES.find(t=>t.re.test(w.title||"")); if(t) return t;
+  const cnt={}; ex.forEach(x=>cnt[x.group]=(cnt[x.group]||0)+1);
+  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0], g=grpOf(top);
+  return {name:g.name, col:g.col, emo:g.emo};
+}
+const timeOf=i=>{ const w=week[i]||{}; return /^\d{2}:\d{2}$/.test(w.time||"")?w.time:null; };
+const durOf=i=>{ const w=week[i]||{}; return +w.dur>0?+w.dur:60; };
+const endTime=(t,m)=>{ const [h,mi]=t.split(":").map(Number), x=h*60+mi+m; return `${String(Math.floor(x/60)%24).padStart(2,"0")}:${String(x%60).padStart(2,"0")}`; };
 function renderWeek(){
   const mon=monday(weekOff), todayIso=iso(new Date()), dates=DAYS.map((_,i)=>{ const d=new Date(mon); d.setDate(mon.getDate()+i); return d; });
   const sun=dates[6], label=weekOff===0?"Diese Woche":weekOff===1?"Nächste Woche":weekOff===-1?"Letzte Woche":`KW ${kw(mon)}`;
-  if(openDay==null){ const ti=dates.findIndex(d=>iso(d)===todayIso); openDay=ti>=0?ti:0; }
-  if(!exList().length && !Object.keys(week).length){
-    $("#list").innerHTML=`<div class="empty"><strong>Dein Gymplan</strong><span>So fängst du an:</span>
-      <span>1. Tipp auf <b>„+ Übung“</b> und leg deine Übungen an, sortiert nach Muskelgruppen.</span>
-      <span>2. Tipp hier im <b>Wochenplan</b> auf einen Tag und wähl aus, was du an dem Tag trainierst.</span>
-      <span>3. Im Gym hakst du die Übungen ab.</span></div>`+daysHtml(dates,todayIso);
-    return;
-  }
-  $("#list").innerHTML=`<div class="weeknav"><button class="arr" type="button" data-wk="-1" aria-label="Woche zurück">${PREV}</button>
+  const trainDays=DAYS.map((_,i)=>i).filter(i=>dayEx(i).length), mins=trainDays.reduce((a,i)=>a+durOf(i),0);
+  let html=`<div class="weeknav"><button class="arr" type="button" data-wk="-1" aria-label="Woche zurück">${PREV}</button>
       <span style="text-align:center"><b>${label}</b><small>${dates[0].toLocaleDateString("de-DE",{day:"numeric",month:"short"})} – ${sun.toLocaleDateString("de-DE",{day:"numeric",month:"short"})}${weekOff?` · <button class="linkish" type="button" data-wk="0">heute</button>`:""}</small></span>
-      <button class="arr" type="button" data-wk="1" aria-label="Woche vor">${NEXT}</button></div>
-    <div class="wstrip">${dates.map((d,i)=>{ const ex=dayEx(i), done=ex.length&&ex.every(x=>(log[iso(d)]||{})[x.id]);
-      return `<button type="button" class="wd${ex.length?" train":""}${done?" done":""}${iso(d)===todayIso?" today":""}" data-day="${i}" aria-pressed="${openDay===i}">${DSHORT[i]}<b>${d.getDate()}</b><i></i></button>`; }).join("")}</div>`
-    +daysHtml(dates,todayIso);
+      <button class="arr" type="button" data-wk="1" aria-label="Woche vor">${NEXT}</button></div>`;
+  if(trainDays.length) html+=`<div class="wsum"><span><b>${trainDays.length}</b> ${trainDays.length===1?"Training":"Trainings"} · <b>${(mins/60).toLocaleString("de-DE",{maximumFractionDigits:1})}</b> Std.</span>
+      <button class="btn cal-btn" type="button" id="calExport"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>In Kalender</button></div>`;
+  else if(!exList().length) html+=`<div class="empty"><strong>Dein Wochenplan</strong><span>1. Unter <b>„Übungen“</b> die Übungen wählen, die du machst.</span><span>2. Hier auf einen Tag tippen, Training benennen (z.B. Push, Pull, Beine), Uhrzeit festlegen und Übungen auswählen.</span><span>3. Mit „In Kalender“ landen deine Gym-Termine im Handy-Kalender.</span></div>`;
+  html+=`<div class="plan">${dates.map((d,i)=>dayRow(d,i,todayIso)).join("")}</div>`;
+  $("#list").innerHTML=html;
 }
-function daysHtml(dates,todayIso){
-  return dates.map((d,i)=>{ const w=week[i]||{}, ex=dayEx(i), di=iso(d), lg=log[di]||{}, n=ex.filter(x=>lg[x.id]).length, open=openDay===i;
-    const groups=[...new Set(ex.map(x=>x.group))].map(g=>grpOf(g).name);
-    return `<section class="day${di===todayIso?" today":""}${ex.length?"":" rest"}" id="day-${i}">
-      <button type="button" class="day-head" data-open-day="${i}" aria-expanded="${open}">
-        <span class="dn"><small>${DSHORT[i]}</small><b>${d.getDate()}</b></span>
-        <span class="dt"><b>${esc(w.title||(ex.length?"Training":"Ruhetag"))}</b><small>${ex.length?esc(groups.join(" · ")):"Tippen, um Übungen auszuwählen"}</small></span>
-        ${ex.length?`<span class="prog${n===ex.length?" ok":""}">${n}/${ex.length}</span>`:""}</button>
-      ${open?`<div class="day-body">
-        ${ex.length?`<ul class="exl">${ex.map(x=>`<li${lg[x.id]?' class="done"':""}><button type="button" class="ck${lg[x.id]?" on":""}" data-ck="${di}|${esc(x.id)}" aria-pressed="${!!lg[x.id]}" aria-label="${esc(x.name)} erledigt">${CHECK}</button>
-            <button type="button" class="th-btn" data-info="${esc(x.id)}" aria-label="${esc(x.name)} ansehen">${thumb(imgOf(x))}</button><span class="exn"><b>${esc(x.name)}</b><small>${esc(fmtEx(x))}</small></span></li>`).join("")}</ul>`
-          :`<p class="note" style="margin:0;color:var(--muted);font-size:.88rem">Kein Training geplant.</p>`}
-        <div class="day-actions"><button class="btn" type="button" data-edit-day="${i}">${ex.length?"Tag bearbeiten":"Übungen auswählen"}</button>
-          ${ex.length&&n?`<button class="linkish" type="button" data-reset-day="${di}">Haken zurücksetzen</button>`:""}</div>
-      </div>`:""}
-    </section>`; }).join("");
+function dayRow(d,i,todayIso){
+  const w=week[i]||{}, ex=dayEx(i), di=iso(d), lg=log[di]||{}, n=ex.filter(x=>lg[x.id]).length, open=openDay===i, ty=typeOf(i), t=timeOf(i), past=di<todayIso;
+  const groups=[...new Set(ex.map(x=>x.group))].map(g=>grpOf(g));
+  return `<div class="prow${di===todayIso?" today":""}${past?" past":""}" id="day-${i}">
+    <div class="pdate"><small>${DSHORT[i]}</small><b>${d.getDate()}</b>${di===todayIso?`<span class="tdy">heute</span>`:""}</div>
+    ${ty?`<div class="pblock${open?" open":""}" style="--tc:${ty.col}">
+        <button type="button" class="pb-head" data-open-day="${i}" aria-expanded="${open}">
+          <span class="pb-emo" aria-hidden="true">${ty.emo}</span>
+          <span class="pb-txt"><b>${esc(w.title||ty.name)}</b><small>${t?`${t}–${endTime(t,durOf(i))} Uhr`:"Uhrzeit festlegen"} · ${ex.length} ${ex.length===1?"Übung":"Übungen"}</small></span>
+          ${n?`<span class="pb-prog${n===ex.length?" ok":""}">${n===ex.length?"✓":`${n}/${ex.length}`}</span>`:""}</button>
+        <div class="pb-groups">${groups.map(g=>`<span style="--gc:${g.col}">${esc(g.name)}</span>`).join("")}</div>
+        ${open?`<div class="pb-body">
+          <button type="button" class="pb-title" data-showex="1" aria-expanded="${showEx}">${esc(w.title||ty.name)} · ${showEx?"Übungen ausblenden":"Übungen ansehen"} ${CHEV}</button>
+          ${showEx?`<ul class="exl">${ex.map(x=>`<li${lg[x.id]?' class="done"':""}><button type="button" class="ck${lg[x.id]?" on":""}" data-ck="${di}|${esc(x.id)}" aria-pressed="${!!lg[x.id]}" aria-label="${esc(x.name)} erledigt">${CHECK}</button>
+              <button type="button" class="th-btn" data-info="${esc(x.id)}" aria-label="${esc(x.name)} ansehen">${thumb(imgOf(x))}</button><span class="exn"><b>${esc(x.name)}</b><small>${esc(fmtEx(x))}</small></span></li>`).join("")}</ul>
+            ${n?`<button class="linkish" type="button" data-reset-day="${di}">Haken zurücksetzen</button>`:""}`:""}
+          <div class="day-actions"><button class="btn" type="button" data-edit-day="${i}">Bearbeiten</button>
+            <button class="linkish" type="button" data-cal-day="${i}">Nur diesen Tag in den Kalender</button></div>
+        </div>`:""}
+      </div>`
+      :`<button type="button" class="prest" data-edit-day="${i}"><span>Ruhetag</span><small>+ Training planen</small></button>`}
+  </div>`;
 }
 function kw(d){ const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())); const n=t.getUTCDay()||7; t.setUTCDate(t.getUTCDate()+4-n); const y=new Date(Date.UTC(t.getUTCFullYear(),0,1)); return Math.ceil(((t-y)/864e5+1)/7); }
 const thumb=i=>i?`<span class="th"><img src="${pic(i,1)}" alt="" loading="lazy"></span>`:`<span class="th none"></span>`;
@@ -1121,6 +1177,7 @@ let dayEdit=null;
 function openDayEdit(i){
   dayEdit={i,sel:new Set((week[i]&&Array.isArray(week[i].ex))?week[i].ex:[])};
   $("#dayTitle").textContent=DAYS[i]; $("#dayName").value=(week[i]&&week[i].title)||"";
+  $("#dayTime").value=timeOf(i)||lastTime()||"18:00"; dayEdit.dur=week[i]&&+week[i].dur>0?+week[i].dur:60; renderDur();
   $("#daySug").innerHTML=DAY_SUG.map(s=>`<button type="button" class="chip sug" data-ds="${esc(s)}">${esc(s)}</button>`).join("");
   const list=exList();
   $("#dayPicks").innerHTML=list.length?GROUPS.map(g=>{ const it=list.filter(x=>x.group===g.id).sort((a,b)=>a.name.localeCompare(b.name,"de")); if(!it.length) return "";
@@ -1129,24 +1186,55 @@ function openDayEdit(i){
   $("#dayModal").hidden=false;
 }
 const closeDay=()=>{ $("#dayModal").hidden=true; dayEdit=null; };
+const lastTime=()=>{ for(let k=0;k<7;k++) if(timeOf(k)) return timeOf(k); return null; };
+function renderDur(){ $("#dayDur").innerHTML=[45,60,75,90,120].map(m=>`<button type="button" class="chip" data-dur="${m}" aria-pressed="${dayEdit.dur===m}">${m<60?m+" min":m%60?`${Math.floor(m/60)}:${m%60} Std.`:m/60+" Std."}</button>`).join(""); }
 $("#dayCancel").addEventListener("click",closeDay);
-$("#dayModal").addEventListener("click",e=>{ if(e.target.id==="dayModal") return closeDay(); const s=e.target.closest("[data-ds]"); if(s) $("#dayName").value=s.dataset.ds; });
+$("#dayModal").addEventListener("click",e=>{ if(e.target.id==="dayModal") return closeDay(); const s=e.target.closest("[data-ds]"); if(s) $("#dayName").value=s.dataset.ds;
+  const du=e.target.closest("[data-dur]"); if(du&&dayEdit){ dayEdit.dur=+du.dataset.dur; renderDur(); } });
 $("#dayModal").addEventListener("change",e=>{ const c=e.target.closest("[data-pick]"); if(!c||!dayEdit) return; if(c.checked) dayEdit.sel.add(c.dataset.pick); else dayEdit.sel.delete(c.dataset.pick); });
 $("#dayForm").addEventListener("submit",e=>{
   e.preventDefault(); if(!dayEdit||!root) return;
   const order=exList().filter(x=>dayEdit.sel.has(x.id)).sort((a,b)=>GROUPS.findIndex(g=>g.id===a.group)-GROUPS.findIndex(g=>g.id===b.group)||a.name.localeCompare(b.name,"de")).map(x=>x.id);
-  const data=order.length?{title:$("#dayName").value.trim().slice(0,30)||null,ex:order}:null;
+  const tm=$("#dayTime").value;
+  const data=order.length?{title:$("#dayName").value.trim().slice(0,30)||null,ex:order,time:/^\d{2}:\d{2}$/.test(tm)?tm:null,dur:dayEdit.dur||60}:null;
   week[dayEdit.i]=data; root.child("week/"+dayEdit.i).set(data).catch(showErr); openDay=dayEdit.i; closeDay(); render();
 });
 $("#dayRest").addEventListener("click",()=>{ if(!dayEdit||!root) return; week[dayEdit.i]=null; root.child("week/"+dayEdit.i).remove().catch(showErr); closeDay(); render(); });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if(!$("#infoModal").hidden) closeInfo(); if(!$("#exModal").hidden) closeEx(); if(!$("#dayModal").hidden) closeDay(); } });
 
+/* ---------- Kalender: Termine als .ics (wöchentlich wiederkehrend, mit Erinnerung) ---------- */
+function exportCal(only){
+  const mon=monday(0), days=(only!=null?[only]:DAYS.map((_,i)=>i)).filter(i=>dayEx(i).length);
+  if(!days.length){ $("#status").textContent="Plan zuerst ein Training, dann kannst du es in den Kalender übernehmen."; return; }
+  const p2=n=>String(n).padStart(2,"0"), stamp=new Date().toISOString().replace(/[-:]/g,"").slice(0,15)+"Z";
+  const BY=["MO","TU","WE","TH","FR","SA","SU"];
+  const escI=t=>String(t).replace(/\\/g,"\\\\").replace(/[,;]/g,m=>"\\"+m).replace(/\n/g,"\\n");
+  const ev=days.map(i=>{ const d=new Date(mon); d.setDate(mon.getDate()+i); const t=timeOf(i)||"18:00", [h,m]=t.split(":").map(Number);
+    const s=new Date(d.getFullYear(),d.getMonth(),d.getDate(),h,m), e=new Date(s.getTime()+durOf(i)*60000);
+    const f=x=>`${x.getFullYear()}${p2(x.getMonth()+1)}${p2(x.getDate())}T${p2(x.getHours())}${p2(x.getMinutes())}00`;
+    const ty=typeOf(i), title=(week[i]&&week[i].title)||ty.name;
+    return ["BEGIN:VEVENT",`UID:ours-gym-${i}-${(Auth.me||"x")}@ours`,`DTSTAMP:${stamp}`,`DTSTART:${f(s)}`,`DTEND:${f(e)}`,
+      only!=null?null:`RRULE:FREQ=WEEKLY;BYDAY=${BY[i]}`,`SUMMARY:${escI("Gym: "+title)}`,
+      `DESCRIPTION:${escI(dayEx(i).map(x=>`${x.name} (${fmtEx(x)})`).join("\n"))}`,
+      "BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:Gym","TRIGGER:-PT30M","END:VALARM","END:VEVENT"].filter(Boolean).join("\r\n"); });
+  const ics=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Ours//Gym//DE","CALSCALE:GREGORIAN","METHOD:PUBLISH",...ev,"END:VCALENDAR"].join("\r\n");
+  const blob=new Blob([ics],{type:"text/calendar;charset=utf-8"}), url=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=url; a.download=only!=null?`gym-${DAYS[only].toLowerCase()}.ics`:"gym-wochenplan.ics"; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),10000);
+  $("#status").textContent=only!=null?"Termin erstellt. Öffne die Datei, um ihn in deinen Kalender zu übernehmen."
+    :`${days.length} wöchentliche Gym-Termine erstellt, mit Erinnerung 30 Minuten vorher. Öffne die Datei, um sie in deinen Kalender zu übernehmen.`;
+  setTimeout(()=>{ $("#status").textContent=""; },9000);
+}
+
 /* ---------- Klicks ---------- */
 document.addEventListener("click",e=>{
   const v=e.target.closest("[data-view]"); if(v){ view=v.dataset.view; try{ localStorage.setItem("gym.view",view); }catch(err){} render(); return; }
   const wk=e.target.closest("[data-wk]"); if(wk){ weekOff=wk.dataset.wk==="0"?0:weekOff+(+wk.dataset.wk); openDay=null; render(); return; }
-  const d=e.target.closest("[data-day]"); if(d){ openDay=+d.dataset.day; render(); const el=$("#day-"+openDay); if(el) el.scrollIntoView({behavior:"smooth",block:"nearest"}); return; }
-  const od=e.target.closest("[data-open-day]"); if(od){ const i=+od.dataset.openDay; openDay=openDay===i?-1:i; render(); return; }
+
+  const od=e.target.closest("[data-open-day]"); if(od){ const i=+od.dataset.openDay; openDay=openDay===i?-1:i; showEx=false; render(); return; }
+  if(e.target.closest("[data-showex]")){ showEx=!showEx; render(); return; }
+  if(e.target.closest("#calExport")) return exportCal();
+  const cd=e.target.closest("[data-cal-day]"); if(cd) return exportCal(+cd.dataset.calDay);
   const ed=e.target.closest("[data-edit-day]"); if(ed) return openDayEdit(+ed.dataset.editDay);
   const ck=e.target.closest("[data-ck]"); if(ck){ const [di,id]=ck.dataset.ck.split("|"); log[di]=log[di]||{}; const on=!log[di][id];
     if(on) log[di][id]=true; else delete log[di][id]; root.child(`log/${di}/${id}`).set(on||null).catch(showErr); render(); return; }
