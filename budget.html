@@ -408,7 +408,7 @@ html,body{height:100%}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-04-221348";
+  const APP_VERSION="2026-11-04-222102";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -418,6 +418,14 @@ html,body{height:100%}
   }
   checkVersion();
   addEventListener("pageshow",e=>{ if(e.persisted) checkVersion(); });
+  // Was beim Zusammenlegen und Austreten mitgenommen wird
+  const DATA = {
+    dates:   {keys:["ideas"], word:["Idee","Ideen"]},
+    recipes: {keys:["recipes"], word:["Rezept","Rezepte"]},
+    chores:  {keys:["chores","rooms","choreLog"], word:["Aufgabe","Aufgaben"]},
+    budget:  {keys:["recurring","expenses","cats"], word:["Eintrag","Einträge"]},
+    gym:     {keys:["exercises","week","log"], word:["Übung","Übungen"]},
+  };
   function pgToggle(open){ const m=document.getElementById("pgMenu"), b=document.getElementById("pgBtn"); if(!m||!b) return; m.hidden=!open; b.setAttribute("aria-expanded",open); }
   window.Auth = {
     avatar, pub:uid=>{ loadPub(uid); return pubCache.get(uid)||null; },
@@ -641,7 +649,7 @@ html,body{height:100%}
         <div class="auth-copy" id="invBox" hidden><input type="text" id="invLink" readonly aria-label="Einladungslink"><button class="auth-btn" type="button" id="invCopy">Kopieren</button></div>
         <p class="auth-msg" id="authMsg" hidden></p>
         ${nInv?`<button class="auth-link" type="button" id="invRevoke">${nInv} offene${nInv===1?"r Link":" Links"} · alle zurückziehen</button>`:""}
-        ${(type==="recipes"?ids.length>1:!owner)?`<button class="auth-link danger" type="button" id="leave">Diese ${esc(PAGE.noun)} verlassen</button>`:""}
+        ${ids.length>1&&DATA[type]?`<button class="auth-link danger" type="button" id="leave">Austreten und alles mitnehmen</button>`:""}
         <button class="auth-btn alt" type="button" id="ppClose">Fertig</button>`,true);
       $a("#ppClose").onclick=()=>{ rmConfirm=null; hide(); };
       $a("#invNew").onclick=async()=>{
@@ -671,28 +679,27 @@ html,body{height:100%}
         peopleView();
       });
       const lv=$a("#leave"); if(lv) lv.onclick=async()=>{
-        if(lv.dataset.sure!=="1"){ lv.dataset.sure="1"; lv.textContent=type==="recipes"?"Wirklich austreten? Du behältst alle Rezepte als eigene Sammlung, neue teilt ihr nicht mehr.":"Wirklich verlassen? Du kommst nur mit einer neuen Einladung zurück."; return; }
-        if(type==="recipes"){
-          // alle Rezepte in eine eigene, neue Sammlung mitnehmen
-          lv.textContent="Rezepte werden mitgenommen …"; lv.disabled=true;
-          const nid=rand(20);
-          try{
-            await db.ref(`spaces/${nid}/access/${user.uid}`).set("owner");
-            await db.ref(`spaces/${nid}/meta`).set({type,owner:user.uid,createdAt:Date.now()});
-            await copyRecipes(sid,nid);
-            await db.ref(`users/${user.uid}/spaces/${type}`).set(nid);
+        const w=(DATA[type]||{}).word||["Eintrag","Einträge"];
+        if(lv.dataset.sure!=="1"){ lv.dataset.sure="1"; lv.textContent=`Wirklich austreten? Du nimmst alle ${w[1]} als eigene ${PAGE.noun} mit. Neue teilt ihr dann nicht mehr.`; return; }
+        lv.textContent=`${w[1]} werden mitgenommen …`; lv.disabled=true;
+        const nid=rand(20);
+        try{
+          await db.ref(`spaces/${nid}/access/${user.uid}`).set("owner");
+          await db.ref(`spaces/${nid}/meta`).set({type,owner:user.uid,createdAt:Date.now()});
+          await copyData(sid,nid);
+          await db.ref(`users/${user.uid}/spaces/${type}`).set(nid);
+          if(type==="recipes"){
             const rd=(await db.ref(`spaces/${sid}/readers`).once("value")).val()||{};
             for(const [k,v] of Object.entries(rd)) if(v&&v.by===user.uid) await db.ref(`spaces/${sid}/readers/${k}`).remove().catch(()=>{});
             await db.ref(`spaces/${sid}/share/${user.uid}`).remove().catch(()=>{});
-            await db.ref(`spaces/${sid}/meta/owners/${user.uid}`).remove().catch(()=>{});
-            await db.ref(`spaces/${sid}/profiles/${user.uid}`).remove().catch(()=>{});
-            await db.ref(`spaces/${sid}/access/${user.uid}`).remove().catch(()=>{});
-          }catch(err){ lv.disabled=false; lv.textContent="Austreten hat nicht geklappt. Versuch es noch einmal."; return; }
-          location.reload(); return;
-        }
-        await db.ref(`spaces/${sid}/profiles/${user.uid}`).remove().catch(()=>{});
-        await db.ref(`spaces/${sid}/access/${user.uid}`).remove().catch(()=>{});
-        await db.ref(`users/${user.uid}/spaces/${type}`).remove().catch(()=>{});
+          }
+          // die anderen behalten die Liste; wer übrig bleibt, darf sie weiter verwalten
+          const acc=(await db.ref(`spaces/${sid}/access`).once("value")).val()||{};
+          for(const id of Object.keys(acc)) if(id!==user.uid) await db.ref(`spaces/${sid}/meta/owners/${id}`).set(true).catch(()=>{});
+          await db.ref(`spaces/${sid}/meta/owners/${user.uid}`).remove().catch(()=>{});
+          await db.ref(`spaces/${sid}/profiles/${user.uid}`).remove().catch(()=>{});
+          await db.ref(`spaces/${sid}/access/${user.uid}`).remove().catch(()=>{});
+        }catch(err){ lv.disabled=false; lv.textContent="Austreten hat nicht geklappt. Versuch es noch einmal."; return; }
         location.reload();
       };
     }
@@ -841,36 +848,38 @@ html,body{height:100%}
     }
 
     /* ---------- Einladung annehmen ---------- */
-    async function join(j,current){
-      if(current && current!==j.sid && !confirm_ && type==="recipes"){
-        let n=0; try{ n=Object.keys((await db.ref(`spaces/${current}/recipes`).once("value")).val()||{}).length; }catch(e){}
-        show("Sammlungen zusammenlegen?","",`<p class="auth-note">Du hast schon eine eigene Rezeptsammlung${n?` mit ${n} ${n===1?"Rezept":"Rezepten"}`:""}. Beim Beitreten werden deine Rezepte in die gemeinsame Sammlung übernommen. Die Sammlung gehört dann euch beiden.</p>
-          <p class="auth-note">Wenn du später austrittst, behältst du alle Rezepte.</p>
-          <button class="auth-btn" type="button" id="jYes">Zusammenlegen</button>
-          <button class="auth-btn alt" type="button" id="jNo">Abbrechen</button>`);
-        $a("#jYes").onclick=()=>{ confirm_=true; $a("#jYes").disabled=true; $a("#jYes").textContent="Wird zusammengelegt …"; join(j,current); };
-        $a("#jNo").onclick=()=>{ clearHash(); hide(); open(current); };
-        return;
-      }
-      if(current && current!==j.sid && !confirm_){
-        show(`Einladung zu ${PAGE.label}`,"",`<p class="auth-note">Du bist schon in einer anderen ${esc(PAGE.noun)}. Möchtest du zur neuen wechseln? Die alte bleibt bestehen, du siehst sie dann aber nicht mehr.</p>
-          <button class="auth-btn" type="button" id="jYes">Zur neuen wechseln</button>
-          <button class="auth-btn alt" type="button" id="jNo">Bei meiner bleiben</button>`);
-        $a("#jYes").onclick=()=>{ confirm_=true; join(j,current); };
-        $a("#jNo").onclick=()=>{ clearHash(); hide(); open(current); };
-        return;
+    // wie viele Einträge eine Liste hat (für die Frage beim Beitreten)
+    async function countData(id){
+      const d=DATA[type]; if(!d) return 0;
+      try{ return Object.keys((await db.ref(`spaces/${id}/${d.keys[0]}`).once("value")).val()||{}).length; }catch(e){ return 0; }
+    }
+    async function join(j,current,mode){
+      if(current && current!==j.sid && !mode){
+        const n=await countData(current), d=DATA[type], w=d?d.word:["Eintrag","Einträge"];
+        if(n>0){
+          show(`Einladung zu ${PAGE.label}`,"",`<p class="auth-note">Du hast schon eine eigene ${esc(PAGE.noun)} mit <b>${n} ${n===1?w[0]:w[1]}</b>. Was soll damit passieren?</p>
+            <button class="auth-btn" type="button" id="jYes">Mitnehmen und zusammenlegen</button>
+            <p class="auth-note">Deine ${w[1]} kommen in die gemeinsame ${esc(PAGE.noun)}. Sie gehört dann euch beiden. Wenn du später austrittst, nimmst du alles mit.</p>
+            <button class="auth-btn alt" type="button" id="jDrop">Nicht mitnehmen und löschen</button>
+            <p class="auth-note">Du trittst ohne deine ${w[1]} bei. Deine bisherige ${esc(PAGE.noun)} wird gelöscht.</p>
+            <button class="auth-link" type="button" id="jNo">Abbrechen, bei meiner bleiben</button>`);
+          $a("#jYes").onclick=()=>{ $a("#jYes").disabled=true; $a("#jYes").textContent="Wird zusammengelegt …"; join(j,current,"merge"); };
+          $a("#jDrop").onclick=()=>{ const b=$a("#jDrop"); if(b.dataset.sure!=="1"){ b.dataset.sure="1"; b.textContent=`Wirklich löschen? ${n} ${n===1?w[0]:w[1]} gehen verloren.`; return; }
+            b.disabled=true; join(j,current,"drop"); };
+          $a("#jNo").onclick=()=>{ clearHash(); hide(); open(current); };
+          return;
+        }
+        mode="drop";   // eigene Liste ist leer: einfach wechseln
       }
       try{
         await db.ref(`spaces/${j.sid}/access/${user.uid}`).set(j.code);
-        if(type==="recipes"){
-          await db.ref(`spaces/${j.sid}/meta/owners/${user.uid}`).set(true);   // gehört dann allen gemeinsam
-          if(current && current!==j.sid){
-            await copyRecipes(current,j.sid);
-            // alte Sammlung aufräumen, wenn sonst niemand drin war
-            try{ const acc=(await db.ref(`spaces/${current}/access`).once("value")).val()||{};
-              if(Object.keys(acc).length<=1) await db.ref(`spaces/${current}`).remove();
-              else { await db.ref(`spaces/${current}/profiles/${user.uid}`).remove(); await db.ref(`spaces/${current}/access/${user.uid}`).remove(); } }catch(e){}
-          }
+        await db.ref(`spaces/${j.sid}/meta/owners/${user.uid}`).set(true).catch(()=>{});   // gehört dann allen gemeinsam
+        if(current && current!==j.sid){
+          if(mode==="merge") await copyData(current,j.sid);
+          // alte Liste aufräumen: löschen, wenn sonst niemand drin war, sonst nur selbst austreten
+          try{ const acc=(await db.ref(`spaces/${current}/access`).once("value")).val()||{};
+            if(Object.keys(acc).length<=1) await db.ref(`spaces/${current}`).remove();
+            else { await db.ref(`spaces/${current}/profiles/${user.uid}`).remove(); await db.ref(`spaces/${current}/meta/owners/${user.uid}`).remove().catch(()=>{}); await db.ref(`spaces/${current}/access/${user.uid}`).remove(); } }catch(e){}
         }
         await db.ref(`users/${user.uid}/spaces/${type}`).set(j.sid);
         await db.ref(`spaces/${j.sid}/invites/${j.code}`).remove().catch(()=>{});   // Link gilt nur einmal
@@ -878,20 +887,31 @@ html,body{height:100%}
       }catch(err){ clearHash(); if(current) open(current); else setupView("Der Einladungslink ist ungültig oder wurde zurückgezogen."); }
     }
     let confirm_=false;
-    // Rezepte samt Titelbildern von einer Sammlung in eine andere kopieren (vorhandene bleiben)
-    async function copyRecipes(from,to){
-      const rs=(await db.ref(`spaces/${from}/recipes`).once("value")).val()||{};
-      const have=(await db.ref(`spaces/${to}/recipes`).once("value")).val()||{};
-      const out={};
-      for(const [id,r] of Object.entries(rs)){
-        if(have[id] || !r) continue;
-        if(r.cover && /^[0-9a-f]{32}$/.test(r.cover)){
-          const ph=(await db.ref(`spaces/${from}/photos/${r.cover}`).once("value")).val();
-          if(ph) await db.ref(`spaces/${to}/photos/${r.cover}`).set(ph);
+    // Alle Daten dieser Seite samt Fotos von einer Liste in eine andere kopieren (Vorhandenes bleibt)
+    async function copyData(from,to){
+      const d=DATA[type]; if(!d) return;
+      const photos=new Set();
+      for(const key of d.keys){
+        const src=(await db.ref(`spaces/${from}/${key}`).once("value")).val(); if(!src) continue;
+        const dst=(await db.ref(`spaces/${to}/${key}`).once("value")).val()||{};
+        const out={};
+        if(key==="week"){   // Gym-Wochenplan: Übungen je Tag zusammenführen
+          const A=Array.isArray(src)?Object.assign({},src):src, B=Array.isArray(dst)?Object.assign({},dst):dst;
+          for(const [day,v] of Object.entries(A)){ if(!v) continue; const b=B[day];
+            if(!b) out[day]=v; else out[day]={title:b.title||v.title||null,ex:[...new Set([...(b.ex||[]),...(v.ex||[])])]}; }
+        }else if(key==="log"){   // abgehakte Übungen je Datum zusammenführen
+          for(const [day,v] of Object.entries(src)) out[day]={...(v||{}),...(dst[day]||{})};
+        }else if(key==="rooms"||key==="cats"){   // eigene Namen: doppelte weglassen
+          const have=new Set(Object.values(dst));
+          for(const [k,v] of Object.entries(src)) if(!have.has(v) && !dst[k]) out[k]=v;
+        }else{
+          for(const [k,v] of Object.entries(src)){ if(dst[k] || !v) continue; out[k]=v;
+            if(v.cover && /^[0-9a-f]{32}$/.test(v.cover)) photos.add(v.cover);
+            if(Array.isArray(v.photos)) v.photos.forEach(p=>{ if(/^[0-9a-f]{32}$/.test(p)) photos.add(p); }); }
         }
-        out[id]=r;
+        if(Object.keys(out).length) await db.ref(`spaces/${to}/${key}`).update(out);
       }
-      if(Object.keys(out).length) await db.ref(`spaces/${to}/recipes`).update(out);
+      for(const p of photos){ const ph=(await db.ref(`spaces/${from}/photos/${p}`).once("value")).val(); if(ph) await db.ref(`spaces/${to}/photos/${p}`).set(ph); }
     }
 
     async function open(id){

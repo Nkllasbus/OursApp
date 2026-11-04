@@ -110,6 +110,22 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
 .exrow svg{flex:none;width:16px;height:16px;color:var(--muted)}
 .add-in{border:1px dashed var(--line);background:none;color:var(--accent);border-radius:10px;padding:8px 12px;font-weight:600;font-size:.88rem;text-align:left}
 
+.th{flex:none;width:52px;height:40px;border-radius:8px;overflow:hidden;background:var(--accent-soft);display:block}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.th.none{background:repeating-linear-gradient(45deg,var(--accent-soft),var(--accent-soft) 6px,var(--surface) 6px,var(--surface) 12px)}
+.th-btn{border:0;background:none;padding:0;flex:none;line-height:0;border-radius:8px}
+.sub-l{margin:4px 0 -2px;font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.sub-l small{text-transform:none;letter-spacing:0;color:var(--muted);font-weight:400}
+.sugrow{padding:0 6px 0 0;gap:4px}
+.sug-open{flex:1;min-width:0;display:flex;align-items:center;gap:10px;border:0;background:none;padding:9px 10px;text-align:left;color:var(--ink)}
+.plus{flex:none;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--accent);font-size:1.2rem;font-weight:700;line-height:1;padding:0}
+.pics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pics figure{margin:0;display:flex;flex-direction:column;gap:4px}
+.pics img{width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:12px;background:var(--accent-soft)}
+.pics figcaption{font-size:.76rem;color:var(--muted);text-align:center;font-weight:600}
+@media (max-width:420px){.pics{grid-template-columns:1fr}}
+.info-g{margin:-6px 0 0;display:flex;align-items:center;gap:6px;color:var(--muted);font-size:.88rem}
+.card-note{color:var(--muted);font-size:.88rem;margin:0}
 /* Bögen */
 .modal{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(15,16,32,.5);padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px))}
 .sheet{width:100%;max-width:420px;max-height:100%;overflow-y:auto;background:var(--surface);border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 60px -20px rgba(15,16,32,.6)}
@@ -171,6 +187,8 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
       <div class="right"><button class="ghost" type="button" id="exCancel">Abbrechen</button><button class="btn primary" type="submit">Speichern</button></div></div>
   </form>
 </div>
+
+<div class="modal" id="infoModal" hidden><div class="sheet" role="dialog" aria-modal="true" aria-label="Übung" id="infoBody"></div></div>
 
 <div class="modal" id="dayModal" hidden>
   <form class="sheet" id="dayForm" role="dialog" aria-modal="true" aria-labelledby="dayTitle" autocomplete="off">
@@ -369,7 +387,7 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-04-221348";
+  const APP_VERSION="2026-11-04-222102";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -379,6 +397,14 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
   }
   checkVersion();
   addEventListener("pageshow",e=>{ if(e.persisted) checkVersion(); });
+  // Was beim Zusammenlegen und Austreten mitgenommen wird
+  const DATA = {
+    dates:   {keys:["ideas"], word:["Idee","Ideen"]},
+    recipes: {keys:["recipes"], word:["Rezept","Rezepte"]},
+    chores:  {keys:["chores","rooms","choreLog"], word:["Aufgabe","Aufgaben"]},
+    budget:  {keys:["recurring","expenses","cats"], word:["Eintrag","Einträge"]},
+    gym:     {keys:["exercises","week","log"], word:["Übung","Übungen"]},
+  };
   function pgToggle(open){ const m=document.getElementById("pgMenu"), b=document.getElementById("pgBtn"); if(!m||!b) return; m.hidden=!open; b.setAttribute("aria-expanded",open); }
   window.Auth = {
     avatar, pub:uid=>{ loadPub(uid); return pubCache.get(uid)||null; },
@@ -602,7 +628,7 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
         <div class="auth-copy" id="invBox" hidden><input type="text" id="invLink" readonly aria-label="Einladungslink"><button class="auth-btn" type="button" id="invCopy">Kopieren</button></div>
         <p class="auth-msg" id="authMsg" hidden></p>
         ${nInv?`<button class="auth-link" type="button" id="invRevoke">${nInv} offene${nInv===1?"r Link":" Links"} · alle zurückziehen</button>`:""}
-        ${(type==="recipes"?ids.length>1:!owner)?`<button class="auth-link danger" type="button" id="leave">Diese ${esc(PAGE.noun)} verlassen</button>`:""}
+        ${ids.length>1&&DATA[type]?`<button class="auth-link danger" type="button" id="leave">Austreten und alles mitnehmen</button>`:""}
         <button class="auth-btn alt" type="button" id="ppClose">Fertig</button>`,true);
       $a("#ppClose").onclick=()=>{ rmConfirm=null; hide(); };
       $a("#invNew").onclick=async()=>{
@@ -632,28 +658,27 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
         peopleView();
       });
       const lv=$a("#leave"); if(lv) lv.onclick=async()=>{
-        if(lv.dataset.sure!=="1"){ lv.dataset.sure="1"; lv.textContent=type==="recipes"?"Wirklich austreten? Du behältst alle Rezepte als eigene Sammlung, neue teilt ihr nicht mehr.":"Wirklich verlassen? Du kommst nur mit einer neuen Einladung zurück."; return; }
-        if(type==="recipes"){
-          // alle Rezepte in eine eigene, neue Sammlung mitnehmen
-          lv.textContent="Rezepte werden mitgenommen …"; lv.disabled=true;
-          const nid=rand(20);
-          try{
-            await db.ref(`spaces/${nid}/access/${user.uid}`).set("owner");
-            await db.ref(`spaces/${nid}/meta`).set({type,owner:user.uid,createdAt:Date.now()});
-            await copyRecipes(sid,nid);
-            await db.ref(`users/${user.uid}/spaces/${type}`).set(nid);
+        const w=(DATA[type]||{}).word||["Eintrag","Einträge"];
+        if(lv.dataset.sure!=="1"){ lv.dataset.sure="1"; lv.textContent=`Wirklich austreten? Du nimmst alle ${w[1]} als eigene ${PAGE.noun} mit. Neue teilt ihr dann nicht mehr.`; return; }
+        lv.textContent=`${w[1]} werden mitgenommen …`; lv.disabled=true;
+        const nid=rand(20);
+        try{
+          await db.ref(`spaces/${nid}/access/${user.uid}`).set("owner");
+          await db.ref(`spaces/${nid}/meta`).set({type,owner:user.uid,createdAt:Date.now()});
+          await copyData(sid,nid);
+          await db.ref(`users/${user.uid}/spaces/${type}`).set(nid);
+          if(type==="recipes"){
             const rd=(await db.ref(`spaces/${sid}/readers`).once("value")).val()||{};
             for(const [k,v] of Object.entries(rd)) if(v&&v.by===user.uid) await db.ref(`spaces/${sid}/readers/${k}`).remove().catch(()=>{});
             await db.ref(`spaces/${sid}/share/${user.uid}`).remove().catch(()=>{});
-            await db.ref(`spaces/${sid}/meta/owners/${user.uid}`).remove().catch(()=>{});
-            await db.ref(`spaces/${sid}/profiles/${user.uid}`).remove().catch(()=>{});
-            await db.ref(`spaces/${sid}/access/${user.uid}`).remove().catch(()=>{});
-          }catch(err){ lv.disabled=false; lv.textContent="Austreten hat nicht geklappt. Versuch es noch einmal."; return; }
-          location.reload(); return;
-        }
-        await db.ref(`spaces/${sid}/profiles/${user.uid}`).remove().catch(()=>{});
-        await db.ref(`spaces/${sid}/access/${user.uid}`).remove().catch(()=>{});
-        await db.ref(`users/${user.uid}/spaces/${type}`).remove().catch(()=>{});
+          }
+          // die anderen behalten die Liste; wer übrig bleibt, darf sie weiter verwalten
+          const acc=(await db.ref(`spaces/${sid}/access`).once("value")).val()||{};
+          for(const id of Object.keys(acc)) if(id!==user.uid) await db.ref(`spaces/${sid}/meta/owners/${id}`).set(true).catch(()=>{});
+          await db.ref(`spaces/${sid}/meta/owners/${user.uid}`).remove().catch(()=>{});
+          await db.ref(`spaces/${sid}/profiles/${user.uid}`).remove().catch(()=>{});
+          await db.ref(`spaces/${sid}/access/${user.uid}`).remove().catch(()=>{});
+        }catch(err){ lv.disabled=false; lv.textContent="Austreten hat nicht geklappt. Versuch es noch einmal."; return; }
         location.reload();
       };
     }
@@ -802,36 +827,38 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
     }
 
     /* ---------- Einladung annehmen ---------- */
-    async function join(j,current){
-      if(current && current!==j.sid && !confirm_ && type==="recipes"){
-        let n=0; try{ n=Object.keys((await db.ref(`spaces/${current}/recipes`).once("value")).val()||{}).length; }catch(e){}
-        show("Sammlungen zusammenlegen?","",`<p class="auth-note">Du hast schon eine eigene Rezeptsammlung${n?` mit ${n} ${n===1?"Rezept":"Rezepten"}`:""}. Beim Beitreten werden deine Rezepte in die gemeinsame Sammlung übernommen. Die Sammlung gehört dann euch beiden.</p>
-          <p class="auth-note">Wenn du später austrittst, behältst du alle Rezepte.</p>
-          <button class="auth-btn" type="button" id="jYes">Zusammenlegen</button>
-          <button class="auth-btn alt" type="button" id="jNo">Abbrechen</button>`);
-        $a("#jYes").onclick=()=>{ confirm_=true; $a("#jYes").disabled=true; $a("#jYes").textContent="Wird zusammengelegt …"; join(j,current); };
-        $a("#jNo").onclick=()=>{ clearHash(); hide(); open(current); };
-        return;
-      }
-      if(current && current!==j.sid && !confirm_){
-        show(`Einladung zu ${PAGE.label}`,"",`<p class="auth-note">Du bist schon in einer anderen ${esc(PAGE.noun)}. Möchtest du zur neuen wechseln? Die alte bleibt bestehen, du siehst sie dann aber nicht mehr.</p>
-          <button class="auth-btn" type="button" id="jYes">Zur neuen wechseln</button>
-          <button class="auth-btn alt" type="button" id="jNo">Bei meiner bleiben</button>`);
-        $a("#jYes").onclick=()=>{ confirm_=true; join(j,current); };
-        $a("#jNo").onclick=()=>{ clearHash(); hide(); open(current); };
-        return;
+    // wie viele Einträge eine Liste hat (für die Frage beim Beitreten)
+    async function countData(id){
+      const d=DATA[type]; if(!d) return 0;
+      try{ return Object.keys((await db.ref(`spaces/${id}/${d.keys[0]}`).once("value")).val()||{}).length; }catch(e){ return 0; }
+    }
+    async function join(j,current,mode){
+      if(current && current!==j.sid && !mode){
+        const n=await countData(current), d=DATA[type], w=d?d.word:["Eintrag","Einträge"];
+        if(n>0){
+          show(`Einladung zu ${PAGE.label}`,"",`<p class="auth-note">Du hast schon eine eigene ${esc(PAGE.noun)} mit <b>${n} ${n===1?w[0]:w[1]}</b>. Was soll damit passieren?</p>
+            <button class="auth-btn" type="button" id="jYes">Mitnehmen und zusammenlegen</button>
+            <p class="auth-note">Deine ${w[1]} kommen in die gemeinsame ${esc(PAGE.noun)}. Sie gehört dann euch beiden. Wenn du später austrittst, nimmst du alles mit.</p>
+            <button class="auth-btn alt" type="button" id="jDrop">Nicht mitnehmen und löschen</button>
+            <p class="auth-note">Du trittst ohne deine ${w[1]} bei. Deine bisherige ${esc(PAGE.noun)} wird gelöscht.</p>
+            <button class="auth-link" type="button" id="jNo">Abbrechen, bei meiner bleiben</button>`);
+          $a("#jYes").onclick=()=>{ $a("#jYes").disabled=true; $a("#jYes").textContent="Wird zusammengelegt …"; join(j,current,"merge"); };
+          $a("#jDrop").onclick=()=>{ const b=$a("#jDrop"); if(b.dataset.sure!=="1"){ b.dataset.sure="1"; b.textContent=`Wirklich löschen? ${n} ${n===1?w[0]:w[1]} gehen verloren.`; return; }
+            b.disabled=true; join(j,current,"drop"); };
+          $a("#jNo").onclick=()=>{ clearHash(); hide(); open(current); };
+          return;
+        }
+        mode="drop";   // eigene Liste ist leer: einfach wechseln
       }
       try{
         await db.ref(`spaces/${j.sid}/access/${user.uid}`).set(j.code);
-        if(type==="recipes"){
-          await db.ref(`spaces/${j.sid}/meta/owners/${user.uid}`).set(true);   // gehört dann allen gemeinsam
-          if(current && current!==j.sid){
-            await copyRecipes(current,j.sid);
-            // alte Sammlung aufräumen, wenn sonst niemand drin war
-            try{ const acc=(await db.ref(`spaces/${current}/access`).once("value")).val()||{};
-              if(Object.keys(acc).length<=1) await db.ref(`spaces/${current}`).remove();
-              else { await db.ref(`spaces/${current}/profiles/${user.uid}`).remove(); await db.ref(`spaces/${current}/access/${user.uid}`).remove(); } }catch(e){}
-          }
+        await db.ref(`spaces/${j.sid}/meta/owners/${user.uid}`).set(true).catch(()=>{});   // gehört dann allen gemeinsam
+        if(current && current!==j.sid){
+          if(mode==="merge") await copyData(current,j.sid);
+          // alte Liste aufräumen: löschen, wenn sonst niemand drin war, sonst nur selbst austreten
+          try{ const acc=(await db.ref(`spaces/${current}/access`).once("value")).val()||{};
+            if(Object.keys(acc).length<=1) await db.ref(`spaces/${current}`).remove();
+            else { await db.ref(`spaces/${current}/profiles/${user.uid}`).remove(); await db.ref(`spaces/${current}/meta/owners/${user.uid}`).remove().catch(()=>{}); await db.ref(`spaces/${current}/access/${user.uid}`).remove(); } }catch(e){}
         }
         await db.ref(`users/${user.uid}/spaces/${type}`).set(j.sid);
         await db.ref(`spaces/${j.sid}/invites/${j.code}`).remove().catch(()=>{});   // Link gilt nur einmal
@@ -839,20 +866,31 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
       }catch(err){ clearHash(); if(current) open(current); else setupView("Der Einladungslink ist ungültig oder wurde zurückgezogen."); }
     }
     let confirm_=false;
-    // Rezepte samt Titelbildern von einer Sammlung in eine andere kopieren (vorhandene bleiben)
-    async function copyRecipes(from,to){
-      const rs=(await db.ref(`spaces/${from}/recipes`).once("value")).val()||{};
-      const have=(await db.ref(`spaces/${to}/recipes`).once("value")).val()||{};
-      const out={};
-      for(const [id,r] of Object.entries(rs)){
-        if(have[id] || !r) continue;
-        if(r.cover && /^[0-9a-f]{32}$/.test(r.cover)){
-          const ph=(await db.ref(`spaces/${from}/photos/${r.cover}`).once("value")).val();
-          if(ph) await db.ref(`spaces/${to}/photos/${r.cover}`).set(ph);
+    // Alle Daten dieser Seite samt Fotos von einer Liste in eine andere kopieren (Vorhandenes bleibt)
+    async function copyData(from,to){
+      const d=DATA[type]; if(!d) return;
+      const photos=new Set();
+      for(const key of d.keys){
+        const src=(await db.ref(`spaces/${from}/${key}`).once("value")).val(); if(!src) continue;
+        const dst=(await db.ref(`spaces/${to}/${key}`).once("value")).val()||{};
+        const out={};
+        if(key==="week"){   // Gym-Wochenplan: Übungen je Tag zusammenführen
+          const A=Array.isArray(src)?Object.assign({},src):src, B=Array.isArray(dst)?Object.assign({},dst):dst;
+          for(const [day,v] of Object.entries(A)){ if(!v) continue; const b=B[day];
+            if(!b) out[day]=v; else out[day]={title:b.title||v.title||null,ex:[...new Set([...(b.ex||[]),...(v.ex||[])])]}; }
+        }else if(key==="log"){   // abgehakte Übungen je Datum zusammenführen
+          for(const [day,v] of Object.entries(src)) out[day]={...(v||{}),...(dst[day]||{})};
+        }else if(key==="rooms"||key==="cats"){   // eigene Namen: doppelte weglassen
+          const have=new Set(Object.values(dst));
+          for(const [k,v] of Object.entries(src)) if(!have.has(v) && !dst[k]) out[k]=v;
+        }else{
+          for(const [k,v] of Object.entries(src)){ if(dst[k] || !v) continue; out[k]=v;
+            if(v.cover && /^[0-9a-f]{32}$/.test(v.cover)) photos.add(v.cover);
+            if(Array.isArray(v.photos)) v.photos.forEach(p=>{ if(/^[0-9a-f]{32}$/.test(p)) photos.add(p); }); }
         }
-        out[id]=r;
+        if(Object.keys(out).length) await db.ref(`spaces/${to}/${key}`).update(out);
       }
-      if(Object.keys(out).length) await db.ref(`spaces/${to}/recipes`).update(out);
+      for(const p of photos){ const ph=(await db.ref(`spaces/${from}/photos/${p}`).once("value")).val(); if(ph) await db.ref(`spaces/${to}/photos/${p}`).set(ph); }
     }
 
     async function open(id){
@@ -931,6 +969,13 @@ const GROUPS=[
   {id:"cardio",    name:"Cardio",          emo:"🏃", col:"#4a7f7a", sug:["Laufband","Fahrrad","Crosstrainer","Rudergerät","Treppensteiger","Seilspringen"]},
 ];
 const grpOf=id=>GROUPS.find(g=>g.id===id)||GROUPS[0];
+// Die gängigsten Übungen mit Bildern (Start und Ende) aus der freien „Free Exercise DB“ (gemeinfrei)
+const CATALOG=[{"g": "brust", "n": "Bankdrücken", "img": "Barbell_Bench_Press_-_Medium_Grip", "s": "3", "r": "8"},{"g": "brust", "n": "Schrägbankdrücken", "img": "Barbell_Incline_Bench_Press_-_Medium_Grip", "s": "3", "r": "10"},{"g": "brust", "n": "Kurzhantel-Bankdrücken", "img": "Dumbbell_Bench_Press", "s": "3", "r": "10"},{"g": "brust", "n": "Kurzhantel-Flys", "img": "Dumbbell_Flyes", "s": "3", "r": "12"},{"g": "brust", "n": "Butterfly", "img": "Butterfly", "s": "3", "r": "12"},{"g": "brust", "n": "Kabelzug-Crossover", "img": "Cable_Crossover", "s": "3", "r": "12"},{"g": "brust", "n": "Dips (Brust)", "img": "Dips_-_Chest_Version", "s": "3", "r": "10"},{"g": "brust", "n": "Liegestütze", "img": "Pushups", "s": "3", "r": "15"},{"g": "ruecken", "n": "Klimmzüge", "img": "Pullups", "s": "3", "r": "8"},{"g": "ruecken", "n": "Latziehen", "img": "Wide-Grip_Lat_Pulldown", "s": "3", "r": "10"},{"g": "ruecken", "n": "Rudern am Kabel", "img": "Seated_Cable_Rows", "s": "3", "r": "10"},{"g": "ruecken", "n": "Langhantelrudern", "img": "Bent_Over_Barbell_Row", "s": "3", "r": "8"},{"g": "ruecken", "n": "Kurzhantelrudern einarmig", "img": "One-Arm_Dumbbell_Row", "s": "3", "r": "10"},{"g": "ruecken", "n": "Kreuzheben", "img": "Barbell_Deadlift", "s": "3", "r": "6"},{"g": "ruecken", "n": "Hyperextensions", "img": "Hyperextensions_Back_Extensions", "s": "3", "r": "12"},{"g": "schulter", "n": "Schulterdrücken (Langhantel)", "img": "Barbell_Shoulder_Press", "s": "3", "r": "8"},{"g": "schulter", "n": "Schulterdrücken (Kurzhantel)", "img": "Dumbbell_Shoulder_Press", "s": "3", "r": "10"},{"g": "schulter", "n": "Seitheben", "img": "Side_Lateral_Raise", "s": "3", "r": "12"},{"g": "schulter", "n": "Frontheben", "img": "Front_Dumbbell_Raise", "s": "3", "r": "12"},{"g": "schulter", "n": "Face Pulls", "img": "Face_Pull", "s": "3", "r": "15"},{"g": "schulter", "n": "Reverse Flys", "img": "Reverse_Flyes", "s": "3", "r": "12"},{"g": "schulter", "n": "Arnold Press", "img": "Arnold_Dumbbell_Press", "s": "3", "r": "10"},{"g": "schulter", "n": "Aufrechtes Rudern", "img": "Upright_Barbell_Row", "s": "3", "r": "10"},{"g": "bizeps", "n": "Langhantelcurls", "img": "Barbell_Curl", "s": "3", "r": "10"},{"g": "bizeps", "n": "Kurzhantelcurls", "img": "Dumbbell_Bicep_Curl", "s": "3", "r": "10"},{"g": "bizeps", "n": "Hammercurls", "img": "Hammer_Curls", "s": "3", "r": "10"},{"g": "bizeps", "n": "Konzentrationscurls", "img": "Concentration_Curls", "s": "3", "r": "12"},{"g": "bizeps", "n": "Scottcurls", "img": "Preacher_Curl", "s": "3", "r": "10"},{"g": "bizeps", "n": "Kabelcurls", "img": "Standing_Biceps_Cable_Curl", "s": "3", "r": "12"},{"g": "trizeps", "n": "Trizepsdrücken am Kabel", "img": "Triceps_Pushdown", "s": "3", "r": "12"},{"g": "trizeps", "n": "Trizepsdrücken mit Seil", "img": "Triceps_Pushdown_-_Rope_Attachment", "s": "3", "r": "12"},{"g": "trizeps", "n": "French Press", "img": "Lying_Triceps_Press", "s": "3", "r": "10"},{"g": "trizeps", "n": "Überkopf-Trizepsdrücken", "img": "Cable_Rope_Overhead_Triceps_Extension", "s": "3", "r": "12"},{"g": "trizeps", "n": "Dips (Trizeps)", "img": "Dips_-_Triceps_Version", "s": "3", "r": "10"},{"g": "trizeps", "n": "Enges Bankdrücken", "img": "Close-Grip_Barbell_Bench_Press", "s": "3", "r": "8"},{"g": "trizeps", "n": "Kickbacks", "img": "Tricep_Dumbbell_Kickback", "s": "3", "r": "12"},{"g": "bauch", "n": "Crunches", "img": "Crunches", "s": "3", "r": "15"},{"g": "bauch", "n": "Plank", "img": "Plank", "s": "3", "r": "45 s"},{"g": "bauch", "n": "Hängendes Beinheben", "img": "Hanging_Leg_Raise", "s": "3", "r": "12"},{"g": "bauch", "n": "Russian Twists", "img": "Russian_Twist", "s": "3", "r": "20"},{"g": "bauch", "n": "Ab-Roller", "img": "Ab_Roller", "s": "3", "r": "10"},{"g": "bauch", "n": "Kabel-Crunches", "img": "Cable_Crunch", "s": "3", "r": "15"},{"g": "quads", "n": "Kniebeugen", "img": "Barbell_Squat", "s": "3", "r": "8"},{"g": "quads", "n": "Frontkniebeugen", "img": "Front_Barbell_Squat", "s": "3", "r": "8"},{"g": "quads", "n": "Beinpresse", "img": "Leg_Press", "s": "3", "r": "10"},{"g": "quads", "n": "Beinstrecker", "img": "Leg_Extensions", "s": "3", "r": "12"},{"g": "quads", "n": "Ausfallschritte", "img": "Dumbbell_Lunges", "s": "3", "r": "10"},{"g": "quads", "n": "Bulgarian Split Squats", "img": "Split_Squat_with_Dumbbells", "s": "3", "r": "10"},{"g": "quads", "n": "Hackenschmidt-Kniebeugen", "img": "Barbell_Hack_Squat", "s": "3", "r": "10"},{"g": "hams", "n": "Beinbeuger liegend", "img": "Lying_Leg_Curls", "s": "3", "r": "12"},{"g": "hams", "n": "Beinbeuger sitzend", "img": "Seated_Leg_Curl", "s": "3", "r": "12"},{"g": "hams", "n": "Rumänisches Kreuzheben", "img": "Romanian_Deadlift", "s": "3", "r": "10"},{"g": "po", "n": "Hip Thrusts", "img": "Barbell_Hip_Thrust", "s": "3", "r": "10"},{"g": "po", "n": "Glute Bridge", "img": "Barbell_Glute_Bridge", "s": "3", "r": "12"},{"g": "po", "n": "Glute Kickbacks", "img": "Glute_Kickback", "s": "3", "r": "12"},{"g": "po", "n": "Abduktoren-Maschine", "img": "Thigh_Abductor", "s": "3", "r": "15"},{"g": "waden", "n": "Wadenheben stehend", "img": "Standing_Calf_Raises", "s": "3", "r": "15"},{"g": "waden", "n": "Wadenheben sitzend", "img": "Barbell_Seated_Calf_Raise", "s": "3", "r": "15"},{"g": "waden", "n": "Wadenheben an der Beinpresse", "img": "Calf_Press_On_The_Leg_Press_Machine", "s": "3", "r": "15"},{"g": "unterarme", "n": "Handgelenk-Curls", "img": "Palms-Up_Barbell_Wrist_Curl_Over_A_Bench", "s": "3", "r": "15"},{"g": "unterarme", "n": "Farmer's Walk", "img": "Farmers_Walk", "s": "3", "r": "40 m"},{"g": "unterarme", "n": "Reverse Curls", "img": "Reverse_Barbell_Curl", "s": "3", "r": "12"},{"g": "cardio", "n": "Laufband", "img": "Running_Treadmill", "s": "", "r": "20 min"},{"g": "cardio", "n": "Fahrrad", "img": "Bicycling_Stationary", "s": "", "r": "20 min"},{"g": "cardio", "n": "Crosstrainer", "img": "Elliptical_Trainer", "s": "", "r": "20 min"},{"g": "cardio", "n": "Rudergerät", "img": "Rowing_Stationary", "s": "", "r": "15 min"},{"g": "cardio", "n": "Treppensteiger", "img": "Stairmaster", "s": "", "r": "15 min"},{"g": "cardio", "n": "Seilspringen", "img": "Rope_Jumping", "s": "", "r": "10 min"}];
+GROUPS.forEach(g=>g.sug=CATALOG.filter(c=>c.g===g.id).map(c=>c.n));
+const catByName=n=>CATALOG.find(c=>c.n.toLowerCase()===String(n||"").trim().toLowerCase());
+const catByImg=i=>CATALOG.find(c=>c.img===i);
+const imgOf=x=>{ const i=x.img||(catByName(x.name)||{}).img; return i&&catByImg(i)?i:null; };
+const pic=(i,k)=>`gym-img/${i}-${k||0}.jpg`;
 const DAYS=["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"], DSHORT=["Mo","Di","Mi","Do","Fr","Sa","So"];
 const DAY_SUG=["Push","Pull","Beine","Oberkörper","Unterkörper","Ganzkörper","Brust & Trizeps","Rücken & Bizeps","Schultern & Arme","Cardio"];
 const CHECK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -982,7 +1027,7 @@ function daysHtml(dates,todayIso){
         ${ex.length?`<span class="prog${n===ex.length?" ok":""}">${n}/${ex.length}</span>`:""}</button>
       ${open?`<div class="day-body">
         ${ex.length?`<ul class="exl">${ex.map(x=>`<li${lg[x.id]?' class="done"':""}><button type="button" class="ck${lg[x.id]?" on":""}" data-ck="${di}|${esc(x.id)}" aria-pressed="${!!lg[x.id]}" aria-label="${esc(x.name)} erledigt">${CHECK}</button>
-            <span class="gdot" style="background:${grpOf(x.group).col}"></span><span class="exn"><b>${esc(x.name)}</b><small>${esc(fmtEx(x))}</small></span></li>`).join("")}</ul>`
+            <button type="button" class="th-btn" data-info="${esc(x.id)}" aria-label="${esc(x.name)} ansehen">${thumb(imgOf(x))}</button><span class="exn"><b>${esc(x.name)}</b><small>${esc(fmtEx(x))}</small></span></li>`).join("")}</ul>`
           :`<p class="note" style="margin:0;color:var(--muted);font-size:.88rem">Kein Training geplant.</p>`}
         <div class="day-actions"><button class="btn" type="button" data-edit-day="${i}">${ex.length?"Tag bearbeiten":"Übungen auswählen"}</button>
           ${ex.length&&n?`<button class="linkish" type="button" data-reset-day="${di}">Haken zurücksetzen</button>`:""}</div>
@@ -990,17 +1035,20 @@ function daysHtml(dates,todayIso){
     </section>`; }).join("");
 }
 function kw(d){ const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())); const n=t.getUTCDay()||7; t.setUTCDate(t.getUTCDate()+4-n); const y=new Date(Date.UTC(t.getUTCFullYear(),0,1)); return Math.ceil(((t-y)/864e5+1)/7); }
+const thumb=i=>i?`<span class="th"><img src="${pic(i,1)}" alt="" loading="lazy"></span>`:`<span class="th none"></span>`;
 function renderEx(){
   const list=exList();
-  if(!list.length){ $("#list").innerHTML=`<div class="empty"><strong>Noch keine Übungen</strong><span>Tipp auf „+ Übung“. Du wählst eine Muskelgruppe und bekommst passende Vorschläge.</span></div>`+GROUPS.map(g=>grpHtml(g,[])).join(""); return; }
+  if(!list.length){ $("#list").innerHTML=`<div class="empty"><strong>Noch keine Übungen</strong><span>Klapp eine Muskelgruppe auf: Dort stehen die gängigsten Übungen mit Bildern. Mit „+“ kommen sie in deinen Plan.</span></div>`+GROUPS.map(g=>grpHtml(g,[])).join(""); return; }
   $("#list").innerHTML=GROUPS.map(g=>grpHtml(g,list.filter(x=>x.group===g.id).sort((a,b)=>a.name.localeCompare(b.name,"de")))).join("");
 }
 function grpHtml(g,items){
   const open=openGrp.has(g.id);
   return `<section class="grp${open?" open":""}"><button type="button" class="grp-head" data-grp="${g.id}" aria-expanded="${open}">
       <span class="gi" style="background:${g.col}22">${g.emo}</span><b>${esc(g.name)}</b><span class="n">${items.length||""}</span>${CHEV}</button>
-    ${open?`<div class="grp-body">${items.length?`<div class="exl">${items.map(x=>`<button type="button" class="exrow" data-ex="${esc(x.id)}"><span class="exn"><b>${esc(x.name)}</b><small>${esc(fmtEx(x))}</small></span>${NEXT}</button>`).join("")}</div>`:""}
-      <button type="button" class="add-in" data-add-in="${g.id}">+ Übung für ${esc(g.name)}</button></div>`:""}
+    ${open?`<div class="grp-body">${items.length?`<p class="sub-l">Meine Übungen</p><div class="exl">${items.map(x=>`<button type="button" class="exrow" data-info="${esc(x.id)}">${thumb(imgOf(x))}<span class="exn"><b>${esc(x.name)}</b><small>${esc(fmtEx(x))}</small></span>${NEXT}</button>`).join("")}</div>`:""}
+      ${(()=>{ const have=new Set(items.map(x=>x.name.toLowerCase())), sug=CATALOG.filter(c=>c.g===g.id&&!have.has(c.n.toLowerCase()));
+        return sug.length?`<p class="sub-l">${items.length?"Weitere Übungen":"Gängige Übungen"} <small>· antippen zum Ansehen, + zum Hinzufügen</small></p><div class="exl">${sug.map(c=>`<div class="exrow sugrow"><button type="button" class="sug-open" data-cinfo="${esc(c.img)}">${thumb(c.img)}<span class="exn"><b>${esc(c.n)}</b><small>${c.s?`${c.s} × ${esc(c.r)}`:esc(c.r)}</small></span></button><button type="button" class="plus" data-cadd="${esc(c.img)}" aria-label="${esc(c.n)} hinzufügen">+</button></div>`).join("")}</div>`:""; })()}
+      <button type="button" class="add-in" data-add-in="${g.id}">+ Eigene Übung für ${esc(g.name)}</button></div>`:""}
   </section>`;
 }
 
@@ -1024,13 +1072,14 @@ $("#exCancel").addEventListener("click",closeEx);
 $("#exModal").addEventListener("click",e=>{
   if(e.target.id==="exModal") return closeEx();
   const g=e.target.closest("[data-eg]"); if(g){ exForm.group=g.dataset.eg; renderExChips(); return; }
-  const s=e.target.closest("[data-sug]"); if(s){ $("#exName").value=s.dataset.sug; if(!$("#exSets").value) $("#exSets").value=exForm.group==="cardio"?"":"3"; if(!$("#exReps").value) $("#exReps").value=exForm.group==="cardio"?"20 min":"10"; }
+  const s=e.target.closest("[data-sug]"); if(s){ $("#exName").value=s.dataset.sug; const c=catByName(s.dataset.sug); if(c&&!$("#exSets").value&&c.s) $("#exSets").value=c.s; if(c&&!$("#exReps").value) $("#exReps").value=c.r; if(!$("#exSets").value) $("#exSets").value=exForm.group==="cardio"?"":"3"; if(!$("#exReps").value) $("#exReps").value=exForm.group==="cardio"?"20 min":"10"; }
 });
 $("#exForm").addEventListener("submit",e=>{
   e.preventDefault(); if(!root||!exForm) return;
   const name=$("#exName").value.trim().slice(0,60); if(!name){ $("#exErr").textContent="Gib der Übung einen Namen."; $("#exErr").hidden=false; return; }
   const sets=parseInt($("#exSets").value,10), kg=parseFloat(String($("#exKg").value).replace(",","."));
-  const data={name,group:exForm.group,sets:sets>0&&sets<100?sets:null,reps:$("#exReps").value.trim().slice(0,7)||null,kg:kg>0&&kg<1000?Math.round(kg*10)/10:null,at:(exForm.id&&exercises[exForm.id].at)||Date.now()};
+  const c=catByName(name), keep=exForm.id&&exercises[exForm.id].img;
+  const data={name,img:(c&&c.img)||keep||null,group:exForm.group,sets:sets>0&&sets<100?sets:null,reps:$("#exReps").value.trim().slice(0,7)||null,kg:kg>0&&kg<1000?Math.round(kg*10)/10:null,at:(exForm.id&&exercises[exForm.id].at)||Date.now()};
   const id=exForm.id||uid(); exercises[id]=data; root.child("exercises/"+id).set(data).catch(showErr);
   openGrp.add(data.group); closeEx(); render();
 });
@@ -1042,6 +1091,31 @@ $("#exDel").addEventListener("click",()=>{
   closeEx(); render();
 });
 
+/* ---------- Übung ansehen (Bilder Start und Ende) ---------- */
+let info=null;
+function openInfo(o){
+  info=o; const c=o.cat, x=o.id?exercises[o.id]:null, img=c?c.img:imgOf(x), g=grpOf(c?c.g:x.group);
+  $("#infoBody").innerHTML=`<h3>${esc(c?c.n:x.name)}</h3>
+    <p class="info-g"><span class="gdot" style="background:${g.col}"></span>${esc(g.name)}${x?` · ${esc(fmtEx(x))}`:c?` · Vorschlag: ${c.s?`${c.s} × ${esc(c.r)}`:esc(c.r)}`:""}</p>
+    ${img?`<div class="pics"><figure><img src="${pic(img,0)}" alt="Startposition"><figcaption>Start</figcaption></figure><figure><img src="${pic(img,1)}" alt="Endposition"><figcaption>Ende</figcaption></figure></div>`
+      :`<p class="card-note">Zu dieser Übung gibt es kein Bild.</p>`}
+    <div class="sheet-actions">${x?`<button class="btn" type="button" id="infoEdit">Bearbeiten</button>`:""}
+      <div class="right"><button class="ghost" type="button" id="infoClose">Schließen</button>${c&&!x?`<button class="btn primary" type="button" id="infoAdd">Hinzufügen</button>`:""}</div></div>`;
+  $("#infoModal").hidden=false;
+}
+const closeInfo=()=>{ $("#infoModal").hidden=true; info=null; };
+function addFromCatalog(img){
+  const c=catByImg(img); if(!c||!root) return;
+  const id=uid(), data={name:c.n,img:c.img,group:c.g,sets:c.s?+c.s:null,reps:c.r||null,kg:null,at:Date.now()};
+  exercises[id]=data; root.child("exercises/"+id).set(data).catch(showErr); openGrp.add(c.g); render();
+  $("#status").textContent=`„${c.n}“ hinzugefügt. Gewicht trägst du über die Übung ein.`; setTimeout(()=>{ if($("#status").textContent.startsWith("„"+c.n)) $("#status").textContent=""; },3500);
+}
+$("#infoModal").addEventListener("click",e=>{
+  if(e.target.id==="infoModal"||e.target.closest("#infoClose")) return closeInfo();
+  if(e.target.closest("#infoEdit")){ const id=info.id; closeInfo(); return openEx(id); }
+  if(e.target.closest("#infoAdd")){ const img=info.cat.img; closeInfo(); addFromCatalog(img); }
+});
+
 /* ---------- Tag bearbeiten ---------- */
 let dayEdit=null;
 function openDayEdit(i){
@@ -1050,7 +1124,7 @@ function openDayEdit(i){
   $("#daySug").innerHTML=DAY_SUG.map(s=>`<button type="button" class="chip sug" data-ds="${esc(s)}">${esc(s)}</button>`).join("");
   const list=exList();
   $("#dayPicks").innerHTML=list.length?GROUPS.map(g=>{ const it=list.filter(x=>x.group===g.id).sort((a,b)=>a.name.localeCompare(b.name,"de")); if(!it.length) return "";
-      return `<div class="pg"><b><span class="gdot" style="background:${g.col}"></span>${esc(g.name)}</b>${it.map(x=>`<label class="pick"><input type="checkbox" data-pick="${esc(x.id)}"${dayEdit.sel.has(x.id)?" checked":""}><span class="exn"><b>${esc(x.name)}</b><small>${esc(fmtEx(x))}</small></span></label>`).join("")}</div>`; }).join("")
+      return `<div class="pg"><b><span class="gdot" style="background:${g.col}"></span>${esc(g.name)}</b>${it.map(x=>`<label class="pick"><input type="checkbox" data-pick="${esc(x.id)}"${dayEdit.sel.has(x.id)?" checked":""}>${thumb(imgOf(x))}<span class="exn"><b>${esc(x.name)}</b><small>${esc(fmtEx(x))}</small></span></label>`).join("")}</div>`; }).join("")
     :`<p class="err" style="color:var(--muted)">Du hast noch keine Übungen. Leg sie zuerst unter „Übungen“ an.</p>`;
   $("#dayModal").hidden=false;
 }
@@ -1065,7 +1139,7 @@ $("#dayForm").addEventListener("submit",e=>{
   week[dayEdit.i]=data; root.child("week/"+dayEdit.i).set(data).catch(showErr); openDay=dayEdit.i; closeDay(); render();
 });
 $("#dayRest").addEventListener("click",()=>{ if(!dayEdit||!root) return; week[dayEdit.i]=null; root.child("week/"+dayEdit.i).remove().catch(showErr); closeDay(); render(); });
-document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if(!$("#exModal").hidden) closeEx(); if(!$("#dayModal").hidden) closeDay(); } });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if(!$("#infoModal").hidden) closeInfo(); if(!$("#exModal").hidden) closeEx(); if(!$("#dayModal").hidden) closeDay(); } });
 
 /* ---------- Klicks ---------- */
 document.addEventListener("click",e=>{
@@ -1080,6 +1154,9 @@ document.addEventListener("click",e=>{
   const g=e.target.closest("[data-grp]"); if(g){ const id=g.dataset.grp; if(openGrp.has(id)) openGrp.delete(id); else openGrp.add(id); render(); return; }
   const ai=e.target.closest("[data-add-in]"); if(ai) return openEx(null,ai.dataset.addIn);
   const x=e.target.closest("[data-ex]"); if(x) return openEx(x.dataset.ex);
+  const inf=e.target.closest("[data-info]"); if(inf) return openInfo({id:inf.dataset.info});
+  const ci=e.target.closest("[data-cinfo]"); if(ci) return openInfo({cat:catByImg(ci.dataset.cinfo)});
+  const ca=e.target.closest("[data-cadd]"); if(ca) return addFromCatalog(ca.dataset.cadd);
 });
 // Beim Runterscrollen schiebt sich der helle Bereich über den Kopf
 (()=>{ const wrap=$(".wrap"), head=$("#head"), sc=$("#list");
