@@ -882,6 +882,7 @@ body{background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px)!impor
   function paintAv(uid){ document.querySelectorAll(`[data-av="${uid}"]`).forEach(el=>{ el.innerHTML=avInner(uid,el.dataset.avname); }); }
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
+  function pgToggle(open){ const m=document.getElementById("pgMenu"), b=document.getElementById("pgBtn"); if(!m||!b) return; m.hidden=!open; b.setAttribute("aria-expanded",open); }
   window.Auth = {
     avatar, pub:uid=>{ loadPub(uid); return pubCache.get(uid)||null; },
     refreshPub(uid){ pubCache.delete(uid); loadPub(uid); },
@@ -891,7 +892,22 @@ body{background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px)!impor
     const st=document.createElement("style"); st.textContent=CSS; document.head.appendChild(st);
     // Name der App oben in jeder Seite
     const hd=document.querySelector("header");
-    if(hd && !hd.querySelector(".ours-logo")) hd.insertAdjacentHTML("afterbegin",'<button type="button" class="ours-logo" id="pgBtn" aria-label="Ours – Seiten" aria-haspopup="true" aria-expanded="false" aria-controls="pgMenu"><img src="ours-mark.png" alt=""></button>');
+    if(hd && !hd.querySelector(".ours-logo")){
+      hd.insertAdjacentHTML("afterbegin",'<button type="button" class="ours-logo" id="pgBtn" aria-label="Ours – Seiten" aria-haspopup="true" aria-expanded="false" aria-controls="pgMenu"><img src="ours-mark.png" alt=""></button>');
+      // Seiten-Menü hinter dem Logo: sofort nutzbar, auch bevor die Anmeldung fertig ist
+      hd.insertAdjacentHTML("beforeend",`<nav class="pf-menu pg-menu" id="pgMenu" hidden aria-label="Seiten">
+          <div class="pf-who"><img class="pf-logo" src="ours-mark.png" alt=""><span class="pf-brand">Ours</span></div>
+          <div class="pf-sep"></div>
+          ${PAGES.filter(p=>!p.noSpace).map(p=>`<a href="${p.file}" data-page="${p.type}"${p.type===type?' aria-current="page"':""}><span class="dot" style="background:${p.color}"></span>${p.label}</a>`).join("")}
+        </nav>`);
+      const pgBtn=document.getElementById("pgBtn"), pgMenu=document.getElementById("pgMenu");
+      pgBtn.addEventListener("click",e=>{ e.stopPropagation(); if(window.Auth._closePf) window.Auth._closePf(); pgToggle(pgMenu.hidden); });
+      document.addEventListener("click",e=>{ if(!pgMenu.hidden && !pgMenu.contains(e.target)) pgToggle(false); });
+      document.addEventListener("keydown",e=>{ if(e.key==="Escape") pgToggle(false); });
+      pgMenu.addEventListener("click",e=>{ if(e.target.closest("a")) pgToggle(false); });
+      // Zurück-Geste: Seite kommt aus dem Zwischenspeicher, Menüs dann zu
+      addEventListener("pageshow",()=>{ pgToggle(false); if(window.Auth._closePf) window.Auth._closePf(); });
+    }
     let auth, db;
     try{ if(!firebase.apps.length) firebase.initializeApp(config); auth=firebase.auth(); db=firebase.database(); }
     catch(e){ cb(null); return; }
@@ -977,20 +993,10 @@ body{background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px)!impor
           <button type="button" data-pf="settings">${IC.gear}Einstellungen</button>
           <button type="button" data-pf="logout">${IC.out}Abmelden</button>
         </nav>`);
-      // Seiten-Menü hinter dem Logo
-      head.insertAdjacentHTML("beforeend",`<nav class="pf-menu pg-menu" id="pgMenu" hidden aria-label="Seiten">
-          <div class="pf-who"><img class="pf-logo" src="ours-mark.png" alt=""><span class="pf-brand">Ours</span></div>
-          <div class="pf-sep"></div>
-          ${PAGES.filter(p=>!p.noSpace).map(p=>`<a href="${p.file}" data-page="${p.type}"${p.type===type?' aria-current="page"':""}><span class="dot" style="background:${p.color}"></span>${p.label}</a>`).join("")}
-        </nav>`);
-      const pgBtn=document.getElementById("pgBtn"), pgMenu=document.getElementById("pgMenu");
-      const pgToggle=open=>{ if(!pgBtn) return; pgMenu.hidden=!open; pgBtn.setAttribute("aria-expanded",open); };
-      if(pgBtn){ pgBtn.onclick=e=>{ e.stopPropagation(); document.getElementById("pfMenu").hidden=true; pgToggle(pgMenu.hidden); };
-        document.addEventListener("click",e=>{ if(!pgMenu.hidden && !pgMenu.contains(e.target)) pgToggle(false); });
-        document.addEventListener("keydown",e=>{ if(e.key==="Escape") pgToggle(false); }); }
       const btn=document.getElementById("pfBtn"), menu=document.getElementById("pfMenu");
       const toggle=open=>{ menu.hidden=!open; btn.setAttribute("aria-expanded",open); };
       btn.onclick=e=>{ e.stopPropagation(); pgToggle(false); toggle(menu.hidden); };
+      window.Auth._closePf=()=>toggle(false);
       document.addEventListener("click",e=>{ if(!menu.hidden && !menu.contains(e.target)) toggle(false); });
       document.addEventListener("keydown",e=>{ if(e.key==="Escape") toggle(false); });
       menu.querySelectorAll("[data-pf]").forEach(b=>b.onclick=()=>{ toggle(false);
