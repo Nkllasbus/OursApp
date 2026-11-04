@@ -84,6 +84,11 @@ header p{margin:8px 0 0;color:var(--muted)}
 .items li{display:flex;align-items:flex-start;gap:10px;padding:8px 8px 8px 12px;border-top:1px solid var(--line)}
 .items li:first-child{border-top:0}
 .leaf{flex:none;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-top:12px}
+.ick{flex:none;width:24px;height:24px;margin-top:5px;border-radius:7px;border:1.5px solid var(--line);background:var(--surface);color:transparent;display:grid;place-items:center;padding:0}
+.ick svg{width:16px;height:16px}
+.ick.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.items li.had input{color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(0,0,0,.25)}
+.sec h2 .linkish{font-size:.78rem;letter-spacing:0;text-transform:none}
 .num{flex:none;width:26px;height:26px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:.85rem;display:grid;place-items:center;margin-top:5px;font-variant-numeric:tabular-nums}
 .items input,.items textarea{flex:1;min-width:0;font:inherit;border:0;background:none;color:var(--ink);padding:6px 0;resize:none;line-height:1.5}
 .items input:focus,.items textarea:focus{outline:none}
@@ -317,6 +322,17 @@ header p{margin-top:4px;font-size:.88rem}
 #pickList .nm small{font-size:.75rem;color:var(--muted)}
 .pk-btn{border:0;background:var(--band);color:var(--on-band);border-radius:999px;padding:6px 14px;font:inherit;font-size:.85rem;font-weight:600}
 .pk-btn:disabled{opacity:.6}
+/* Preis */
+.price-box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.price-main{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.price-main b{font-family:var(--display);font-weight:400;font-size:1.7rem;margin-left:6px}
+.price-main span{color:var(--muted);font-size:.88rem}
+.price-lbl{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-right:6px}
+.price-list{list-style:none;margin:6px 0 2px;padding:0;display:flex;flex-direction:column;gap:6px;font-size:.88rem}
+.price-list li{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.price-list small{display:block;font-size:.75rem;color:var(--muted)}
+.price-box a{color:var(--accent)}
+.price-box .linkish{align-self:flex-start}
 /* Supermärkte */
 .shop-btn{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:10px 12px;font-weight:600;font-size:.9rem}
 .shop-btn svg{width:20px;height:20px;color:var(--accent)}
@@ -342,6 +358,7 @@ header p{margin-top:4px;font-size:.88rem}
 .shop-items small{color:var(--muted)}
 .shop-route{display:inline-block;margin:0 12px 10px;font-size:.84rem;font-weight:600;color:var(--accent)}
 .shop-note{font-size:.76rem;color:var(--muted);margin:0}
+.shop-more{align-self:center;width:100%}
 
 /* Seitenmenü hinter dem Titel */
 .switch{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;text-align:left}
@@ -1386,7 +1403,7 @@ function cardHtml(r,showCat){
   return `<button class="card" type="button" data-open="${esc(r.id)}">
     <div class="cover">${u?`<img src="${u}" alt="" style="object-position:50% ${coverY(r)}%">`:LEAF}${starsBadge(r)}</div>
     <div class="card-body">${showCat&&c?`<span class="card-cat">${c.one}</span>`:""}<span class="card-title">${esc(r.title||"Ohne Namen")}</span>
-    <span class="card-meta">${n} Zutaten · ${s} Schritte${(()=>{ const t=nutTotals(r); return showKcal&&t.kcal&&!t.missing?` · ${fmtN(t.kcal/servOf(r))} kcal`:""; })()}</span></div></button>`;
+    <span class="card-meta">${n} Zutaten · ${s} Schritte${(()=>{ const t=nutTotals(r); return showKcal&&t.kcal&&!t.missing?` · ${fmtN(t.kcal/servOf(r))} kcal`:""; })()}${priceHas(r)?` · ca. ${fmtEur(r.price.total/servOf(r))}`:""}</span></div></button>`;
 }
 function renderList(){
   document.querySelectorAll("[data-src]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.src===src));
@@ -1444,9 +1461,10 @@ function renderDetail(r){
     <div class="cat-row" role="group" aria-label="Kategorie">${CATS.map(c=>`<button type="button" class="chip" data-act="cat" data-cat="${c.id}" aria-pressed="${r.category===c.id}">${c.emoji} ${c.one}</button>`).join("")}</div>
     ${okId(r.cover)&&photoUrl(r.cover)?`<div class="crop"><div class="crop-prev"><img id="cropPrev" src="${photoUrl(r.cover)}" alt="" style="object-position:50% ${coverY(r)}%"></div>
       <label for="cropY">Ausschnitt für die Kachel<input type="range" id="cropY" min="0" max="100" value="${coverY(r)}"></label></div>`:""}
+    ${priceBox(r)}
     ${nutSummary(r)}
     <div class="sec">
-      <h2>Zutaten <span>${ing.length}</span></h2>
+      <h2>Zutaten <span>${(()=>{ const n=ing.filter(t=>hasIng(r,t)).length; return n?`${n} von ${ing.length} abgehakt · <button type="button" class="linkish" data-act="have-reset">zurücksetzen</button>`:ing.length; })()}</span></h2>
       <ul class="items">${ing.map((t,k)=>ingRow(r,t,k)).join("")}</ul>
       <form class="adder" id="addIng" autocomplete="off"><input id="newIng" placeholder="z.B. 200 g rote Linsen" aria-label="Neue Zutat"><button class="btn" type="submit">+</button></form>
       ${ing.length?`<button class="shop-btn" type="button" data-act="shops"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h2l2.2 10.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L20.5 8H6.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="20" r="1.3" fill="currentColor"/><circle cx="17" cy="20" r="1.3" fill="currentColor"/></svg>Wo gibt's das in der Nähe?</button>`:""}
@@ -1458,7 +1476,7 @@ function renderDetail(r){
     </div>
     <button class="del${confirmDel?" sure":""}" type="button" data-act="del-recipe">${confirmDel?"Wirklich löschen?":"Rezept löschen"}</button>`;
   $("#detail").querySelectorAll("textarea[data-step],#rtitle").forEach(grow);
-  scheduleEstimate(r);
+  scheduleEstimate(r); schedulePrice(r);
 }
 const grow=t=>{ t.style.height="auto"; t.style.height=t.scrollHeight+"px"; };
 
@@ -1930,12 +1948,18 @@ const fmtDist=k=>k<1?`${Math.round(k*100)*10} m`:`${k.toFixed(1).replace(".",","
 function openShops(){
   const r=cur(); if(!r) return;
   shopOpen=r.id; $("#shopModal").hidden=false;
+  const ing=arr(r.ingredients).filter(t=>t.trim() && !hasIng(r,t));
+  if(!ing.length){ shopState={step:"err",err:"Du hast alle Zutaten abgehakt. Es gibt nichts mehr zu besorgen."}; return renderShops(); }
+  shopIng=ing;
   if(shopLoc) findShops(); else { shopState={step:"loc"}; renderShops(); }
 }
+let shopIng=[];
 function closeShops(){ $("#shopModal").hidden=true; shopOpen=null; }
 $("#shopClose").addEventListener("click",closeShops);
 $("#shopModal").addEventListener("click",e=>{ if(e.target.id==="shopModal") closeShops(); });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !$("#shopModal").hidden) closeShops(); });
+const SHOP_STEP=5;
+const shopScore=x=>x.res?x.res.items.filter(i=>i.s==="ja").length:-1;
 function renderShops(){
   const b=$("#shopBody"), st=shopState||{};
   if(st.step==="loc"){
@@ -1945,20 +1969,22 @@ function renderShops(){
       ${st.err?`<p class="vmsg">${esc(st.err)}</p>`:""}</div>`;
     return;
   }
-  const where=shopLoc?`<div class="shop-where"><span>In der Nähe von ${esc(shopLoc.label||"deinem Standort")}</span><button class="linkish" type="button" id="shopChange">ändern</button></div>`:"";
+  const where=shopLoc&&st.step!=="err"?`<div class="shop-where"><span>In der Nähe von ${esc(shopLoc.label||"deinem Standort")}</span><button class="linkish" type="button" id="shopChange">ändern</button></div>`:"";
   if(st.step==="busy"){ b.innerHTML=where+`<p class="card-meta">${esc(st.msg||"Einen Moment …")}</p>`; return; }
   if(st.step==="err"){ b.innerHTML=where+`<p class="vmsg">${esc(st.err)}</p>`; return; }
-  const r=recipes.find(x=>x.id===shopOpen), ing=r?arr(r.ingredients):[];
-  const list=st.shops||[];
-  b.innerHTML=where+(list.length?`<ul class="shops">${list.map((sh,i)=>{ const res=sh.res, n=ing.length;
-      const yes=res?res.items.filter(x=>x.s==="ja").length:0, maybe=res?res.items.filter(x=>x.s==="vielleicht").length:0, open=st.open===i;
+  const ing=shopIng, n=ing.length;
+  const vis=(st.all||[]).slice(0,st.show).sort((a,b)=>(shopScore(b)-shopScore(a))||(a.d-b.d));
+  b.innerHTML=where+`<p class="card-meta">Gesucht ${n===1?"wird":"werden"} ${n} ${n===1?"Zutat":"Zutaten"}, die du noch nicht abgehakt hast.</p>`
+    +(vis.length?`<ul class="shops">${vis.map(sh=>{ const res=sh.res, i=st.all.indexOf(sh), open=st.open===i;
+      const yes=res?res.items.filter(x=>x.s==="ja").length:0, maybe=res?res.items.filter(x=>x.s==="vielleicht").length:0;
       return `<li class="shop"><button type="button" class="shop-head" data-shop="${i}" aria-expanded="${open}">
           <span class="nm"><b>${esc(sh.name)}</b><small>${esc(SHOP_TYPES[sh.type]||"Laden")} · ${fmtDist(sh.d)}${sh.street?` · ${esc(sh.street)}`:""}</small></span>
           ${res?`<span class="shop-score${yes<n*.6?" low":""}">${yes}/${n}${maybe?` <small>+${maybe}?</small>`:""}</span>`:`<span class="shop-score">…</span>`}</button>
         ${res?`<div class="shop-bar"><span style="width:${n?Math.round(yes/n*100):0}%"></span></div>`:""}
-        ${open&&res?`<ul class="shop-items">${ing.map((t,k)=>{ const x=res.items[k]||{s:"vielleicht",hint:""}; return `<li><span class="st ${x.s}">${x.s==="ja"?"✓":x.s==="nein"?"✗":"?"}</span><span>${esc(t)}${x.hint?` <small>· ${esc(x.hint)}</small>`:""}</span></li>`; }).join("")}</ul>
-          <a class="shop-route" href="https://www.google.com/maps/dir/?api=1&destination=${sh.lat},${sh.lon}" target="_blank" rel="noopener">Route anzeigen ↗</a>`:""}</li>`; }).join("")}</ul>`
+        ${open&&res?`<ul class="shop-items">${ing.map((t,k)=>{ const x=res.items[k]||{s:"vielleicht",hint:""}; return `<li><span class="st ${x.s}">${x.s==="ja"?"✓":x.s==="nein"?"✗":"?"}</span><span>${esc(t)}${x.hint?` <small>· ${esc(x.hint)}</small>`:""}</span></li>`; }).join("")}</ul>`:""}
+        ${open?`<a class="shop-route" href="https://www.google.com/maps/dir/?api=1&destination=${sh.lat},${sh.lon}" target="_blank" rel="noopener">Route anzeigen ↗</a>`:""}</li>`; }).join("")}</ul>`
     :`<p class="card-meta">In der Nähe habe ich keine Supermärkte gefunden.</p>`)
+    +((st.all||[]).length>st.show?`<button class="btn shop-more" type="button" id="shopMore"${st.loading?" disabled":""}>${st.loading?"Lädt …":"Mehr Läden laden"}</button>`:"")
     +(st.warn?`<p class="vmsg">${esc(st.warn)}</p>`:"")
     +`<p class="shop-note">Ladenliste aus OpenStreetMap. Ob es eine Zutat gibt, ist eine Einschätzung anhand des üblichen Sortiments, kein Live-Bestand der Filiale.</p>`;
 }
@@ -1971,6 +1997,7 @@ document.addEventListener("click",e=>{
     return;
   }
   if(e.target.closest("#shopChange")){ shopState={step:"loc"}; return renderShops(); }
+  if(e.target.closest("#shopMore") && shopState && !shopState.loading){ shopState.show+=SHOP_STEP; renderShops(); return loadShopRes(); }
   const h=e.target.closest("[data-shop]"); if(h && shopState){ const i=+h.dataset.shop; shopState.open=shopState.open===i?null:i; renderShops(); }
 });
 document.addEventListener("submit",async e=>{
@@ -1985,48 +2012,48 @@ document.addEventListener("submit",async e=>{
 });
 function setShopLoc(l){ shopLoc=l; try{ localStorage.setItem("rezepte.shopLoc",JSON.stringify(l)); }catch(e){} }
 async function overpass(lat,lon,rad){
-  const q=`[out:json][timeout:20];nwr(around:${rad},${lat},${lon})["shop"~"^(supermarket|convenience|organic|greengrocer|health_food|chemist)$"];out center tags 80;`;
+  const q=`[out:json][timeout:20];nwr(around:${rad},${lat},${lon})["shop"~"^(supermarket|convenience|organic|greengrocer|health_food|chemist)$"];out center tags 120;`;
   for(const url of ["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"]){
     try{ const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"data="+encodeURIComponent(q)});
       if(r.ok) return (await r.json()).elements||[]; }catch(e){}
   }
   throw new Error("Die Ladenliste von OpenStreetMap ist gerade nicht erreichbar. Versuch es gleich nochmal.");
 }
+const shopBrand=x=>x.name.toLowerCase().replace(/\s+(markt|center|city|to go|express)\b.*$/,"").trim();
 async function findShops(){
   const r=recipes.find(x=>x.id===shopOpen); if(!r||!shopLoc) return;
-  const ing=arr(r.ingredients);
   shopState={step:"busy",msg:"Supermärkte in der Nähe werden gesucht …"}; renderShops();
   try{
     let els=await overpass(shopLoc.lat,shopLoc.lon,2000);
-    if(els.filter(x=>x.tags&&(x.tags.name||x.tags.brand)).length<3) els=await overpass(shopLoc.lat,shopLoc.lon,6000);
-    const shops=els.map(x=>{ const t=x.tags||{}, lat=x.lat??(x.center&&x.center.lat), lon=x.lon??(x.center&&x.center.lon);
-        return {name:(t.brand||t.name||"").trim(), full:t.name||t.brand||"", type:t.shop, lat, lon, street:[t["addr:street"],t["addr:housenumber"]].filter(Boolean).join(" ")}; })
-      .filter(x=>x.name && x.lat!=null).map(x=>({...x,d:distKm(shopLoc,x)})).sort((a,b)=>a.d-b.d).slice(0,14);
-    shops.forEach(x=>{ if(x.full && x.full!==x.name && x.full.length<40) x.name=x.full.toLowerCase().includes(x.name.toLowerCase())?x.full:x.name; });
+    if(els.filter(x=>x.tags&&(x.tags.name||x.tags.brand)).length<SHOP_STEP) els=await overpass(shopLoc.lat,shopLoc.lon,6000);
+    const all=els.map(x=>{ const t=x.tags||{}, lat=x.lat??(x.center&&x.center.lat), lon=x.lon??(x.center&&x.center.lon);
+        let name=(t.brand||t.name||"").trim(); const full=(t.name||"").trim();
+        if(full && full!==name && full.length<40 && full.toLowerCase().includes(name.toLowerCase())) name=full;
+        return {name, type:t.shop, lat, lon, street:[t["addr:street"],t["addr:housenumber"]].filter(Boolean).join(" ")}; })
+      .filter(x=>x.name && x.lat!=null).map(x=>({...x,d:distKm(shopLoc,x)})).sort((a,b)=>a.d-b.d).slice(0,40);
     if(shopOpen!==r.id) return;
-    shopState={step:"list",shops,open:null}; renderShops();
-    if(!shops.length) return;
-    // Ketten nur einmal fragen
-    const brand=x=>x.name.toLowerCase().replace(/\s+(markt|center|city|to go|express)\b.*$/,"").trim();
-    const brands=[...new Set(shops.map(brand))].slice(0,10);
-    const label=b=>{ const x=shops.find(s=>brand(s)===b); return `${x.name} (${SHOP_TYPES[x.type]||"Laden"})`; };
-    if(!WORKER_URL){ shopState.warn="In dieser Vorschau kann Claude das Sortiment nicht prüfen. Auf deiner echten Seite schon."; return renderShops(); }
-    const key=JSON.stringify([brands,ing]);
-    let res=shopCache[key];
-    if(!res){
-      const resp=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mode:"stores",stores:brands.map(label),items:ing})});
-      const d=await resp.json().catch(()=>({}));
-      if(!resp.ok || !Array.isArray(d.stores)) throw new Error(resp.ok||resp.status===400&&!d.error?"Der Rezept-Helfer kennt die Supermarkt-Suche noch nicht. Aktualisier den Code in Cloudflare.":(d.error||"Der Rezept-Helfer hat nicht geantwortet."));
-      res=shopCache[key]=d.stores;
-    }
-    if(shopOpen!==r.id) return;
-    shops.forEach(x=>{ x.res=res[brands.indexOf(brand(x))]||null; });
-    shops.sort((a,b)=>{ const sc=x=>x.res?x.res.items.filter(i=>i.s==="ja").length:-1; return (sc(b)-sc(a))||(a.d-b.d); });
-    renderShops();
-  }catch(err){
-    if(shopState && shopState.step==="list"){ shopState.warn=err instanceof TypeError?"Keine Verbindung zum Rezept-Helfer.":err.message; renderShops(); }
-    else { shopState={step:"err",err:err instanceof TypeError?"Keine Verbindung.":err.message}; renderShops(); }
-  }
+    shopState={step:"list",all,show:SHOP_STEP,open:null}; renderShops();
+    await loadShopRes();
+  }catch(err){ shopState={step:"err",err:err instanceof TypeError?"Keine Verbindung.":err.message}; renderShops(); }
+}
+// nur die Ketten der gerade sichtbaren Läden fragen, die noch nicht eingeschätzt sind
+async function loadShopRes(){
+  const st=shopState; if(!st || st.step!=="list") return;
+  const ingK=JSON.stringify(shopIng), vis=st.all.slice(0,st.show);
+  vis.forEach(x=>{ const c=shopCache[shopBrand(x)+"|"+ingK]; if(c) x.res=c; });
+  const need=[...new Set(vis.filter(x=>!x.res).map(shopBrand))];
+  if(!need.length) return renderShops();
+  if(!WORKER_URL){ st.warn="In dieser Vorschau kann Claude das Sortiment nicht prüfen. Auf deiner echten Seite schon."; return renderShops(); }
+  const label=b=>{ const x=vis.find(s=>shopBrand(s)===b); return `${x.name} (${SHOP_TYPES[x.type]||"Laden"})`; };
+  st.loading=true; renderShops();
+  try{
+    const resp=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mode:"stores",stores:need.map(label),items:shopIng})});
+    const d=await resp.json().catch(()=>({}));
+    if(!resp.ok || !Array.isArray(d.stores)) throw new Error(resp.ok||resp.status===400&&!d.error?"Der Rezept-Helfer kennt die Supermarkt-Suche noch nicht. Aktualisier den Code in Cloudflare.":(d.error||"Der Rezept-Helfer hat nicht geantwortet."));
+    need.forEach((b,i)=>{ if(d.stores[i]) shopCache[b+"|"+ingK]=d.stores[i]; });
+    vis.forEach(x=>{ const c=shopCache[shopBrand(x)+"|"+ingK]; if(c) x.res=c; });
+  }catch(err){ st.warn=err instanceof TypeError?"Keine Verbindung zum Rezept-Helfer.":err.message; }
+  st.loading=false; if(shopState===st) renderShops();
 }
 
 /* ---------- Kalorien und Nährwerte ---------- */
@@ -2112,6 +2139,45 @@ async function ensureEstimates(id){
   miss.forEach(([t,k],i)=>{ if(arr(cur.ingredients)[k]===t && !nutEntry(cur,k)) nutri[k]={...res[i],src:"est",t}; });
   cur.nutri=nutri; patch(id,{nutri}); render();
 }
+/* ---------- Preis pro Portion: Discounterpreise aus dem Netz ---------- */
+let priceTimer=null, priceOpen=false; const pricing=new Set(), priceTried=new Set();
+const ingsKey=r=>ingKey(arr(r.ingredients).join("\n"));
+const priceHas=r=>r.price && typeof r.price.total==="number";
+const priceOk=r=>priceHas(r) && r.price.k===ingsKey(r);
+const fmtEur=v=>v.toLocaleString("de-DE",{style:"currency",currency:"EUR"});
+function priceBox(r){
+  const ing=arr(r.ingredients); if(!ing.length) return "";
+  const s=servOf(r);
+  if(!priceHas(r)) return `<div class="price-box"><span class="price-lbl">Preis</span><span class="card-meta">${pricing.has(r.id)?"Claude sucht aktuelle Discounterpreise …":!WORKER_URL?"In der Vorschau kann der Preis nicht gesucht werden.":r.priceErr?esc(r.priceErr)+` · <button type="button" class="linkish" data-act="price-redo">nochmal</button>`:"Preis wird gleich geschätzt …"}</span></div>`;
+  const p=r.price;
+  return `<div class="price-box">
+    <div class="price-main"><div><span class="price-lbl">ca. Preis</span><b class="tn">${fmtEur(p.total/s)}</b><span> pro Portion</span></div>
+      <button type="button" class="linkish" data-act="price-more">${priceOpen?"weniger":"Details"}</button></div>
+    <p class="card-meta">${fmtEur(p.total)} für ${s} ${s===1?"Portion":"Portionen"} · Discounterpreise, Stand ${new Date(p.at).toLocaleDateString("de-DE",{day:"numeric",month:"short"})}</p>
+    ${!priceOk(r)?`<p class="card-meta">${pricing.has(r.id)?"Wird neu berechnet …":`Die Zutaten haben sich geändert. <button type="button" class="linkish" data-act="price-redo">Neu berechnen</button>`}</p>`:""}
+    ${priceOpen?`<ul class="price-list">${ing.map((t,k)=>{ const x=(p.items||[])[k]||{}; return `<li><span>${esc(t)}${x.pack?`<small>${esc(x.pack)}</small>`:""}</span><b class="tn">${fmtEur(+x.eur||0)}</b></li>`; }).join("")}</ul>
+      ${(p.sources||[]).length?`<p class="card-meta">Quellen: ${p.sources.map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a>`).join(" · ")}</p>`:""}
+      <button type="button" class="linkish" data-act="price-redo">Neu berechnen</button>`:""}
+  </div>`;
+}
+function schedulePrice(r){
+  if(!WORKER_URL || priceHas(r) || pricing.has(r.id) || priceTried.has(r.id+"|"+ingsKey(r)) || !arr(r.ingredients).length) return;
+  clearTimeout(priceTimer); priceTimer=setTimeout(()=>ensurePrice(r.id),3000);
+}
+async function ensurePrice(id){
+  const r=recipes.find(x=>x.id===id); if(!r || (priceHas(r)&&!r.priceRedo) || pricing.has(id)) return;
+  const ing=arr(r.ingredients), k=ingsKey(r); if(!ing.length) return;
+  pricing.add(id); priceTried.add(id+"|"+k); r.priceErr=null; if(view===id) render();
+  try{
+    const resp=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mode:"price",items:ing})});
+    const d=await resp.json().catch(()=>({}));
+    if(!resp.ok || typeof d.total!=="number") throw new Error(resp.ok||resp.status===400&&!d.error?"Der Rezept-Helfer kennt Preise noch nicht. Aktualisier den Code in Cloudflare.":(d.error||"Kein Preis gefunden."));
+    const price={total:d.total,items:d.items||[],sources:d.sources||[],k,at:Date.now()};
+    const cur=recipes.find(x=>x.id===id); if(cur && ingsKey(cur)===k){ cur.price=price; cur.priceRedo=false; patch(id,{price}); }
+  }catch(err){ const cur=recipes.find(x=>x.id===id); if(cur) cur.priceErr=err instanceof TypeError?"Keine Verbindung zum Rezept-Helfer.":err.message; }
+  pricing.delete(id); if(view===id) render();
+  const now=recipes.find(x=>x.id===id); if(now && view===id && !priceHas(now)) schedulePrice(now);   // Zutaten haben sich inzwischen geändert
+}
 function nutSummary(r){
   const ing=arr(r.ingredients); if(!ing.length || !showKcal) return "";
   const t=nutTotals(r), s=servOf(r);
@@ -2124,11 +2190,15 @@ function nutSummary(r){
     ${t.missing?`<p class="nutri-note">${t.missing} ${t.missing===1?"Zutat wird":"Zutaten werden"} gerade geschätzt …</p>`:`<p class="nutri-note">Tipp auf die Kalorien neben einer Zutat, um Menge und Werte selbst einzutragen oder ein Foto vom Etikett zu machen.</p>`}
   </div>`;
 }
+// Zutaten abhaken (z.B. „hab ich schon“); gilt für alle, die die Sammlung teilen
+const ingKey=t=>{ let h=5381; for(const c of String(t).trim().toLowerCase()) h=((h<<5)+h+c.charCodeAt(0))>>>0; return "i"+h.toString(36); };
+const hasIng=(r,t)=>!!(r.have && r.have[ingKey(t)]);
+const ickBtn=(r,t,k)=>{ const on=hasIng(r,t); return `<button type="button" class="ick${on?" on":""}" data-act="have" data-k="${k}" aria-pressed="${on}" aria-label="${esc(t)} ${on?"nicht mehr abgehakt":"abhaken"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`; };
 function ingRow(r,t,k){
-  if(!showKcal) return `<li><span class="leaf"></span><input id="ing-${k}" data-ing="${k}" value="${esc(t)}" aria-label="Zutat ${k+1}"><button class="x" type="button" data-act="del-ing" data-k="${k}" aria-label="Zutat löschen">×</button></li>`;
+  if(!showKcal) return `<li${hasIng(r,t)?' class="had"':""}>${ickBtn(r,t,k)}<input id="ing-${k}" data-ing="${k}" value="${esc(t)}" aria-label="Zutat ${k+1}"><button class="x" type="button" data-act="del-ing" data-k="${k}" aria-label="Zutat löschen">×</button></li>`;
   const e=nutEntry(r,k), open=nutOpen===k;
   const badge=e?`${e.src==="est"?"≈ ":""}${fmtN(kcalOf(e))} kcal`:"…";
-  let h=`<li><span class="leaf"></span><input id="ing-${k}" data-ing="${k}" value="${esc(t)}" aria-label="Zutat ${k+1}">
+  let h=`<li${hasIng(r,t)?' class="had"':""}>${ickBtn(r,t,k)}<input id="ing-${k}" data-ing="${k}" value="${esc(t)}" aria-label="Zutat ${k+1}">
     <button class="kc${e&&e.src!=="est"?" set":""}${open?" open":""}" type="button" data-act="nut" data-k="${k}" aria-expanded="${open}" aria-label="Nährwerte für ${esc(t)}">${badge}</button>
     <button class="x" type="button" data-act="del-ing" data-k="${k}" aria-label="Zutat löschen">×</button></li>`;
   if(open){
@@ -2404,6 +2474,12 @@ document.addEventListener("click",e=>{
   const act=b.dataset.act, k=+b.dataset.k;
   if(act==="cover"){ coverFor=r.id; $("#coverInput").click(); }
   if(act==="shops") openShops();
+  if(act==="have"){ const t=arr(r.ingredients)[k]; if(t==null) return; const key=ingKey(t), have={...(r.have||{})};
+    if(have[key]) delete have[key]; else have[key]=true;
+    r.have=have; patch(r.id,{have:Object.keys(have).length?have:null}); render(); return; }
+  if(act==="have-reset"){ r.have=null; patch(r.id,{have:null}); render(); return; }
+  if(act==="price-redo"){ r.priceRedo=true; priceTried.delete(r.id+"|"+ingsKey(r)); ensurePrice(r.id); return; }
+  if(act==="price-more"){ priceOpen=!priceOpen; render(); return; }
   if(act==="del-ing"){
     const old=nutriOf(r), nutri={};
     arr(r.ingredients).forEach((_,i)=>{ if(i<k && old[i]) nutri[i]=old[i]; if(i>k && old[i]) nutri[i-1]=old[i]; });
