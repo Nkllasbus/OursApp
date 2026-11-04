@@ -366,11 +366,19 @@ html,body{height:100%}
   .pf-badge{margin-left:auto;min-width:20px;height:20px;border-radius:10px;padding:0 6px;background:#d9534f;color:#fff;font-size:.72rem;font-weight:700;display:inline-grid;place-items:center}
   .pf-dot{position:absolute;top:-1px;right:-1px;width:12px;height:12px;border-radius:50%;background:#d9534f;border:2px solid var(--band)}
   .ours-mark{display:none!important}
-  .ours-logo{position:absolute;left:16px;top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2);z-index:31;width:40px;height:40px;border-radius:11px;overflow:hidden;
-    box-shadow:0 0 0 1.5px color-mix(in srgb,var(--on-band) 30%,transparent),0 4px 10px -4px rgba(0,0,0,.4);display:block}
+  /* Logo: Hintergrund passt sich der Seitenfarbe an (etwas dunkler als der Kopf) */
+  .ours-logo{position:absolute;left:16px;top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2);z-index:31;width:40px;height:40px;border-radius:11px;overflow:hidden;padding:0;border:0;cursor:pointer;
+    background:var(--logo-bg,color-mix(in srgb,var(--band) 62%,#000));
+    box-shadow:0 0 0 1.5px color-mix(in srgb,var(--on-band) 26%,transparent),0 4px 10px -4px rgba(0,0,0,.4);display:block}
   .ours-logo img{width:100%;height:100%;display:block}
+  .ours-logo:focus-visible{outline:2px solid var(--on-band);outline-offset:2px}
+  .pf-menu.pg-menu{left:12px;right:auto}
+  .pf-menu.pg-menu .pf-who{flex-direction:row;align-items:center;justify-content:flex-start;gap:10px;text-align:left;padding:8px 10px 6px}
+  .pf-menu.pg-menu .pf-logo{margin:0;background:var(--logo-bg,color-mix(in srgb,var(--band) 62%,#000))}
+  .pf-menu.pg-menu .pf-brand{margin:0}
   header{padding-left:64px!important}
   .pf-menu .pf-logo{width:34px;height:34px;border-radius:9px;margin:0 auto 4px;display:block}
+  #pfBig{display:flex;justify-content:center;margin-bottom:4px}
   .pf-brand{font-family:var(--display);font-size:1.15rem;line-height:1;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
   .fr-code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.5rem;font-weight:700;letter-spacing:.18em;text-align:center;padding:10px;border-radius:12px;
     background:var(--surface);border:1.5px dashed var(--line);color:var(--ink)}
@@ -438,7 +446,7 @@ html,body{height:100%}
     const st=document.createElement("style"); st.textContent=CSS; document.head.appendChild(st);
     // Name der App oben in jeder Seite
     const hd=document.querySelector("header");
-    if(hd && !hd.querySelector(".ours-logo")) hd.insertAdjacentHTML("afterbegin",'<span class="ours-logo" role="img" aria-label="Ours"><img src="ours-logo.png" alt=""></span>');
+    if(hd && !hd.querySelector(".ours-logo")) hd.insertAdjacentHTML("afterbegin",'<button type="button" class="ours-logo" id="pgBtn" aria-label="Ours – Seiten" aria-haspopup="true" aria-expanded="false" aria-controls="pgMenu"><img src="ours-mark.png" alt=""></button>');
     let auth, db;
     try{ if(!firebase.apps.length) firebase.initializeApp(config); auth=firebase.auth(); db=firebase.database(); }
     catch(e){ cb(null); return; }
@@ -515,9 +523,7 @@ html,body{height:100%}
       const head=document.querySelector("header"); if(!head || head.querySelector(".pf-btn")) { updateMenu(); return; }
       head.insertAdjacentHTML("beforeend",`<button class="pf-btn" type="button" id="pfBtn" aria-haspopup="true" aria-expanded="false" aria-controls="pfMenu" aria-label="Profil und Seiten"><span id="pfInit"></span><span class="pf-dot" id="pfDot" hidden></span></button>
         <nav class="pf-menu" id="pfMenu" hidden aria-label="Profil und Seiten">
-          <div class="pf-who"><img class="pf-logo" src="ours-logo.png" alt=""><span class="pf-brand">Ours</span><b id="pfName"></b><small id="pfMail"></small></div>
-          <div class="pf-sep"></div>
-          ${PAGES.filter(p=>!p.noSpace).map(p=>`<a href="${p.file}" data-page="${p.type}"${p.type===type?' aria-current="page"':""}><span class="dot" style="background:${p.color}"></span>${p.label}</a>`).join("")}
+          <div class="pf-who"><span id="pfBig"></span><b id="pfName"></b><small id="pfMail"></small></div>
           <div class="pf-sep"></div>
           <button type="button" data-pf="people">${IC.people}Personen bei ${esc(PAGE.label)}</button>
           <a href="chat.html" class="pf-chat"${type==="chat"?' aria-current="page"':""}>${IC.chat}Chats<span class="pf-badge" id="pfChatBadge" hidden></span></a>
@@ -526,9 +532,20 @@ html,body{height:100%}
           <button type="button" data-pf="settings">${IC.gear}Einstellungen</button>
           <button type="button" data-pf="logout">${IC.out}Abmelden</button>
         </nav>`);
+      // Seiten-Menü hinter dem Logo
+      head.insertAdjacentHTML("beforeend",`<nav class="pf-menu pg-menu" id="pgMenu" hidden aria-label="Seiten">
+          <div class="pf-who"><img class="pf-logo" src="ours-mark.png" alt=""><span class="pf-brand">Ours</span></div>
+          <div class="pf-sep"></div>
+          ${PAGES.filter(p=>!p.noSpace).map(p=>`<a href="${p.file}" data-page="${p.type}"${p.type===type?' aria-current="page"':""}><span class="dot" style="background:${p.color}"></span>${p.label}</a>`).join("")}
+        </nav>`);
+      const pgBtn=document.getElementById("pgBtn"), pgMenu=document.getElementById("pgMenu");
+      const pgToggle=open=>{ if(!pgBtn) return; pgMenu.hidden=!open; pgBtn.setAttribute("aria-expanded",open); };
+      if(pgBtn){ pgBtn.onclick=e=>{ e.stopPropagation(); document.getElementById("pfMenu").hidden=true; pgToggle(pgMenu.hidden); };
+        document.addEventListener("click",e=>{ if(!pgMenu.hidden && !pgMenu.contains(e.target)) pgToggle(false); });
+        document.addEventListener("keydown",e=>{ if(e.key==="Escape") pgToggle(false); }); }
       const btn=document.getElementById("pfBtn"), menu=document.getElementById("pfMenu");
       const toggle=open=>{ menu.hidden=!open; btn.setAttribute("aria-expanded",open); };
-      btn.onclick=e=>{ e.stopPropagation(); toggle(menu.hidden); };
+      btn.onclick=e=>{ e.stopPropagation(); pgToggle(false); toggle(menu.hidden); };
       document.addEventListener("click",e=>{ if(!menu.hidden && !menu.contains(e.target)) toggle(false); });
       document.addEventListener("keydown",e=>{ if(e.key==="Escape") toggle(false); });
       menu.querySelectorAll("[data-pf]").forEach(b=>b.onclick=()=>{ toggle(false);
@@ -539,6 +556,7 @@ html,body{height:100%}
       const name=profile.name||user.email.split("@")[0];
       const b=document.getElementById("pfBtn"); if(!b) return;
       document.getElementById("pfInit").innerHTML=avatar(user.uid,name,37); updateFriendBadge();
+      const big=document.getElementById("pfBig"); if(big) big.innerHTML=avatar(user.uid,name,48);
       document.getElementById("pfName").textContent=name;
       document.getElementById("pfMail").textContent=user.email;
       const pp=document.querySelector('[data-pf="people"]'); pp.disabled=!sid; pp.hidden=!!PAGE.noSpace;
