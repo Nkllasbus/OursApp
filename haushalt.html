@@ -396,6 +396,15 @@ html,body{height:100%}
   .auth-people .rm.sure{color:#c0533f;border-color:#c0533f;font-weight:600}
   .auth-sec{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 -4px}
 
+  /* Profilbilder */
+  .ours-av{flex:none;display:inline-grid;place-items:center;border-radius:50%;overflow:hidden;background:var(--band);color:var(--on-band);font-weight:700;line-height:1}
+  .ours-av img{width:100%;height:100%;object-fit:cover;display:block}
+  .pf-btn .ours-av{width:100%;height:100%;background:none;color:inherit}
+  .pf-photo{display:flex;align-items:center;gap:14px}
+  .pf-photo .ours-av{width:72px;height:72px;font-size:1.6rem}
+  .pf-photo div{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+  .auth-card textarea{font:inherit;font-size:1rem;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface,#fff);color:var(--ink);resize:vertical;min-height:64px;width:100%;box-sizing:border-box}
+
   /* Profil-Knopf und Menü */
   header{padding-right:64px!important}
   .pf-btn{position:absolute;top:14px;right:16px;z-index:31;width:40px;height:40px;border-radius:50%;cursor:pointer;
@@ -461,9 +470,28 @@ html,body{height:100%}
   const parseJoin = () => { const m=location.hash.match(/^#join-([A-Za-z0-9]{12,40})-([A-Za-z0-9]{12,40})$/); return m?{sid:m[1],code:m[2]}:null; };
   const clearHash = () => history.replaceState(history.state,"",location.pathname);
   const initial = n => (String(n||"?").trim()[0]||"?").toUpperCase();
+  // Öffentliches Profil (Name, Bild, Über mich) unter pub/<uid>; Bilder werden nachgeladen und überall ausgetauscht
+  const pubCache = new Map(), pubWait = new Set();
+  let pubDb = null;
+  function loadPub(uid){
+    if(!uid || !pubDb || pubCache.has(uid) || pubWait.has(uid)) return;
+    pubWait.add(uid);
+    pubDb.ref("pub/"+uid).once("value").then(s=>{ pubCache.set(uid,s.val()||{}); paintAv(uid); document.dispatchEvent(new CustomEvent("ours-pub",{detail:uid})); })
+      .catch(()=>pubCache.set(uid,{})).finally(()=>pubWait.delete(uid));
+  }
+  const okPhoto = p => typeof p==="string" && /^data:image\/(jpeg|png|webp);base64,/.test(p);
+  function avInner(uid,name){ const p=pubCache.get(uid), ph=p&&okPhoto(p.photo)?p.photo:null;
+    return ph?`<img src="${ph}" alt="">`:esc(initial((p&&p.name)||name)); }
+  function avatar(uid,name,size,extra){ loadPub(uid); const z=size||32;
+    return `<span class="ours-av${extra?" "+extra:""}" data-av="${esc(uid||"")}" data-avname="${esc(name||"")}" style="width:${z}px;height:${z}px;font-size:${Math.round(z*.42)}px">${avInner(uid,name)}</span>`; }
+  function paintAv(uid){ document.querySelectorAll(`[data-av="${uid}"]`).forEach(el=>{ el.innerHTML=avInner(uid,el.dataset.avname); }); }
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
-  window.Auth = { start(config, type, cb){
+  window.Auth = {
+    avatar, pub:uid=>{ loadPub(uid); return pubCache.get(uid)||null; },
+    refreshPub(uid){ pubCache.delete(uid); loadPub(uid); },
+    editProfile(){ if(window.Auth._profileView) window.Auth._profileView(); },
+    start(config, type, cb){
     const PAGE = PAGES.find(p=>p.type===type);
     const st=document.createElement("style"); st.textContent=CSS; document.head.appendChild(st);
     // Name der App oben in jeder Seite
@@ -473,6 +501,7 @@ html,body{height:100%}
     try{ if(!firebase.apps.length) firebase.initializeApp(config); auth=firebase.auth(); db=firebase.database(); }
     catch(e){ cb(null); return; }
     let user=null, profile={}, sid=null, started=false, setupEl=null;
+    const pubSet=v=>{ pubCache.set(user.uid,{...(pubCache.get(user.uid)||{}),...v}); paintAv(user.uid); document.dispatchEvent(new CustomEvent("ours-pub",{detail:user.uid})); };
 
     /* ---------- Fenster (Anmelden und Pop-ups) ---------- */
     let screen=null;
@@ -550,7 +579,7 @@ html,body{height:100%}
           <div class="pf-sep"></div>
           <button type="button" data-pf="people">${IC.people}Personen bei ${esc(PAGE.label)}</button>
           <button type="button" data-pf="friends">${IC.heart}Freunde<span class="pf-badge" id="pfFriendBadge" hidden></span></button>
-          <button type="button" data-pf="profile">${IC.user}Profil bearbeiten</button>
+          <button type="button" data-pf="profile">${IC.user}Mein Profil</button>
           <button type="button" data-pf="settings">${IC.gear}Einstellungen</button>
           <button type="button" data-pf="logout">${IC.out}Abmelden</button>
         </nav>`);
@@ -566,7 +595,7 @@ html,body{height:100%}
     function updateMenu(){
       const name=profile.name||user.email.split("@")[0];
       const b=document.getElementById("pfBtn"); if(!b) return;
-      document.getElementById("pfInit").textContent=initial(name); updateFriendBadge();
+      document.getElementById("pfInit").innerHTML=avatar(user.uid,name,37); updateFriendBadge();
       document.getElementById("pfName").textContent=name;
       document.getElementById("pfMail").textContent=user.email;
       document.querySelector('[data-pf="people"]').disabled=!sid;
@@ -574,21 +603,41 @@ html,body{height:100%}
 
     /* ---------- Profil, Einstellungen ---------- */
     function profileView(){
-      show("Profil bearbeiten","",`<label>Dein Name<input type="text" id="pfIn" maxlength="30" value="${esc(profile.name||"")}"></label>
-        <p class="auth-note">So sehen dich die anderen in euren Listen.</p>
+      const pb=pubCache.get(user.uid)||{}; let photo=okPhoto(pb.photo)?pb.photo:null;
+      show("Mein Profil","Name, Bild und ein paar Worte über dich sehen deine Freunde.",`
+        <div class="pf-photo"><span class="ours-av" id="pfPrev">${photo?`<img src="${photo}" alt="">`:esc(initial(profile.name))}</span>
+          <div><button class="auth-btn alt" type="button" id="pfPick">${photo?"Bild ändern":"Profilbild wählen"}</button>
+          <button class="auth-link" type="button" id="pfDrop"${photo?"":" hidden"}>Bild entfernen</button></div></div>
+        <input type="file" id="pfFile" accept="image/*" hidden>
+        <label>Dein Name<input type="text" id="pfIn" maxlength="30" value="${esc(profile.name||"")}"></label>
+        <label>Über mich <small>(optional)</small><textarea id="pfBio" maxlength="140" placeholder="z.B. Koche am liebsten Asiatisch, backe sonntags">${esc(pb.bio||"")}</textarea></label>
         <p class="auth-msg" id="authMsg" hidden></p>
         <button class="auth-btn" type="button" id="pfSave">Speichern</button>
         <button class="auth-link" type="button" id="pfClose">Abbrechen</button>`,true);
-      $a("#pfIn").focus();
       $a("#pfClose").onclick=hide;
+      $a("#pfPick").onclick=()=>$a("#pfFile").click();
+      $a("#pfDrop").onclick=()=>{ photo=null; $a("#pfPrev").textContent=initial($a("#pfIn").value||profile.name); $a("#pfDrop").hidden=true; $a("#pfPick").textContent="Profilbild wählen"; };
+      $a("#pfFile").onchange=async e=>{
+        const f=e.target.files[0]; e.target.value=""; if(!f) return;
+        try{ // quadratisch zuschneiden, klein halten
+          const bmp=await createImageBitmap(f), m=Math.min(bmp.width,bmp.height), c=document.createElement("canvas"); c.width=c.height=256;
+          c.getContext("2d").drawImage(bmp,(bmp.width-m)/2,(bmp.height-m)/2,m,m,0,0,256,256);
+          photo=c.toDataURL("image/jpeg",.82); $a("#pfPrev").innerHTML=`<img src="${photo}" alt="">`; $a("#pfDrop").hidden=false; $a("#pfPick").textContent="Bild ändern";
+        }catch(err){ msg("Das Bild konnte nicht gelesen werden. Nimm ein JPG oder PNG.",true); }
+      };
       $a("#pfSave").onclick=async()=>{
-        const name=$a("#pfIn").value.trim().slice(0,30); if(!name) return msg("Gib einen Namen ein.",true);
+        const name=$a("#pfIn").value.trim().slice(0,30), bio=$a("#pfBio").value.trim().slice(0,140); if(!name) return msg("Gib einen Namen ein.",true);
+        $a("#pfSave").disabled=true;
         try{
-          await db.ref(`users/${user.uid}/profile/name`).set(name); profile.name=name;
-          const ptr=(await db.ref(`users/${user.uid}/spaces`).once("value")).val()||{};
-          for(const s of Object.values(ptr)) await db.ref(`spaces/${s}/profiles/${user.uid}/name`).set(name).catch(()=>{});
+          await db.ref(`pub/${user.uid}`).set({name,bio:bio||null,photo:photo||null,at:Date.now()});
+          pubSet({name,bio:bio||null,photo:photo||null});
+          if(name!==profile.name){
+            await db.ref(`users/${user.uid}/profile/name`).set(name); profile.name=name;
+            const ptr=(await db.ref(`users/${user.uid}/spaces`).once("value")).val()||{};
+            for(const s of Object.values(ptr)) await db.ref(`spaces/${s}/profiles/${user.uid}/name`).set(name).catch(()=>{});
+          }
           updateMenu(); hide();
-        }catch(err){ msg("Speichern hat nicht geklappt.",true); }
+        }catch(err){ $a("#pfSave").disabled=false; msg("Speichern hat nicht geklappt. Prüf die Regeln in Firebase.",true); }
       };
     }
     function settingsView(){
@@ -623,11 +672,11 @@ html,body{height:100%}
       const nInv=Object.keys(invites).length;
       show(`Personen bei ${PAGE.label}`,
         PAGE.type==="budget"&&ids.length<=1?"Im Moment siehst nur du dein Budget.":`${ids.length} ${ids.length===1?"Person sieht":"Personen sehen"} diese ${PAGE.noun}.`,
-        `<ul class="auth-people">${list.map(p=>`<li><span class="av">${esc(initial(p.name))}</span>
+        `<ul class="auth-people">${list.map(p=>`<li>${avatar(p.id,p.name,30)}
             <span class="nm"><b>${esc(p.name)}${p.id===user.uid?" (du)":""}</b><small>${p.own?(type==="recipes"&&ids.length>1?"Besitzer":"Hat die Liste angelegt"):esc(p.mail)}</small></span>
             ${owner&&p.id!==user.uid?`<button type="button" class="rm${rmConfirm===p.id?" sure":""}" data-rm="${esc(p.id)}">${rmConfirm===p.id?"Entfernen?":"Entfernen"}</button>`:""}</li>`).join("")}</ul>
         ${(()=>{ const fl=Object.entries(friends).filter(([id])=>!access[id]); return fl.length?`<p class="auth-sec">Freunde einladen</p>
-          <ul class="auth-people">${fl.map(([id,f])=>`<li><span class="av">${esc(initial(f.name))}</span><span class="nm"><b>${esc(f.name||"Freund")}</b><small>bekommt die Einladung unter „Freunde“</small></span>
+          <ul class="auth-people">${fl.map(([id,f])=>`<li>${avatar(id,f.name,30)}<span class="nm"><b>${esc(f.name||"Freund")}</b><small>bekommt die Einladung unter „Freunde“</small></span>
           <button type="button" class="rm yes" data-fr-inv="${esc(id)}">Einladen</button></li>`).join("")}</ul>`:""; })()}
         <p class="auth-sec">Per Link einladen</p>
         <p class="auth-note">Der Link gilt nur für ${esc(PAGE.label)} und nur für eine Person. Wer ihn öffnet, tritt mit eigenem Konto bei. Deine anderen Seiten sieht die Person nicht.</p>
@@ -737,14 +786,14 @@ html,body{height:100%}
       const reqs=Object.entries(requestsIn), inv=Object.entries(inbox), fl=Object.entries(friends).sort((a,b)=>(a[1].name||"").localeCompare(b[1].name||""));
       const pageOf=t=>PAGES.find(p=>p.type===(t==="swipe"?"recipes":t))||PAGES[0];
       show("Freunde",fl.length?`${fl.length} ${fl.length===1?"Freund":"Freunde"}`:"Füg Freunde hinzu, um sie schnell zu deinen Listen einzuladen.",`
-        ${inv.length?`<p class="auth-sec">Einladungen</p><ul class="auth-people">${inv.map(([id,x])=>`<li><span class="av" style="background:${pageOf(x.type).color}">${esc(initial(x.fromName))}</span>
+        ${inv.length?`<p class="auth-sec">Einladungen</p><ul class="auth-people">${inv.map(([id,x])=>`<li>${avatar(x.from,x.fromName,30)}
           <span class="nm"><b>${esc(x.fromName||"Jemand")}</b><small>${x.type==="swipe"?"will mit dir Rezepte swipen":`lädt dich zu ${esc(pageOf(x.type).label)} ein`}</small></span>
           <button type="button" class="rm" data-inv-no="${esc(id)}">Nein</button><button type="button" class="rm yes" data-inv-yes="${esc(id)}">Annehmen</button></li>`).join("")}</ul>`:""}
-        ${reqs.length?`<p class="auth-sec">Anfragen</p><ul class="auth-people">${reqs.map(([id,x])=>`<li><span class="av">${esc(initial(x.name))}</span>
+        ${reqs.length?`<p class="auth-sec">Anfragen</p><ul class="auth-people">${reqs.map(([id,x])=>`<li>${avatar(id,x.name,30)}
           <span class="nm"><b>${esc(x.name||"Jemand")}</b><small>möchte mit dir befreundet sein</small></span>
           <button type="button" class="rm" data-req-no="${esc(id)}">Ablehnen</button><button type="button" class="rm yes" data-req-yes="${esc(id)}">Annehmen</button></li>`).join("")}</ul>`:""}
         <p class="auth-sec">Deine Freunde</p>
-        ${fl.length?`<ul class="auth-people">${fl.map(([id,f])=>`<li><span class="av">${esc(initial(f.name))}</span><span class="nm"><b>${esc(f.name||"Freund")}</b><small>befreundet seit ${new Date(f.since||Date.now()).toLocaleDateString("de-DE")}</small></span>
+        ${fl.length?`<ul class="auth-people">${fl.map(([id,f])=>`<li>${avatar(id,f.name,30)}<span class="nm"><b>${esc(f.name||"Freund")}</b><small>befreundet seit ${new Date(f.since||Date.now()).toLocaleDateString("de-DE")}</small></span>
           <button type="button" class="rm${frConfirm===id?" sure":""}" data-fr-rm="${esc(id)}">${frConfirm===id?"Entfernen?":"Entfernen"}</button></li>`).join("")}</ul>`
           :`<p class="auth-note">Noch keine Freunde. Schick deinen Code oder Link, oder gib unten einen Code ein.</p>`}
         <p class="auth-sec">Dein Freundescode</p>
@@ -898,12 +947,16 @@ html,body{height:100%}
       user=u;
       show(PAGE.label,"",`<p class="auth-note">Lädt …</p>`);
       try{
+        pubDb=db;
         profile=(await db.ref(`users/${u.uid}/profile`).once("value")).val()||{};
         if(!profile.name){
           let n=""; try{ n=sessionStorage.getItem("auth.newName")||""; sessionStorage.removeItem("auth.newName"); }catch(e){}
           profile.name=n||u.displayName||u.email.split("@")[0];
           await db.ref(`users/${u.uid}/profile/name`).set(profile.name);
         }
+        try{ const pb=(await db.ref(`pub/${u.uid}`).once("value")).val()||{}; pubCache.set(u.uid,pb);
+          if(pb.name!==profile.name) await db.ref(`pub/${u.uid}/name`).set(profile.name); pubCache.get(u.uid).name=profile.name; }catch(e){}
+        window.Auth._profileView=profileView; window.Auth.me=u.uid;
         installMenu();
         try{ await ensureFriendCode(); watchFriends(); }catch(e){}
         const fr=location.hash.match(/^#friend-([A-Za-z0-9]{6,12})$/);
