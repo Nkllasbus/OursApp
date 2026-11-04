@@ -372,6 +372,16 @@ header p{margin-top:4px;font-size:.88rem}
 .prof-stats b{color:var(--ink);font-weight:700}
 .prof-sheet .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 .post-head .av-btn .ours-av{font-size:.9rem}
+.prof-sheet{max-width:460px}
+#profEdit{align-self:center;margin:2px auto 4px;display:block}
+.prof-cat{margin:10px 0 2px;font-weight:600;font-size:.92rem;display:flex;gap:6px;align-items:baseline}
+.prof-cat span{color:var(--muted);font-weight:500;font-size:.82rem}
+.av-zoom{border:0;background:none;padding:0;border-radius:50%;cursor:zoom-in}
+.av-light{position:fixed;inset:0;z-index:80;background:rgba(15,8,10,.9);display:grid;place-items:center;padding:24px;cursor:zoom-out}
+.av-light img{width:min(86vw,420px);aspect-ratio:1;object-fit:cover;border-radius:50%;box-shadow:0 20px 50px -10px rgba(0,0,0,.6)}
+.av-light button{position:absolute;top:max(16px,env(safe-area-inset-top));right:16px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.15);color:#fff;font-size:1.5rem}
+.frx-from{display:flex;align-items:center;gap:8px;border:0;background:none;padding:0;color:var(--muted);text-align:left;font:inherit;font-size:.9rem}
+.frx-from b{color:var(--ink)}
 /* Preis */
 .price-box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
 .price-main{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
@@ -759,7 +769,9 @@ body{background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px)!impor
   /* Profilbilder */
   .ours-av{flex:none;display:inline-grid;place-items:center;border-radius:50%;overflow:hidden;background:var(--band);color:var(--on-band);font-weight:700;line-height:1}
   .ours-av img{width:100%;height:100%;object-fit:cover;display:block}
-  .pf-btn .ours-av{width:100%;height:100%;background:none;color:inherit}
+  .pf-btn{padding:0;overflow:visible}
+  #pfInit{position:absolute;inset:0;display:block;border-radius:50%;overflow:hidden}
+  .pf-btn .ours-av{width:100%!important;height:100%!important;font-size:1rem!important;background:none;color:inherit;display:grid}
   .pf-photo{display:flex;align-items:center;gap:14px}
   .pf-photo .ours-av{width:72px;height:72px;font-size:1.6rem}
   .pf-photo div{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
@@ -949,7 +961,7 @@ body{background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px)!impor
       document.addEventListener("click",e=>{ if(!menu.hidden && !menu.contains(e.target)) toggle(false); });
       document.addEventListener("keydown",e=>{ if(e.key==="Escape") toggle(false); });
       menu.querySelectorAll("[data-pf]").forEach(b=>b.onclick=()=>{ toggle(false);
-        ({people:peopleView,friends:()=>friendsView(),profile:profileView,settings:settingsView,logout:()=>auth.signOut()})[b.dataset.pf](); });
+        ({people:peopleView,friends:()=>friendsView(),profile:()=>window.Auth.profileHandler?window.Auth.profileHandler(user.uid):profileView(),settings:settingsView,logout:()=>auth.signOut()})[b.dataset.pf](); });
       updateMenu();
     }
     function updateMenu(){
@@ -1558,11 +1570,11 @@ function renderList(){
       :`<p class="card-meta" style="grid-column:1/-1">Noch keine ${g.label}.</p>`;
   }
 }
-let folds=new Set(); try{ folds=new Set(JSON.parse(localStorage.getItem("rezepte.folds")||"[]")); }catch(e){}
+let folds=new Set();   // beim Öffnen eines Rezepts ist alles außer den Zutaten eingeklappt
 const FOLD_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-function foldSec(id,title,sub,body){
+function foldSec(id,title,sub,body,act){
   const open=folds.has(id);
-  return `<section class="fold${open?" open":""}"><button type="button" class="fold-head" data-act="fold" data-f="${id}" aria-expanded="${open}">
+  return `<section class="fold${open?" open":""}"><button type="button" class="fold-head" ${act||'data-act="fold"'} data-f="${id}" aria-expanded="${open}">
     <span class="fold-t">${title}</span><span class="fold-s">${sub||""}</span>${FOLD_SVG}</button>${open?`<div class="fold-body">${body()}</div>`:""}</section>`;
 }
 function renderDetail(r){
@@ -1606,7 +1618,7 @@ function renderDetail(r){
 const grow=t=>{ t.style.height="auto"; t.style.height=t.scrollHeight+"px"; };
 
 /* ---------- Navigation (Zurück-Taste des Handys funktioniert) ---------- */
-function openRecipe(id){ view=id; confirmDel=false; history.pushState({r:id,swipe:swipeOpen},"",location.pathname); render(); $("#detailView .scroll").scrollTop=0; }
+function openRecipe(id){ view=id; confirmDel=false; folds=new Set(); nutOpen=null; history.pushState({r:id,swipe:swipeOpen},"",location.pathname); render(); $("#detailView .scroll").scrollTop=0; }
 addEventListener("popstate",e=>{ view=e.state&&e.state.r||null; swipeOpen=!!(e.state&&e.state.swipe); confirmDel=false; render(); });
 $("#back").addEventListener("click",()=>{ if(history.state&&history.state.r) history.back(); else { view=null; render(); } });
 
@@ -2186,17 +2198,17 @@ async function loadShopRes(){
 const NUT_FIELDS=[["g","Menge","g"],["kcal","Kalorien","kcal / 100 g"],["p","Eiweiß","g / 100 g"],["c","Kohlenhydrate","g / 100 g"],["zu","davon Zucker","g / 100 g"],["f","Fett","g / 100 g"],["fs","davon gesättigt","g / 100 g"],["bs","Ballaststoffe","g / 100 g"],["sa","Salz","g / 100 g"]];
 const fmtG=v=>v<10?(Math.round(v*10)/10).toLocaleString("de-DE"):fmtN(v);
 const nutriOf=r=>(r.nutri && typeof r.nutri==="object")?r.nutri:{};
-function nutEntry(r,k){
+function nutEntry(r,k,lenient){
   const e=nutriOf(r)[k], text=arr(r.ingredients)[k];
   if(!e || typeof e!=="object") return null;
-  if(e.src==="est" && (e.t!==text || !e.x)) return null;   // Zutat geändert oder alte Schätzung ohne Zucker/Ballaststoffe/Salz: neu schätzen
+  if(e.src==="est" && (e.t!==text || (!e.x && !lenient))) return null;   // Zutat geändert oder alte Schätzung ohne Zucker/Ballaststoffe/Salz: neu schätzen
   return e;
 }
 const kcalOf=e=>e?(+e.g||0)*(+e.kcal||0)/100:0;
 const servOf=r=>Number.isInteger(r.servings)&&r.servings>0?r.servings:2;
-function nutTotals(r){
+function nutTotals(r,lenient){
   const t={kcal:0,p:0,c:0,f:0,zu:0,fs:0,bs:0,sa:0,est:false,missing:0}, gap={};
-  arr(r.ingredients).forEach((_,k)=>{ const e=nutEntry(r,k); if(!e){ t.missing++; return; }
+  arr(r.ingredients).forEach((_,k)=>{ const e=nutEntry(r,k,lenient); if(!e){ t.missing++; return; }
     const g=(+e.g||0)/100; t.kcal+=g*(+e.kcal||0); t.p+=g*(+e.p||0); t.c+=g*(+e.c||0); t.f+=g*(+e.f||0); if(e.src==="est") t.est=true;
     ["zu","fs","bs","sa"].forEach(x=>{ if(e[x]==null||e[x]==="") gap[x]=1; else t[x]+=g*(+e[x]||0); }); });
   Object.keys(gap).forEach(x=>{ if(t[x]===0) t[x]=null; else t.est=true; });   // fehlt überall: „–“ statt 0
@@ -2314,18 +2326,19 @@ function nutRow(r,t,k){
   }
   return h;
 }
-function nutBody(r){
-  const t=nutTotals(r), s=servOf(r), ing=arr(r.ingredients);
+function nutBody(r,ro){
+  const t=nutTotals(r,ro), s=servOf(r), ing=arr(r.ingredients);
   const row=(l,v,u,sub)=>`<tr${sub?' class="sub"':""}><th>${l}</th><td class="tn">${v==null?"–":(u==="kcal"?fmtN(v/s):fmtG(v/s))} ${v==null?"":u}</td></tr>`;
   return `<table class="nut-table"><caption>pro Portion${t.est?" · teils geschätzt":""}</caption>
       ${row("Kalorien",t.kcal,"kcal")}${row("Eiweiß",t.p,"g")}${row("Kohlenhydrate",t.c,"g")}${row("davon Zucker",t.zu,"g",1)}
       ${row("Fett",t.f,"g")}${row("davon gesättigt",t.fs,"g",1)}${row("Ballaststoffe",t.bs,"g")}${row("Salz",t.sa,"g")}</table>
     <p class="nutri-note">Zusammen ${fmtN(t.kcal)} kcal für ${s} ${s===1?"Portion":"Portionen"}.${t.missing?` ${t.missing} ${t.missing===1?"Zutat wird":"Zutaten werden"} noch geschätzt.`:""}</p>
-    <p class="fold-sub">Pro Zutat <small>· antippen zum Ändern oder Etikett fotografieren</small></p>
-    <ul class="items nut-items">${ing.map((x,k)=>nutRow(r,x,k)).join("")}</ul>`;
+    ${ro?"":`<p class="fold-sub">Pro Zutat <small>· antippen zum Ändern oder Etikett fotografieren</small></p>
+    <ul class="items nut-items">${ing.map((x,k)=>nutRow(r,x,k)).join("")}</ul>`}`;
 }
-function priceBody(r){
+function priceBody(r,ro){
   const ing=arr(r.ingredients), s=servOf(r);
+  if(ro && !priceHas(r)) return `<p class="card-meta">Für dieses Rezept wurde noch kein Preis berechnet. Übernimm es, dann rechnet Claude ihn für dich aus.</p>`;
   if(!priceHas(r)) return `<p class="card-meta">${pricing.has(r.id)?"Claude sucht aktuelle Discounterpreise …":!WORKER_URL?"In der Vorschau kann der Preis nicht gesucht werden.":r.priceErr?esc(r.priceErr):"Der Preis wird gleich geschätzt …"}</p>
     ${!pricing.has(r.id)&&WORKER_URL?`<button type="button" class="linkish" data-act="price-redo">Jetzt suchen</button>`:""}`;
   const p=r.price;
@@ -2333,7 +2346,7 @@ function priceBody(r){
     ${!priceOk(r)?`<p class="card-meta">${pricing.has(r.id)?"Wird neu berechnet …":"Die Zutaten haben sich seitdem geändert."}</p>`:""}
     <ul class="price-list">${ing.map((t,k)=>{ const x=(p.items||[])[k]||{}; return `<li><span>${esc(t)}${x.pack?`<small>${esc(x.pack)}</small>`:""}</span><b class="tn">${x.eur!=null?fmtEur(+x.eur||0):"–"}</b></li>`; }).join("")}</ul>
     ${(p.sources||[]).length?`<p class="card-meta">Quellen: ${p.sources.map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a>`).join(" · ")}</p>`:""}
-    ${!pricing.has(r.id)?`<button type="button" class="linkish" data-act="price-redo">Neu berechnen</button>`:""}`;
+    ${!pricing.has(r.id)&&!ro?`<button type="button" class="linkish" data-act="price-redo">Neu berechnen</button>`:""}`;
 }
 const CAM='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.4" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>';
 function setNutMsg(t,err){ const m=$("#nutMsg"); if(!m) return; m.textContent=t||""; m.hidden=!t; m.classList.toggle("err",!!err); }
@@ -2388,7 +2401,12 @@ async function loadFriendRecipes(){
 const av=(uid,name,size)=>window.Auth&&Auth.avatar?Auth.avatar(uid,name,size):`<span class="ours-av" style="width:${size}px;height:${size}px">${esc((name||"?")[0].toUpperCase())}</span>`;
 const pubOf=uid=>window.Auth&&Auth.pub?Auth.pub(uid):null;
 function friendCards(f){
-  return `<div class="grid">${f.recipes.map(r=>{ const u=okId(r.cover)&&friendPhoto(f.sid,r.cover), c=catOf(r);
+  // nach Kategorie gruppiert wie in der eigenen Übersicht, darin alphabetisch
+  const groups=[...CATS.map(c=>({c,list:f.recipes.filter(r=>catOf(r)===c)})),{c:null,list:f.recipes.filter(r=>!catOf(r))}].filter(g=>g.list.length);
+  return groups.map(g=>`<p class="prof-cat">${g.c?`${g.c.emoji} ${g.c.label}`:"Ohne Kategorie"} <span>${g.list.length}</span></p>${friendGrid(f,g.list.sort((a,b)=>(a.title||"").localeCompare(b.title||"","de")))}`).join("");
+}
+function friendGrid(f,list){
+  return `<div class="grid">${list.map(r=>{ const u=okId(r.cover)&&friendPhoto(f.sid,r.cover), c=catOf(r);
     return `<button class="card" type="button" data-fopen="${esc(f.fid)}|${esc(r.id)}">
       <div class="cover">${u?`<img src="${u}" alt="" style="object-position:50% ${coverY(r)}%">`:LEAF}${starsBadge(r)}</div>
       <div class="card-body">${c?`<span class="card-cat">${c.emoji} ${c.one}</span>`:""}<span class="card-title">${esc(r.title||"Ohne Namen")}</span></div></button>`; }).join("")}</div>`;
@@ -2416,7 +2434,7 @@ let profUid=null;
 async function openProfile(uid){
   if(!uid) return;
   profUid=uid; $("#profModal").hidden=false; renderProfile();
-  if(uid!==myUid && !frData && !frLoading){ await loadFriendRecipes(); renderProfile(); }
+  if(!frData && !frLoading){ await loadFriendRecipes(); renderProfile(); }
 }
 function renderProfile(){
   if(!profUid || $("#profModal").hidden) return;
@@ -2426,44 +2444,59 @@ function renderProfile(){
   const posts=(feed||[]).filter(x=>x.uid===uid).length;
   let stats, body="";
   if(me){
+    const mineF={fid:myUid,sid:mySid,recipes};
     stats=`<span><b>${recipes.length}</b> Rezepte</span><span><b>${frData?frData.length:"–"}</b> Freunde</span><span><b>${posts}</b> Beiträge</span>`;
-    body=`<button class="btn primary" type="button" id="profEdit">Profil bearbeiten</button>`;
+    body=`<button class="btn" type="button" id="profEdit">Profil bearbeiten</button>${recipes.length?friendCards(mineF).replace(/data-fopen="[^"|]*\|/g,'data-open="'):""}`;
   }else{
     stats=`${f?`<span><b>${f.recipes.length}</b> Rezepte</span>`:""}<span><b>${posts}</b> Beiträge</span>${f&&f.since?`<span>befreundet seit ${new Date(f.since).toLocaleDateString("de-DE",{month:"short",year:"numeric"})}</span>`:""}`;
     body=!f?`<p class="card-meta">${frLoading?"Wird geladen …":"Ihr seid nicht befreundet, deshalb siehst du keine Rezepte."}</p>`
       :f.same?`<p class="card-meta">Ihr teilt euch dieselbe Sammlung. Die Rezepte stehen unter „Meine“.</p>`
       :!f.sid?`<p class="card-meta">${esc(name)} teilt die eigenen Rezepte gerade nicht.</p>`
-      :f.recipes.length?`<p class="fr-sec">Rezepte</p>${friendCards(f)}`:`<p class="card-meta">${esc(name)} hat noch keine Rezepte.</p>`;
+      :f.recipes.length?friendCards(f):`<p class="card-meta">${esc(name)} hat noch keine Rezepte.</p>`;
   }
-  $("#profBody").innerHTML=`<div class="prof-head">${av(uid,name,84)}<h3>${esc(name)}${me?" <small>(du)</small>":""}</h3>
+  const hasPic=p.photo&&/^data:image\//.test(p.photo);
+  $("#profBody").innerHTML=`<div class="prof-head">${hasPic?`<button type="button" class="av-zoom" data-zoom="${esc(uid)}" aria-label="Profilbild groß ansehen">${av(uid,name,128)}</button>`:av(uid,name,128)}<h3>${esc(name)}${me?" <small>(du)</small>":""}</h3>
       ${p.bio?`<p class="prof-bio">${esc(p.bio)}</p>`:me?`<p class="prof-bio muted">Noch nichts über dich. Erzähl unter „Profil bearbeiten“, was du gern kochst.</p>`:""}
       <div class="prof-stats">${stats}</div></div>${body}`;
 }
 const closeProfile=()=>{ $("#profModal").hidden=true; profUid=null; };
+// Profilbild groß ansehen
+document.addEventListener("click",e=>{ const z=e.target.closest("[data-zoom]"); if(!z) return; const p=pubOf(z.dataset.zoom); if(!p||!p.photo) return;
+  const o=document.createElement("div"); o.className="av-light"; o.innerHTML=`<img src="${p.photo}" alt="Profilbild"><button type="button" aria-label="Schließen">×</button>`;
+  o.onclick=()=>o.remove(); document.body.appendChild(o); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ const o=document.querySelector(".av-light"); if(o) o.remove(); } });
+if(window.Auth) Auth.profileHandler=uid=>openProfile(uid);
 $("#profClose").addEventListener("click",closeProfile);
 $("#profModal").addEventListener("click",e=>{ if(e.target.id==="profModal") return closeProfile(); if(e.target.closest("#profEdit")){ closeProfile(); window.Auth&&Auth.editProfile(); } });
-document.addEventListener("click",e=>{ const b=e.target.closest("[data-prof]"); if(b){ e.preventDefault(); openProfile(b.dataset.prof); } });
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-prof]"); if(b){ e.preventDefault(); $("#frx").hidden=true; openProfile(b.dataset.prof); return; }
+  if(!$("#profModal").hidden && e.target.closest("#profBody [data-open]")) closeProfile(); },true);
 let pubTimer=null;
 document.addEventListener("ours-pub",()=>{ clearTimeout(pubTimer); pubTimer=setTimeout(()=>{ if(src==="friends"&&!view&&!swipeOpen) renderList(); renderProfile(); },60); });
 let frxCur=null;
-function openFriendRecipe(fid,rid){ frxDirect=null; frxCur={fid,rid}; frxRefresh(); $("#frx").hidden=false; $("#frx .frx-card").scrollTop=0; }
+function openFriendRecipe(fid,rid){ folds=new Set(); frxDirect=null; frxCur={fid,rid}; frxRefresh(); $("#frx").hidden=false; $("#frx .frx-card").scrollTop=0; }
 function frxRefresh(){
   if(!frxCur) return;
   const f=frxDirect?frxDirect.f:frData&&frData.find(x=>x.fid===frxCur.fid), r=frxDirect?frxDirect.r:f&&f.recipes.find(x=>x.id===frxCur.rid); if(!r) return;
-  const u=okId(r.cover)&&friendPhoto(f.sid,r.cover), c=catOf(r), ing=arr(r.ingredients), steps=arr(r.steps);
-  let kc=""; if(showKcal){ const t=nutTotals(r); if(t.kcal&&!t.missing) kc=`<p class="frx-kcal"><b>${fmtN(t.kcal/servOf(r))} kcal</b> pro Portion · ${servOf(r)} Portionen${t.est?" · teils geschätzt":""}</p>`; }
+  const u=okId(r.cover)&&friendPhoto(f.sid,r.cover), c=catOf(r), ing=arr(r.ingredients), steps=arr(r.steps), s=servOf(r), t=nutTotals(r,true);
+  const FA='data-act-fr="1"';
   $("#frxBody").innerHTML=`
     <div class="hero">${u?`<div class="blur" style="background-image:url('${u}')"></div><img src="${u}" alt="">`:LEAF}${starsBadge(r)}</div>
-    <p class="frx-from">Rezept von <b>${esc(f.name)}</b>${c?` · ${c.emoji} ${c.one}`:""}</p>
+    <button type="button" class="frx-from" data-prof="${esc(f.fid)}">${av(f.fid,f.name,24)}<span>Rezept von <b>${esc(f.name)}</b>${c?` · ${c.emoji} ${c.one}`:""}</span></button>
     <h2 class="frx-title">${esc(r.title||"Ohne Namen")}</h2>
     ${/^https:\/\/[^\s"]+$/.test(r.source||"")?`<a class="source" href="${esc(r.source)}" target="_blank" rel="noopener">Video ansehen ↗</a>`:""}
-    ${kc}
-    <div class="sec"><h2>Zutaten <span>${ing.length}</span></h2>${ing.length?`<ul class="items ro">${ing.map(t=>`<li><span class="leaf"></span><span>${esc(t)}</span></li>`).join("")}</ul>`:`<p class="card-meta">Keine Zutaten eingetragen.</p>`}</div>
-    <div class="sec"><h2>Zubereitung <span>${steps.length} Schritte</span></h2>${steps.length?`<ol class="items ro">${steps.map((t,k)=>`<li><span class="num">${k+1}</span><span>${esc(t)}</span></li>`).join("")}</ol>`:`<p class="card-meta">Keine Schritte eingetragen.</p>`}</div>
+    ${ing.length?`<div class="facts">
+      ${showKcal?`<div class="fact"><b class="tn">${t.kcal&&!t.missing?fmtN(t.kcal/s):"–"}</b><small>kcal pro Portion</small></div>`:""}
+      <div class="fact"><b class="tn">${priceHas(r)?fmtEur(r.price.total/s):"–"}</b><small>${priceHas(r)?"ca. pro Portion":"Preis pro Portion"}</small></div>
+      <div class="fact"><b class="tn">${s}</b><small>${s===1?"Portion":"Portionen"}</small></div></div>`:""}
+    <div class="sec"><h2>Zutaten <span>${ing.length}</span></h2>${ing.length?`<ul class="items ro">${ing.map(x=>`<li><span class="leaf"></span><span>${esc(x)}</span></li>`).join("")}</ul>`:`<p class="card-meta">Keine Zutaten eingetragen.</p>`}</div>
+    ${foldSec("steps","Zubereitung",steps.length?`${steps.length} ${steps.length===1?"Schritt":"Schritte"}`:"keine",()=>steps.length?`<ol class="items ro">${steps.map((x,k)=>`<li><span class="num">${k+1}</span><span>${esc(x)}</span></li>`).join("")}</ol>`:`<p class="card-meta">Keine Schritte eingetragen.</p>`,FA)}
+    ${showKcal&&ing.length?foldSec("nut","Nährwerte",t.kcal&&!t.missing?`${fmtN(t.kcal/s)} kcal · ${fmtN(t.p/s)} g Eiweiß`:"noch nicht berechnet",()=>t.missing===ing.length?`<p class="card-meta">Für dieses Rezept gibt es noch keine Nährwerte. Übernimm es, dann werden sie geschätzt.</p>`:nutBody(r,true),FA):""}
+    ${ing.length?foldSec("price","Preis",priceHas(r)?`ca. ${fmtEur(r.price.total/s)} pro Portion`:"",()=>priceBody(r,true),FA):""}
     <p class="nutri-msg" id="frxMsg" hidden></p>
     <button class="btn primary frx-copy" type="button" id="frxCopy">In meine Sammlung übernehmen</button>`;
   $("#frxCopy").onclick=()=>copyFriendRecipe(f,r);
 }
+document.addEventListener("click",e=>{ const h=e.target.closest("[data-act-fr]"); if(!h) return; const id=h.dataset.f; if(folds.has(id)) folds.delete(id); else folds.add(id); frxRefresh(); });
 async function copyFriendRecipe(f,r){
   if(!root) return;
   const btn=$("#frxCopy"); btn.disabled=true; btn.textContent="Wird übernommen …";
@@ -2594,7 +2627,7 @@ async function openFeedRecipe(key){
   try{
     const r=(await fdb().ref(`spaces/${p.sid}/recipes/${p.rid}`).once("value")).val();
     if(!r){ $("#status").textContent=`${p.name} hat dieses Rezept gelöscht.`; return; }
-    frxDirect={f:{fid:p.uid,name:p.name,sid:p.sid},r:{id:p.rid,...r}}; frxCur={fid:p.uid,rid:p.rid}; frxRefresh(); $("#frx").hidden=false; $("#frx .frx-card").scrollTop=0;
+    folds=new Set(); frxDirect={f:{fid:p.uid,name:p.name,sid:p.sid},r:{id:p.rid,...r}}; frxCur={fid:p.uid,rid:p.rid}; frxRefresh(); $("#frx").hidden=false; $("#frx .frx-card").scrollTop=0;
   }catch(e){ $("#status").textContent=`${p.name} teilt die Rezepte gerade nicht mehr.`; }
 }
 document.addEventListener("click",e=>{
@@ -2636,7 +2669,6 @@ document.addEventListener("click",e=>{
   if(act==="cover"){ coverFor=r.id; $("#coverInput").click(); }
   if(act==="shops") openShops();
   if(act==="fold"||act==="fold-open"){ const id=b.dataset.f; if(act==="fold-open"||!folds.has(id)) folds.add(id); else folds.delete(id);
-    try{ localStorage.setItem("rezepte.folds",JSON.stringify([...folds])); }catch(e){}
     nutOpen=null; render(); if(act==="fold-open"){ const el=document.querySelector(`[data-f="${id}"].fold-head`); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); } return; }
   if(act==="have"){ const t=arr(r.ingredients)[k]; if(t==null) return; const key=ingKey(t), have={...(r.have||{})};
     if(have[key]) delete have[key]; else have[key]=true;
