@@ -43,7 +43,7 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
 .panel{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
 .topbar{flex:none;display:flex;align-items:center;gap:8px}
 .seg{flex:1;display:flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:2px}
-.seg button{flex:1;border:0;background:none;border-radius:8px;padding:7px 10px;font-size:.9rem;font-weight:600;color:var(--muted)}
+.seg button{flex:1;border:0;background:none;border-radius:8px;padding:7px 6px;font-size:.88rem;font-weight:600;color:var(--muted);white-space:nowrap}
 .seg button[aria-pressed="true"]{background:var(--band);color:var(--on-band)}
 .btn{background:var(--btn);color:var(--ink);border:0;border-radius:10px;padding:9px 14px;font-weight:600;font-size:.92rem}
 .btn.primary{background:var(--band);color:var(--on-band)}
@@ -221,6 +221,22 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
 .hist ul{list-style:none;margin:0;padding:0;font-size:.86rem;display:flex;flex-direction:column;gap:3px}
 .hist li{display:flex;justify-content:space-between;gap:8px;color:var(--muted)}
 .hist li b{color:var(--ink);font-weight:600}
+/* Ich */
+.me-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.me-t{font-family:var(--display);font-weight:400;font-size:1.25rem}
+.me-t small{font-family:var(--body);font-size:.78rem;color:var(--muted)}
+.me-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.me-grid.two{grid-template-columns:repeat(2,1fr)}
+.me-grid label{display:flex;flex-direction:column;gap:4px;font-size:.78rem;color:var(--muted)}
+.me-grid input{font:inherit;font-size:1rem;padding:9px 10px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);min-width:0;width:100%;text-align:center}
+.me-grid input:focus{outline:none;border-color:var(--accent)}
+.me-card.res{border-color:var(--band)}
+.me-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.me-list li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:.9rem}
+.me-list li span{color:var(--muted)}
+.hr-row{display:flex;flex-direction:column;gap:6px}
+.hr-row small{font-size:.76rem;color:var(--muted)}
+.hr-row .flabel small{text-transform:none;letter-spacing:0;font-weight:500;color:var(--muted)}
 /* Streak */
 .streak-card{display:flex;align-items:center;gap:12px;border-radius:14px;padding:10px 14px;background:var(--accent-soft);border:1px solid var(--line)}
 .streak-card .sc-emo{font-size:1.4rem;letter-spacing:-4px}
@@ -335,8 +351,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
 
   <section class="panel">
     <div class="topbar">
-      <div class="seg" role="group" aria-label="Ansicht"><button type="button" data-view="week" aria-pressed="true">Wochenplan</button><button type="button" data-view="ex" aria-pressed="false">Übungen</button><button type="button" data-view="fr" aria-pressed="false">Freunde</button></div>
-      <button class="btn primary" type="button" id="addEx" aria-label="Übung hinzufügen">+<span class="wide"> Übung</span></button>
+      <div class="seg" role="group" aria-label="Ansicht"><button type="button" data-view="week" aria-pressed="true">Wochenplan</button><button type="button" data-view="ex" aria-pressed="false">Übungen</button><button type="button" data-view="fr" aria-pressed="false">Freunde</button><button type="button" data-view="me" aria-pressed="false">Ich</button></div>
     </div>
     <div class="scroll" id="list"></div>
   </section>
@@ -578,7 +593,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-04-233629";
+  const APP_VERSION="2026-11-04-234315";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1180,7 +1195,7 @@ const PREV='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"
 /* ---------- Zustand ---------- */
 let showEx=false;   // Übungen eines Tages erst nach Tipp auf den Trainingsnamen
 let root=null, exercises={}, week={}, log={}, view="week", weekOff=0, openDay=null, openGrp=new Set(), exForm=null, delSure=false;
-try{ const v=localStorage.getItem("gym.view"); view=v==="ex"||v==="fr"?v:"week"; }catch(e){}
+try{ const v=localStorage.getItem("gym.view"); view=["ex","fr","me"].includes(v)?v:"week"; }catch(e){}
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 function showErr(e){ $("#status").textContent=/permission/i.test(String(e&&(e.code||e.message)))?"Keine Berechtigung. Prüf die Regeln in Firebase.":"Speichern hat nicht geklappt. Prüf die Internetverbindung."; }
 const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -1250,7 +1265,7 @@ function renderStreakHead(){
 function render(){
   renderStreakHead();
   document.querySelectorAll("[data-view]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.view===view));
-  if(view==="week") renderWeek(); else if(view==="fr") renderFriends(); else renderEx();
+  if(view==="week") renderWeek(); else if(view==="fr") renderFriends(); else if(view==="me") renderMe(); else renderEx();
 }
 /* ---------- Freunde: Gympläne ansehen (nur lesen) und kopieren ---------- */
 let mySid=null, myName="Ich", shareOn=true, frList=null, frLoading=false, frOpen=null;
@@ -1529,7 +1544,66 @@ document.addEventListener("click",e=>{
   saveSet(a,exId,k,vals); render();
 },true);
 // grob geschätzte Kalorien: MET × Körpergewicht × Stunden (Krafttraining ≈ 5, Cardio ≈ 7)
-function kcalFor(se,ex){ const kg=num(bw[myUid])||75, h=(se.dur||0)/3600, cardio=ex.length&&ex.filter(x=>x.group==="cardio").length>=ex.length/2; return Math.round((cardio?7:5)*kg*h); }
+/* ---------- Körperdaten (nur für dich gespeichert) und Kalorien ---------- */
+let body={};
+const bodyKg=()=>num(body.weight)||num(bw[myUid])||75;
+const ageOf=()=>{ const y=+body.birth; return y>1900?new Date().getFullYear()-y:null; };
+const hrMaxOf=()=>num(body.hrMax)||(ageOf()?Math.round(208-0.7*ageOf()):null);   // Tanaka-Formel, wenn nicht gemessen
+// Training: mit Ø-Puls Formel nach Keytel (2005), sonst MET × Gewicht × Zeit (Kraft ≈ 5, Cardio ≈ 7)
+function kcalFor(se,ex){
+  const kg=bodyKg(), min=(se.dur||0)/60, cardio=ex.length&&ex.filter(x=>x.group==="cardio").length>=ex.length/2;
+  const hr=num(se.hrAvg), age=ageOf(), sx=body.sex;
+  if(hr&&hr>60&&age&&min>0){
+    const m=(-55.0969+0.6309*hr+0.1988*kg+0.2017*age)/4.184, w=(-20.4022+0.4472*hr-0.1263*kg+0.074*age)/4.184;
+    const perMin=sx==="m"?m:sx==="w"?w:(m+w)/2;
+    return Math.max(0,Math.round(perMin*min*(cardio?1:0.8)));   // beim Krafttraining treibt Anspannung den Puls höher als der Verbrauch: 20 % weniger
+  }
+  return Math.round((cardio?7:5)*kg*min/60);
+}
+function bodyCalc(){
+  const kg=num(body.weight), cm=num(body.height), age=ageOf(), sx=body.sex;
+  if(!kg||!cm||!age||!sx) return null;
+  const m=10*kg+6.25*cm-5*age+5, w=10*kg+6.25*cm-5*age-161;   // Mifflin-St Jeor
+  const bmr=sx==="m"?m:sx==="w"?w:(m+w)/2, act={1:1.2,2:1.375,3:1.55,4:1.725,5:1.9}[body.act||2];
+  const tdee=bmr*act, goal=body.goal==="lose"?tdee-400:body.goal==="gain"?tdee+300:tdee, bmi=kg/((cm/100)**2);
+  const prot=Math.round(kg*(body.goal==="gain"?1.8:body.goal==="lose"?1.6:1.4));
+  return {bmr:Math.round(bmr),tdee:Math.round(tdee),goal:Math.round(goal),bmi,prot};
+}
+const bmiText=b=>b<18.5?"Untergewicht":b<25?"Normalgewicht":b<30?"Übergewicht":"Adipositas";
+function renderMe(){
+  const c=bodyCalc(), hm=hrMaxOf(), wk=mySessions().filter(x=>x.end&&Date.now()-x.start<7*864e5), wkK=wk.reduce((a,x)=>a+(x.kcal||0),0);
+  const opt=(id,v,l)=>`<button type="button" class="chip" data-body="${id}" data-val="${v}" aria-pressed="${String(body[id])===String(v)}">${l}</button>`;
+  $("#list").innerHTML=`<p class="card-note">Damit schätzen wir, wie viele Kalorien du am Tag brauchst und beim Training verbrennst. Das bleibt bei dir: Freunde sehen diese Angaben nicht.</p>
+    <section class="me-card"><b class="me-t">Über dich</b>
+      <div class="field"><span class="flabel">Geschlecht</span><div class="chips">${opt("sex","w","Weiblich")}${opt("sex","m","Männlich")}${opt("sex","d","Divers")}</div></div>
+      <div class="me-grid">
+        <label>Geburtsjahr<input data-bodyin="birth" inputmode="numeric" maxlength="4" placeholder="z.B. 1998" value="${esc(body.birth||"")}"></label>
+        <label>Größe (cm)<input data-bodyin="height" inputmode="numeric" placeholder="z.B. 178" value="${esc(body.height||"")}"></label>
+        <label>Gewicht (kg)<input data-bodyin="weight" inputmode="decimal" placeholder="z.B. 75" value="${body.weight?fmtKg(num(body.weight)):""}"></label>
+      </div>
+      <div class="field"><span class="flabel">Wie aktiv bist du im Alltag (ohne Training)?</span><div class="chips">${opt("act",1,"Kaum (Büro)")}${opt("act",2,"Etwas")}${opt("act",3,"Mittel")}${opt("act",4,"Sehr")}${opt("act",5,"Extrem (körperlicher Job)")}</div></div>
+      <div class="field"><span class="flabel">Dein Ziel</span><div class="chips">${opt("goal","lose","Abnehmen")}${opt("goal","keep","Halten")}${opt("goal","gain","Muskeln aufbauen")}</div></div>
+    </section>
+    <section class="me-card"><b class="me-t">Herzfrequenz <small>optional</small></b>
+      <p class="card-note">Wenn du eine Uhr oder einen Brustgurt hast: Trag Ruhe- und Maximalpuls ein. Den Durchschnittspuls eines Trainings gibst du nach dem Training in der Zusammenfassung ein, dann wird die Kalorien-Schätzung genauer.</p>
+      <div class="me-grid two">
+        <label>Ruhepuls<input data-bodyin="hrRest" inputmode="numeric" placeholder="z.B. 60" value="${esc(body.hrRest||"")}"></label>
+        <label>Maximalpuls<input data-bodyin="hrMax" inputmode="numeric" placeholder="${ageOf()?`geschätzt ${hrMaxOf()}`:"z.B. 190"}" value="${esc(body.hrMax||"")}"></label>
+      </div>
+    </section>
+    ${c?`<section class="me-card res"><b class="me-t">Dein Bedarf (geschätzt)</b>
+      <div class="sum-stats"><div><b>${c.bmr.toLocaleString("de-DE")}</b><small>Grundumsatz kcal</small></div><div><b>${c.tdee.toLocaleString("de-DE")}</b><small>Tagesbedarf kcal</small></div><div><b>${c.goal.toLocaleString("de-DE")}</b><small>für dein Ziel</small></div></div>
+      <ul class="me-list"><li><span>BMI</span><b>${c.bmi.toFixed(1).replace(".",",")} · ${bmiText(c.bmi)}</b></li><li><span>Eiweiß pro Tag</span><b>ca. ${c.prot} g</b></li>
+        ${hm?`<li><span>Maximalpuls</span><b>${hm}${body.hrMax?"":" (geschätzt)"}</b></li>`:""}${hm&&num(body.hrRest)?`<li><span>Fettverbrennung / Ausdauer</span><b>${Math.round(num(body.hrRest)+.6*(hm-num(body.hrRest)))}–${Math.round(num(body.hrRest)+.75*(hm-num(body.hrRest)))} Puls</b></li>`:""}
+        <li><span>Training letzte 7 Tage</span><b>${wk.length}× · ca. ${wkK.toLocaleString("de-DE")} kcal</b></li>
+        <li><span>Pro Trainingstag zusätzlich</span><b>ca. ${wk.length?Math.round(wkK/wk.length).toLocaleString("de-DE"):"–"} kcal</b></li></ul>
+      <p class="card-note">Grundumsatz nach Mifflin-St Jeor, mal Aktivitätsfaktor. „Für dein Ziel“: −400 kcal zum Abnehmen, +300 kcal zum Aufbauen. Das sind Richtwerte, keine medizinische Beratung.</p></section>`
+      :`<section class="me-card res"><p class="card-note">Gib Geschlecht, Geburtsjahr, Größe und Gewicht an, dann siehst du hier deinen Kalorienbedarf.</p></section>`}`;
+}
+function saveBody(k,v){ body[k]=v; if(myUid) fdb().ref(`users/${myUid}/body/${k}`).set(v==null||v===""?null:v).catch(showErr); }
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-body]"); if(!b) return; const k=b.dataset.body, v=k==="act"?+b.dataset.val:b.dataset.val; saveBody(k,v); render(); });
+document.addEventListener("change",e=>{ const i=e.target.closest("[data-bodyin]"); if(!i) return; const k=i.dataset.bodyin, v=num(i.value);
+  if(k==="birth"&&v&&(v<1920||v>new Date().getFullYear()-10)) return; saveBody(k,v); if(k==="weight"&&v) { bw[myUid]=v; } render(); });
 async function endTraining(){
   const a=activeSession(); if(!a) return;
   const end=Date.now(), dur=Math.round((end-a.start)/1000), t=templates[a.tpl]||{}, ex=tEx(t);
@@ -1566,7 +1640,7 @@ function showSummary(id){
     if(lb){ if(cardio){ const d=b.tot-lb.tot; diff=d>0?`+${d} min`:d<0?`${d} min`:"gleich"; cls=d>0?"up":d<0?"down":"same"; }
       else if(b.kg!==lb.kg){ const d=Math.round((b.kg-lb.kg)*10)/10; diff=`${d>0?"+":""}${fmtKg(d)} kg`; cls=d>0?"up":"down"; }
       else { const d=b.reps-lb.reps; diff=d?`${d>0?"+":""}${d} Wdh.`:"gleich"; cls=d>0?"up":d<0?"down":"same"; } }
-    return `<li><span class="exn"><b>${esc(x.name)}</b><small>${cardio?`${b.tot} min`:`bester Satz ${b.reps}×${fmtKg(b.kg)} kg · ${doneSets(setsOf(se,x.id)).length} Sätze`}</small></span><span class="dif ${cls}">${cls==="up"?"▲ ":cls==="down"?"▼ ":""}${diff}</span></li>`; }).filter(Boolean);
+    return `<li><span class="exn"><b>${esc(x.name)}</b><small>${cardio?`${b.tot} min`:`bester Satz ${b.reps}×${fmtKg(b.kg)} kg · ${(n=>`${n} ${n===1?"Satz":"Sätze"}`)(doneSets(setsOf(se,x.id)).length)}`}</small></span><span class="dif ${cls}">${cls==="up"?"▲ ":cls==="down"?"▼ ":""}${diff}</span></li>`; }).filter(Boolean);
   const dv=prev&&prev.vol?Math.round((se.vol-prev.vol)/prev.vol*100):null;
   const ups=rows.filter(r=>r.includes('dif up')).length;
   $("#sumBody").innerHTML=`<div class="sum-top"><span class="sum-emo">${ups?"🎉":"💪"}</span><h3>${esc(t.title)} geschafft!</h3>
@@ -1574,7 +1648,9 @@ function showSummary(id){
     <div class="sum-stats"><div><b>${fmtDur(se.dur||0)}</b><small>Dauer</small></div><div><b>ca. ${se.kcal||0}</b><small>kcal</small></div>
       <div><b>${fmtKg((se.vol||0)/1000)} t</b><small>bewegt${dv!=null?` · <span class="${dv>=0?"up":"down"}">${dv>0?"+":""}${dv} %</span>`:""}</small></div></div>
     ${rows.length?`<p class="sec-l">Im Vergleich zum letzten Mal${ups?` · ${ups}× gesteigert`:""}</p><ul class="sum-list">${rows.join("")}</ul>`:`<p class="card-note">Du hast keine Sätze eingetragen.</p>`}
-    <div class="kcal-row"><label>Dein Körpergewicht <input id="bwIn" inputmode="decimal" value="${num(bw[myUid])?fmtKg(num(bw[myUid])):""}" placeholder="75"> kg</label><small>für die Kalorien-Schätzung</small></div>
+    <div class="hr-row"><span class="flabel">Herzfrequenz in diesem Training <small>optional</small></span>
+      <div class="me-grid"><label>Ø Puls<input data-hr="hrAvg" inputmode="numeric" placeholder="–" value="${esc(se.hrAvg||"")}"></label><label>Max.<input data-hr="hrMax" inputmode="numeric" placeholder="–" value="${esc(se.hrMax||"")}"></label><label>Min.<input data-hr="hrMin" inputmode="numeric" placeholder="–" value="${esc(se.hrMin||"")}"></label></div>
+      <small>${se.hrAvg&&ageOf()?`Kalorien aus deinem Puls berechnet${hrMaxOf()?` · Intensität ca. ${Math.round(num(se.hrAvg)/hrMaxOf()*100)} % vom Maximalpuls`:""}.`:se.hrAvg?"Für die Berechnung aus dem Puls fehlen Geburtsjahr und Geschlecht unter „Ich“.":`Geschätzt aus Dauer und ${num(body.weight)?"deinem Gewicht":"75 kg (dein Gewicht trägst du unter „Ich“ ein)"}. Mit Ø-Puls wird es genauer.`}</small></div>
     <div class="sheet-actions"><button class="btn" type="button" data-edit-sess="${esc(id)}">Bearbeiten</button><button class="del" type="button" data-del-sess="${esc(id)}">Löschen</button>
       <div class="right"><button class="btn primary" type="button" id="sumClose">Fertig</button></div></div>`;
   $("#sumModal").hidden=false; $("#sumModal").dataset.id=id;
@@ -1620,7 +1696,6 @@ function renderExChips(){
   $("#exSug").innerHTML=exForm.id?"":grpOf(exForm.group).sug.filter(s=>!have.has(s.toLowerCase())).map(s=>`<button type="button" class="chip sug" data-sug="${esc(s)}">${esc(s)}</button>`).join("");
 }
 const closeEx=()=>{ $("#exModal").hidden=true; exForm=null; };
-$("#addEx").addEventListener("click",()=>openEx(null,openGrp.size===1?[...openGrp][0]:null));
 $("#exCancel").addEventListener("click",closeEx);
 $("#exModal").addEventListener("click",e=>{
   if(e.target.id==="exModal") return closeEx();
@@ -1790,9 +1865,10 @@ $("#sumModal").addEventListener("click",e=>{
   const dl=e.target.closest("[data-del-sess]"); if(dl) delSession(dl.dataset.delSess,dl);
 });
 $("#sumModal").addEventListener("change",e=>{
-  if(e.target.id!=="bwIn") return; const v=num(e.target.value); if(!v||v<30||v>300) return;
-  bw[myUid]=v; root.child("bw/"+myUid).set(v).catch(()=>{});
-  const id=$("#sumModal").dataset.id, se=sessions[id]; if(se){ se.kcal=kcalFor(se,tEx(templates[se.tpl]||{})); root.child(`sessions/${id}/kcal`).set(se.kcal).catch(()=>{}); showSummary(id); render(); }
+  const h=e.target.closest("[data-hr]"); if(!h) return; const v=num(h.value); if(v!=null&&(v<30||v>230)) return;
+  const id=$("#sumModal").dataset.id, se=sessions[id]; if(!se) return;
+  se[h.dataset.hr]=v; se.kcal=kcalFor(se,tEx(templates[se.tpl]||{}));
+  root.child("sessions/"+id).update({[h.dataset.hr]:v,kcal:se.kcal}).catch(showErr); showSummary(id); render();
 });
 
 /* ---------- Kalender: Termine als .ics (wiederkehrend wie im Plan, mit Erinnerung) ---------- */
@@ -1892,7 +1968,8 @@ document.addEventListener("ours-pub",()=>{ if(view==="fr") render(); });
 /* ---------- Start ---------- */
 Auth.start(firebaseConfig,"gym",(r,info)=>{
   root=r; if(info){ myUid=info.uid; mySid=info.sid; myName=info.name||"Ich"; }
-  if(root&&info){ initShare(); if(view==="fr") loadFriends(); } history.replaceState(null,"",location.pathname); render();
+  if(root&&info){ initShare(); if(view==="fr") loadFriends();
+    fdb().ref(`users/${myUid}/body`).on("value",s=>{ body=s.val()||{}; if(view==="me"&&!(document.activeElement&&document.activeElement.matches("[data-bodyin]"))) render(); },()=>{}); } history.replaceState(null,"",location.pathname); render();
   if(!root){ $("#status").textContent="Die Datenbank konnte nicht geladen werden. Prüf die Internetverbindung und lade die Seite neu."; return; }
   root.child("exercises").on("value",s=>{ exercises=s.val()||{}; render(); },showErr);
   root.child("workouts").on("value",s=>{ workouts=s.val()||{}; wLoaded=true; migrateWeek(); migratePlan(); render(); });
