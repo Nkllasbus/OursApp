@@ -230,7 +230,7 @@ html,body{height:100%}
    - E-Mail und Passwort über Firebase Authentication
    - Jede Seite hat ihren eigenen Bereich unter spaces/<id> mit eigenen Personen (access/<uid>)
    - users/<uid>/spaces/<typ> merkt sich, welcher Bereich zu welcher Seite gehört
-   Seiten rufen Auth.start(firebaseConfig, "dates" | "recipes" | "chores" | "budget" | "rooms", (ref, info) => { ... }) auf. */
+   Seiten rufen Auth.start(firebaseConfig, "dates" | "recipes" | "chores" | "budget" | "gym", (ref, info) => { ... }) auf. */
 (function(){
   const PAGES = [
     {type:"dates",   file:"index.html",    label:"Dateideen", color:"#8c7559", noun:"Dateideen-Liste",
@@ -245,8 +245,8 @@ html,body{height:100%}
     {type:"budget",  file:"budget.html",   label:"Budget",    color:"#1b1b1d", noun:"Budget",
      empty:"Noch kein Budget", hint:"Dein Budget ist privat. Später kannst du jemanden dazuholen, zum Beispiel deine Freundin oder deinen Freund.",
      keys:null},
-    {type:"rooms",   file:"raum.html",     label:"Raumdesign", color:"#8a4a30", noun:"Raumsammlung",
-     empty:"Noch keine Raumsammlung", hint:"Leg eine Sammlung an, fotografier deine Räume und probier Einrichtungsstile aus. Später kannst du jemanden dazuholen.",
+    {type:"gym",     file:"gym.html",      label:"Gym", color:"#3c4270", noun:"Trainingsplan",
+     empty:"Noch kein Trainingsplan", hint:"Leg deinen Plan an: Übungen nach Muskelgruppen und ein Wochenplan. Später kannst du deinen Trainingspartner dazuholen.",
      keys:[]},
     {type:"chat",    file:"chat.html",     label:"Chats", color:"#5f6e54", noSpace:true},
   ];
@@ -408,7 +408,7 @@ html,body{height:100%}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-04-220800";
+  const APP_VERSION="2026-11-04-221348";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;

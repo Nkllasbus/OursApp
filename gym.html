@@ -1,0 +1,1100 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ours · Gym</title>
+<link rel="icon" href="ours-logo.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600;700&family=Playfair+Display:wght@800;900&display=swap">
+<style>
+/* Gym: eigene Übungen nach Muskelgruppen und ein Wochenplan */
+:root{
+  --page:#191b2b; --dots:rgba(255,255,255,.035); --frame-line:#12131f; --shadow:rgba(10,11,22,.45);
+  --band:#3c4270; --on-band:#eef0fa; --on-band-muted:#b8bcdc;
+  --bg:#f2f2f6; --surface:#fcfcfe; --ink:#1e2030; --muted:#6c6f82; --line:#e1e2ea;
+  --accent:#3c4270; --accent-soft:#e6e8f3; --btn:#e7e8f0; --ok:#4f8a5b;
+  --display:"Gloock", Georgia, serif; --body:"Figtree", system-ui, -apple-system, sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;overflow:hidden;color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;background-color:var(--page);
+  background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px);background-size:18px 18px}
+button{font:inherit;cursor:pointer;color:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:620px;height:100vh;height:100dvh;margin:0 auto;display:flex;flex-direction:column;gap:12px;background:var(--bg);overflow:hidden;position:relative;
+  padding:0 22px max(12px,env(safe-area-inset-bottom,0px))}
+@media (max-width:660px){.wrap{padding-left:16px;padding-right:16px}}
+@media (min-width:661px){.wrap{border-left:1px solid var(--frame-line);border-right:1px solid var(--frame-line)}}
+header{flex:none;margin:0 -22px;background:var(--band);color:var(--on-band);position:relative;transition:margin-top .3s ease}
+@media (max-width:660px){header{margin:0 -16px}}
+header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:14px;background:var(--bg);border-radius:14px 14px 0 0}
+header.brand{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:calc(12px + env(safe-area-inset-top,0px)) 64px 25px!important}
+header.brand .wordmark{font-family:"Playfair Display",var(--display);font-weight:900;font-size:clamp(2.1rem,9.5vw,2.7rem);line-height:1;color:var(--on-band);white-space:nowrap}
+header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wrap.compact header{margin-top:calc(24px - var(--headH,110px))}
+.count{display:none}
+.status{flex:none;font-size:.82rem;color:var(--muted)}
+.status:empty{display:none}
+
+.panel{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
+.topbar{flex:none;display:flex;align-items:center;gap:8px}
+.seg{flex:1;display:flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:2px}
+.seg button{flex:1;border:0;background:none;border-radius:8px;padding:7px 10px;font-size:.9rem;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--band);color:var(--on-band)}
+.btn{background:var(--btn);color:var(--ink);border:0;border-radius:10px;padding:9px 14px;font-weight:600;font-size:.92rem}
+.btn.primary{background:var(--band);color:var(--on-band)}
+.ghost{background:none;border:0;color:var(--muted);padding:8px 4px}
+.linkish{background:none;border:0;padding:0;color:var(--accent);font-weight:600;text-decoration:underline;font-size:.88rem}
+.scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:2px 2px 90px;margin:0 -2px;display:flex;flex-direction:column;gap:10px}
+.scroll>*{flex:none}
+.empty{border:1.5px dashed var(--line);border-radius:16px;padding:18px;color:var(--muted);display:flex;flex-direction:column;gap:8px}
+.empty strong{color:var(--ink);font-family:var(--display);font-weight:400;font-size:1.3rem}
+
+/* Woche */
+.weeknav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.weeknav b{font-weight:600}
+.weeknav small{display:block;font-size:.78rem;color:var(--muted);font-weight:400}
+.weeknav .arr{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;padding:0}
+.weeknav .arr svg{width:16px;height:16px}
+.wstrip{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.wd{display:flex;flex-direction:column;align-items:center;gap:2px;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:6px 0 7px;font-size:.72rem;color:var(--muted)}
+.wd b{font-size:1rem;color:var(--ink);font-weight:600}
+.wd i{width:7px;height:7px;border-radius:50%;background:transparent}
+.wd.train i{background:var(--accent)}
+.wd.done i{background:var(--ok)}
+.wd.today{border-color:var(--band);box-shadow:0 0 0 1px var(--band) inset}
+.wd[aria-pressed="true"]{background:var(--band);border-color:var(--band);color:var(--on-band-muted)}
+.wd[aria-pressed="true"] b{color:var(--on-band)}
+.wd[aria-pressed="true"].train i{background:var(--on-band)}
+.day{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.day-head{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:12px 14px;text-align:left;color:var(--ink)}
+.day-head .dn{flex:none;width:42px;text-align:center;line-height:1.1}
+.day-head .dn b{display:block;font-size:1.15rem;font-weight:700}
+.day-head .dn small{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.day-head .dt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.day-head .dt b{font-weight:600}
+.day-head .dt small{font-size:.8rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.day-head .prog{flex:none;font-size:.78rem;font-weight:700;border-radius:999px;padding:3px 9px;background:var(--accent-soft);color:var(--accent)}
+.day-head .prog.ok{background:#e1efe3;color:var(--ok)}
+.day.today{border-color:var(--band)}
+.day.rest .dt b{color:var(--muted);font-weight:500}
+.day-body{padding:0 14px 14px;display:flex;flex-direction:column;gap:8px}
+.exl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg)}
+.exl li{display:flex;align-items:center;gap:10px;padding:9px 10px;border-top:1px solid var(--line)}
+.exl li:first-child{border-top:0}
+.ck{flex:none;width:26px;height:26px;border-radius:8px;border:1.5px solid var(--line);background:var(--surface);color:transparent;display:grid;place-items:center;padding:0}
+.ck svg{width:16px;height:16px}
+.ck.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.exn{flex:1;min-width:0;display:flex;flex-direction:column}
+.exn b{font-weight:600;font-size:.95rem}
+.exn small{font-size:.78rem;color:var(--muted)}
+li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(0,0,0,.25)}
+.gdot{flex:none;width:9px;height:9px;border-radius:50%}
+.day-actions{display:flex;justify-content:space-between;align-items:center;gap:8px}
+
+/* Übungen */
+.grp{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.grp-head{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:12px 14px;text-align:left;color:var(--ink)}
+.grp-head .gi{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:1.1rem}
+.grp-head b{flex:1;font-weight:600}
+.grp-head .n{font-size:.8rem;color:var(--muted);font-weight:600}
+.grp-head svg{width:18px;height:18px;color:var(--muted);transition:transform .2s}
+.grp.open .grp-head svg{transform:rotate(180deg)}
+.grp-body{padding:0 14px 12px;display:flex;flex-direction:column;gap:8px}
+.exrow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:none;padding:9px 10px;color:var(--ink);border-top:1px solid var(--line)}
+.exrow:first-child{border-top:0}
+.exrow svg{flex:none;width:16px;height:16px;color:var(--muted)}
+.add-in{border:1px dashed var(--line);background:none;color:var(--accent);border-radius:10px;padding:8px 12px;font-weight:600;font-size:.88rem;text-align:left}
+
+/* Bögen */
+.modal{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(15,16,32,.5);padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px))}
+.sheet{width:100%;max-width:420px;max-height:100%;overflow-y:auto;background:var(--surface);border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 60px -20px rgba(15,16,32,.6)}
+.sheet h3{margin:0;font-family:var(--display);font-weight:400;font-size:1.5rem}
+.field{display:flex;flex-direction:column;gap:6px}
+.flabel{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.sheet input[type=text],.sheet input[inputmode]{font:inherit;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);min-width:0;width:100%}
+.sheet input:focus{outline:none;border-color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:6px 11px;font-size:.85rem;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--band);border-color:var(--band);color:var(--on-band)}
+.chip.sug{border-style:dashed}
+.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.nums label{display:flex;flex-direction:column;gap:4px;font-size:.78rem;color:var(--muted)}
+.picks{display:flex;flex-direction:column;gap:10px;max-height:46vh;overflow-y:auto}
+.picks .pg>b{font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:6px}
+.pick{display:flex;align-items:center;gap:10px;padding:7px 2px;border-bottom:1px solid var(--line);font-size:.95rem}
+.pick input{width:20px;height:20px;accent-color:var(--band)}
+.sheet-actions{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.sheet-actions .right{display:flex;gap:8px;margin-left:auto}
+.del{background:none;border:0;color:var(--muted);font-size:.85rem;text-decoration:underline;padding:4px 0}
+.del.sure{color:#b0412e;font-weight:600}
+.err{color:#b0412e;font-size:.85rem;margin:0}
+
+/* Kopf wie auf den anderen Seiten */
+.foot-count{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="brand" id="head">
+    <div class="wordmark" aria-hidden="true">Gym</div>
+    <h1 class="sr-only">Gym</h1>
+  </header>
+  <div class="count" id="count"></div>
+
+  <section class="panel">
+    <div class="topbar">
+      <div class="seg" role="group" aria-label="Ansicht"><button type="button" data-view="week" aria-pressed="true">Wochenplan</button><button type="button" data-view="ex" aria-pressed="false">Übungen</button></div>
+      <button class="btn primary" type="button" id="addEx">+ Übung</button>
+    </div>
+    <div class="scroll" id="list"></div>
+  </section>
+  <div class="status" id="status" aria-live="polite"></div>
+</div>
+
+<div class="modal" id="exModal" hidden>
+  <form class="sheet" id="exForm" role="dialog" aria-modal="true" aria-labelledby="exTitle" autocomplete="off">
+    <h3 id="exTitle">Neue Übung</h3>
+    <div class="field"><span class="flabel">Muskelgruppe</span><div class="chips" id="exGroups"></div></div>
+    <div class="field"><label class="flabel" for="exName">Übung</label><input type="text" id="exName" maxlength="60" placeholder="z.B. Bankdrücken"><div class="chips" id="exSug"></div></div>
+    <div class="nums">
+      <label>Sätze<input inputmode="numeric" id="exSets" maxlength="2" placeholder="3"></label>
+      <label>Wdh.<input inputmode="text" id="exReps" maxlength="7" placeholder="10"></label>
+      <label>Gewicht kg<input inputmode="decimal" id="exKg" maxlength="6" placeholder="–"></label>
+    </div>
+    <p class="err" id="exErr" hidden></p>
+    <div class="sheet-actions"><button class="del" type="button" id="exDel" hidden>Löschen</button>
+      <div class="right"><button class="ghost" type="button" id="exCancel">Abbrechen</button><button class="btn primary" type="submit">Speichern</button></div></div>
+  </form>
+</div>
+
+<div class="modal" id="dayModal" hidden>
+  <form class="sheet" id="dayForm" role="dialog" aria-modal="true" aria-labelledby="dayTitle" autocomplete="off">
+    <h3 id="dayTitle">Montag</h3>
+    <div class="field"><label class="flabel" for="dayName">Name des Trainings</label><input type="text" id="dayName" maxlength="30" placeholder="z.B. Push, Beine, Oberkörper">
+      <div class="chips" id="daySug"></div></div>
+    <div class="field"><span class="flabel">Übungen an diesem Tag</span><div class="picks" id="dayPicks"></div></div>
+    <div class="sheet-actions"><button class="del" type="button" id="dayRest">Ruhetag</button>
+      <div class="right"><button class="ghost" type="button" id="dayCancel">Abbrechen</button><button class="btn primary" type="submit">Speichern</button></div></div>
+  </form>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+/* Anmeldung, Profil und Bereiche für alle Seiten
+   - E-Mail und Passwort über Firebase Authentication
+   - Jede Seite hat ihren eigenen Bereich unter spaces/<id> mit eigenen Personen (access/<uid>)
+   - users/<uid>/spaces/<typ> merkt sich, welcher Bereich zu welcher Seite gehört
+   Seiten rufen Auth.start(firebaseConfig, "dates" | "recipes" | "chores" | "budget" | "gym", (ref, info) => { ... }) auf. */
+(function(){
+  const PAGES = [
+    {type:"dates",   file:"index.html",    label:"Dateideen", color:"#8c7559", noun:"Dateideen-Liste",
+     empty:"Noch keine Dateideen-Liste", hint:"Leg eine Liste an und lad danach deine Freundin oder deinen Freund ein. Nur eingeladene Personen sehen sie.",
+     keys:["ideas"]},
+    {type:"recipes", file:"rezepte.html",  label:"Rezepte",   color:"#7a2434", noun:"Rezeptsammlung",
+     empty:"Noch keine Rezeptsammlung", hint:"Leg eine Sammlung an und lad Freunde oder Familie ein. Nur eingeladene Personen sehen sie.",
+     keys:["recipes","people","swipe"]},
+    {type:"chores",  file:"haushalt.html", label:"Haushalt",  color:"#3f6f8c", noun:"Haushalt",
+     empty:"Noch kein Haushalt", hint:"Leg einen Haushalt an und lad deine Mitbewohner ein.",
+     keys:["chores","choreLog","members","rooms","people"]},
+    {type:"budget",  file:"budget.html",   label:"Budget",    color:"#1b1b1d", noun:"Budget",
+     empty:"Noch kein Budget", hint:"Dein Budget ist privat. Später kannst du jemanden dazuholen, zum Beispiel deine Freundin oder deinen Freund.",
+     keys:null},
+    {type:"gym",     file:"gym.html",      label:"Gym", color:"#3c4270", noun:"Trainingsplan",
+     empty:"Noch kein Trainingsplan", hint:"Leg deinen Plan an: Übungen nach Muskelgruppen und ein Wochenplan. Später kannst du deinen Trainingspartner dazuholen.",
+     keys:[]},
+    {type:"chat",    file:"chat.html",     label:"Chats", color:"#5f6e54", noSpace:true},
+  ];
+  const CSS = `
+  .auth-screen{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow-y:auto;background:var(--page);
+    padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+  .auth-screen.dim{background:rgba(10,12,14,.55)}
+  .auth-card{width:100%;max-width:390px;background:var(--bg);color:var(--ink);border:1px solid var(--frame-line,var(--line));border-radius:24px;overflow:hidden;
+    box-shadow:0 18px 40px -18px var(--shadow,rgba(0,0,0,.4))}
+  .auth-head{background:var(--band);color:var(--on-band);padding:18px 22px 22px;position:relative}
+  .auth-head::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:14px;background:var(--bg);border-radius:14px 14px 0 0}
+  .auth-head h2{margin:0;font-family:var(--display);font-weight:400;font-size:1.8rem;line-height:1.1}
+  .auth-head p{margin:4px 0 0;font-size:.88rem;opacity:.8}
+  .auth-body{padding:10px 22px 22px;display:flex;flex-direction:column;gap:12px}
+  .auth-tabs{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:2px}
+  .auth-tabs button{flex:1;border:0;background:none;border-radius:8px;padding:7px 10px;font:inherit;font-size:.9rem;font-weight:600;color:var(--muted);cursor:pointer}
+  .auth-tabs button[aria-pressed="true"]{background:var(--band);color:var(--on-band)}
+  .auth-body label{display:flex;flex-direction:column;gap:5px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .auth-body input[type=email],.auth-body input[type=password],.auth-body input[type=text]{font:inherit;font-size:1rem;text-transform:none;letter-spacing:0;padding:11px 12px;
+    border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);min-width:0}
+  .auth-body input:focus{outline:none;border-color:var(--accent)}
+  .auth-btn{border:0;border-radius:10px;padding:12px 16px;font:inherit;font-weight:700;cursor:pointer;background:var(--band);color:var(--on-band)}
+  .auth-btn.alt{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+  .auth-btn:disabled{opacity:.6;cursor:progress}
+  .auth-or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.8rem;margin:2px 0}
+  .auth-or::before,.auth-or::after{content:"";flex:1;height:1px;background:var(--line)}
+  .auth-google{display:flex;align-items:center;justify-content:center;gap:10px}
+  .auth-link{align-self:center;background:none;border:0;padding:4px;font:inherit;font-size:.85rem;color:var(--muted);text-decoration:underline;cursor:pointer}
+  .auth-link.danger{color:#c0533f}
+  .auth-msg{margin:0;font-size:.88rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .auth-msg.err{border-color:#c0533f;color:#c0533f}
+  .auth-note{margin:0;font-size:.88rem;color:var(--muted)}
+  .auth-check{flex-direction:row!important;align-items:center;gap:8px!important;text-transform:none!important;letter-spacing:0!important;font-size:.9rem!important;color:var(--ink)!important;font-weight:500!important}
+  .auth-check input{accent-color:var(--band);width:18px;height:18px}
+  .auth-copy{display:flex;gap:6px}
+  .auth-copy input{flex:1;font-size:.82rem!important;padding:9px 10px!important}
+  .auth-people{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .auth-people li{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+  .auth-people .av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.85rem;background:var(--band);color:var(--on-band);flex:none}
+  .auth-people .nm{flex:1;min-width:0;display:flex;flex-direction:column}
+  .auth-people .nm b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .auth-people .nm small{font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .auth-people .rm{border:1px solid var(--line);background:none;color:var(--muted);border-radius:999px;padding:3px 10px;font:inherit;font-size:.8rem;cursor:pointer}
+  .auth-people .rm.sure{color:#c0533f;border-color:#c0533f;font-weight:600}
+  .auth-sec{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 -4px}
+
+  /* Profilbilder */
+  .ours-av{flex:none;display:inline-grid;place-items:center;border-radius:50%;overflow:hidden;background:var(--band);color:var(--on-band);font-weight:700;line-height:1}
+  .ours-av img{width:100%;height:100%;object-fit:cover;display:block}
+  .pf-btn{padding:0;overflow:visible}
+  #pfInit{position:absolute;inset:0;display:block;border-radius:50%;overflow:hidden}
+  .pf-btn .ours-av{width:100%!important;height:100%!important;font-size:1rem!important;background:none;color:inherit;display:grid}
+  .pf-photo{display:flex;align-items:center;gap:14px}
+  .pf-photo .ours-av{width:72px;height:72px;font-size:1.6rem}
+  .pf-photo div{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+  .auth-card textarea{font:inherit;font-size:1rem;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface,#fff);color:var(--ink);resize:vertical;min-height:64px;width:100%;box-sizing:border-box}
+
+  /* Profil-Knopf und Menü */
+  header{padding-right:64px!important}
+  .pf-btn{position:absolute;top:14px;right:16px;z-index:31;width:40px;height:40px;border-radius:50%;cursor:pointer;
+    border:1.5px solid color-mix(in srgb,var(--on-band) 40%,transparent);background:color-mix(in srgb,var(--on-band) 16%,transparent);
+    color:var(--on-band);font:inherit;font-weight:700;font-size:1rem;display:grid;place-items:center}
+  .pf-btn:focus-visible{outline:2px solid var(--on-band);outline-offset:2px}
+  .pf-menu{position:absolute;top:60px;right:12px;z-index:32;min-width:230px;display:flex;flex-direction:column;gap:2px;padding:6px;
+    background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 36px -14px rgba(0,0,0,.4)}
+  .pf-menu a,.pf-menu button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border:0;border-radius:10px;background:none;
+    color:inherit;font:inherit;font-weight:500;text-decoration:none;cursor:pointer}
+  .pf-menu a:hover,.pf-menu button:hover{background:var(--accent-soft)}
+  .pf-menu a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+  .pf-menu .dot{width:10px;height:10px;border-radius:50%;flex:none;box-shadow:0 0 0 1px rgba(128,128,128,.4) inset}
+  .pf-menu svg{width:17px;height:17px;flex:none;opacity:.75}
+  .pf-sep{height:1px;background:var(--line);margin:4px 6px}
+  .pf-who{padding:6px 12px 4px;display:flex;flex-direction:column}
+  .pf-who b{font-weight:600}
+  .pf-who small{font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pf-menu button:disabled{opacity:.45;cursor:not-allowed}
+
+  /* Freunde */
+  .pf-badge{margin-left:auto;min-width:20px;height:20px;border-radius:10px;padding:0 6px;background:#d9534f;color:#fff;font-size:.72rem;font-weight:700;display:inline-grid;place-items:center}
+  .pf-dot{position:absolute;top:-1px;right:-1px;width:12px;height:12px;border-radius:50%;background:#d9534f;border:2px solid var(--band)}
+  .ours-mark{display:none!important}
+  /* Logo: Hintergrund passt sich der Seitenfarbe an (etwas dunkler als der Kopf) */
+  .ours-logo{position:absolute;left:16px;top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2);z-index:31;width:40px;height:40px;border-radius:11px;overflow:hidden;padding:0;border:0;cursor:pointer;
+    background:var(--logo-bg,color-mix(in srgb,var(--band) 62%,#000));
+    box-shadow:0 0 0 1.5px color-mix(in srgb,var(--on-band) 26%,transparent),0 4px 10px -4px rgba(0,0,0,.4);display:block}
+  .ours-logo img{width:100%;height:100%;display:block}
+  .ours-logo:focus-visible{outline:2px solid var(--on-band);outline-offset:2px}
+  .pf-menu.pg-menu{left:12px;right:auto}
+  /* Chat-Knopf unten links, in der Farbe der Seite */
+  .ours-chat{position:absolute;left:var(--chat-x,16px);bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 22px);z-index:6;width:56px;height:56px;border-radius:50%;
+    background:var(--logo-bg,var(--band));color:var(--on-band);display:grid;place-items:center;text-decoration:none;box-shadow:0 6px 16px -8px var(--shadow,rgba(0,0,0,.5)),0 0 0 1px color-mix(in srgb,var(--on-band) 14%,transparent)}
+  .ours-chat svg{width:26px;height:26px}
+  .ours-chat:active{transform:scale(.94)}
+  .ours-chat .cb{position:absolute;top:-2px;right:-2px;min-width:20px;height:20px;border-radius:999px;background:#e8a33d;color:#2b1e21;font-size:.72rem;font-weight:700;display:grid;place-items:center;padding:0 5px;border:2px solid var(--bg)}
+  .ours-chat .cb[hidden]{display:none}
+  body.has-chat .scroll{padding-bottom:84px!important}
+  .pf-menu.pg-menu .pf-who{flex-direction:row;align-items:center;justify-content:flex-start;gap:10px;text-align:left;padding:8px 10px 6px}
+  .pf-menu.pg-menu .pf-logo{margin:0;background:var(--logo-bg,color-mix(in srgb,var(--band) 62%,#000))}
+  .pf-menu.pg-menu .pf-brand{margin:0}
+  header{padding-left:64px!important}
+  .pf-menu .pf-logo{width:34px;height:34px;border-radius:9px;margin:0 auto 4px;display:block}
+  #pfBig{display:flex;justify-content:center;margin-bottom:4px}
+  .pf-brand{font-family:var(--display);font-size:1.15rem;line-height:1;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+  .fr-code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.5rem;font-weight:700;letter-spacing:.18em;text-align:center;padding:10px;border-radius:12px;
+    background:var(--surface);border:1.5px dashed var(--line);color:var(--ink)}
+  .auth-people .rm.yes{background:var(--band);color:var(--on-band);border-color:var(--band);font-weight:600}
+  .auth-people .rm.done{opacity:.6;cursor:default}
+
+  /* Seite ohne Bereich */
+  .auth-setup{position:absolute;left:0;right:0;bottom:0;z-index:20;background:var(--bg);overflow-y:auto;padding:18px 22px 22px;display:flex;flex-direction:column;align-items:stretch}
+  .auth-setup .box{margin:auto 0;display:flex;flex-direction:column;gap:12px;max-width:420px;align-self:center;width:100%;color:var(--ink)}
+  .auth-setup h3{margin:0;font-family:var(--display);font-weight:400;font-size:1.6rem;line-height:1.15}
+  `;
+  const IC = {
+    people:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M16.5 6.2a2.8 2.8 0 0 1 0 5.4M17 14.3c2 .5 3.2 2 3.5 4.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    gear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    heart:'<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    chat:'<svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4h0A1.5 1.5 0 0 1 4 14.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    out:'<svg viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 16l4-4-4-4M14 12H4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  };
+  const ERR = {
+    "auth/invalid-email":"Die E-Mail-Adresse sieht nicht richtig aus.",
+    "auth/user-not-found":"E-Mail oder Passwort stimmt nicht.",
+    "auth/wrong-password":"E-Mail oder Passwort stimmt nicht.",
+    "auth/invalid-credential":"E-Mail oder Passwort stimmt nicht.",
+    "auth/invalid-login-credentials":"E-Mail oder Passwort stimmt nicht.",
+    "auth/email-already-in-use":"Mit dieser E-Mail gibt es schon ein Konto. Melde dich an.",
+    "auth/weak-password":"Das Passwort ist zu kurz.",
+    "auth/too-many-requests":"Zu viele Versuche. Warte ein paar Minuten und versuch es dann noch einmal.",
+    "auth/network-request-failed":"Keine Verbindung. Prüf dein Internet.",
+    "auth/operation-not-allowed":"Diese Anmeldeart ist in Firebase noch nicht eingeschaltet.",
+    "auth/unauthorized-domain":"Diese Seite ist in Firebase noch nicht als erlaubte Domain eingetragen (Authentication → Einstellungen → Autorisierte Domains).",
+    "auth/account-exists-with-different-credential":"Mit dieser E-Mail gibt es schon ein Konto mit Passwort. Melde dich mit E-Mail und Passwort an.",
+    "auth/popup-blocked":"Das Anmeldefenster wurde blockiert. Erlaube Pop-ups für diese Seite und versuch es noch einmal.",
+  };
+  const errText = e => ERR[e && e.code] || "Das hat nicht geklappt. Versuch es noch einmal.";
+  const rand = n => { const a="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    return [...crypto.getRandomValues(new Uint8Array(n))].map(x=>a[x%a.length]).join(""); };
+  const esc = t => String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const parseJoin = () => { const m=location.hash.match(/^#join-([A-Za-z0-9]{12,40})-([A-Za-z0-9]{12,40})$/); return m?{sid:m[1],code:m[2]}:null; };
+  const clearHash = () => history.replaceState(history.state,"",location.pathname);
+  const initial = n => (String(n||"?").trim()[0]||"?").toUpperCase();
+  // Öffentliches Profil (Name, Bild, Über mich) unter pub/<uid>; Bilder werden nachgeladen und überall ausgetauscht
+  const pubCache = new Map(), pubWait = new Set();
+  let pubDb = null;
+  function loadPub(uid){
+    if(!uid || !pubDb || pubCache.has(uid) || pubWait.has(uid)) return;
+    pubWait.add(uid);
+    pubDb.ref("pub/"+uid).once("value").then(s=>{ pubCache.set(uid,s.val()||{}); paintAv(uid); document.dispatchEvent(new CustomEvent("ours-pub",{detail:uid})); })
+      .catch(()=>pubCache.set(uid,{})).finally(()=>pubWait.delete(uid));
+  }
+  const okPhoto = p => typeof p==="string" && /^data:image\/(jpeg|png|webp);base64,/.test(p);
+  function avInner(uid,name){ const p=pubCache.get(uid), ph=p&&okPhoto(p.photo)?p.photo:null;
+    return ph?`<img src="${ph}" alt="">`:esc(initial((p&&p.name)||name)); }
+  function avatar(uid,name,size,extra){ loadPub(uid); const z=size||32;
+    return `<span class="ours-av${extra?" "+extra:""}" data-av="${esc(uid||"")}" data-avname="${esc(name||"")}" style="width:${z}px;height:${z}px;font-size:${Math.round(z*.42)}px">${avInner(uid,name)}</span>`; }
+  function paintAv(uid){ document.querySelectorAll(`[data-av="${uid}"]`).forEach(el=>{ el.innerHTML=avInner(uid,el.dataset.avname); }); }
+  const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
+
+  // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
+  const APP_VERSION="2026-11-04-221348";
+  function checkVersion(){
+    try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
+      if(!v || !v.v || v.v===APP_VERSION) return;
+      const k="ours.reload."+v.v; try{ if(sessionStorage.getItem(k)) return; sessionStorage.setItem(k,"1"); }catch(e){}
+      location.reload();
+    }).catch(()=>{}); }catch(e){}
+  }
+  checkVersion();
+  addEventListener("pageshow",e=>{ if(e.persisted) checkVersion(); });
+  function pgToggle(open){ const m=document.getElementById("pgMenu"), b=document.getElementById("pgBtn"); if(!m||!b) return; m.hidden=!open; b.setAttribute("aria-expanded",open); }
+  window.Auth = {
+    avatar, pub:uid=>{ loadPub(uid); return pubCache.get(uid)||null; },
+    refreshPub(uid){ pubCache.delete(uid); loadPub(uid); },
+    editProfile(){ if(window.Auth._profileView) window.Auth._profileView(); },
+    start(config, type, cb){
+    const PAGE = PAGES.find(p=>p.type===type);
+    const st=document.createElement("style"); st.textContent=CSS; document.head.appendChild(st);
+    // Name der App oben in jeder Seite
+    const hd=document.querySelector("header");
+    if(hd && !hd.querySelector(".ours-logo")){
+      hd.insertAdjacentHTML("afterbegin",'<button type="button" class="ours-logo" id="pgBtn" aria-label="Ours – Seiten" aria-haspopup="true" aria-expanded="false" aria-controls="pgMenu"><img src="ours-mark.png" alt=""></button>');
+      // Seiten-Menü hinter dem Logo: sofort nutzbar, auch bevor die Anmeldung fertig ist
+      hd.insertAdjacentHTML("beforeend",`<nav class="pf-menu pg-menu" id="pgMenu" hidden aria-label="Seiten">
+          <div class="pf-who"><img class="pf-logo" src="ours-mark.png" alt=""><span class="pf-brand">Ours</span></div>
+          <div class="pf-sep"></div>
+          ${PAGES.filter(p=>!p.noSpace).map(p=>`<a href="${p.file}" data-page="${p.type}"${p.type===type?' aria-current="page"':""}><span class="dot" style="background:${p.color}"></span>${p.label}</a>`).join("")}
+        </nav>`);
+      const pgBtn=document.getElementById("pgBtn"), pgMenu=document.getElementById("pgMenu");
+      pgBtn.addEventListener("click",e=>{ e.stopPropagation(); if(window.Auth._closePf) window.Auth._closePf(); pgToggle(pgMenu.hidden); });
+      document.addEventListener("click",e=>{ if(!pgMenu.hidden && !pgMenu.contains(e.target)) pgToggle(false); });
+      document.addEventListener("keydown",e=>{ if(e.key==="Escape") pgToggle(false); });
+      pgMenu.addEventListener("click",e=>{ if(e.target.closest("a")) pgToggle(false); });
+      const wrap=document.querySelector(".wrap");
+      if(wrap && type!=="chat" && !document.getElementById("chatBtn")){
+        wrap.insertAdjacentHTML("beforeend",`<a class="ours-chat" id="oursChat" href="chat.html?from=${type}" aria-label="Chats mit Freunden" title="Chats">${IC.chat}<span class="cb" id="oursChatN" hidden></span></a>`);
+        if(getComputedStyle(wrap).position==="static") wrap.style.position="relative";
+        // gleiche Stelle wie bei Rezepte: am Innenrand der Karte
+        const placeChat=()=>wrap.style.setProperty("--chat-x",getComputedStyle(wrap).paddingLeft);
+        placeChat(); addEventListener("resize",placeChat);
+        document.body.classList.add("has-chat");
+      }
+      // Zurück-Geste: Seite kommt aus dem Zwischenspeicher, Menüs dann zu
+      addEventListener("pageshow",()=>{ pgToggle(false); if(window.Auth._closePf) window.Auth._closePf(); });
+    }
+    let auth, db;
+    try{ if(!firebase.apps.length) firebase.initializeApp(config); auth=firebase.auth(); db=firebase.database(); }
+    catch(e){ cb(null); return; }
+    let user=null, profile={}, sid=null, started=false, setupEl=null;
+    const pubSet=v=>{ pubCache.set(user.uid,{...(pubCache.get(user.uid)||{}),...v}); paintAv(user.uid); document.dispatchEvent(new CustomEvent("ours-pub",{detail:user.uid})); };
+
+    /* ---------- Fenster (Anmelden und Pop-ups) ---------- */
+    let screen=null;
+    function show(title,sub,html,dim){
+      if(!screen){ screen=document.createElement("div"); screen.className="auth-screen"; document.body.appendChild(screen);
+        screen.addEventListener("click",e=>{ if(e.target===screen && screen.classList.contains("dim")) hide(); }); }
+      screen.classList.toggle("dim",!!dim);
+      screen.innerHTML=`<div class="auth-card" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="auth-head"><h2>${esc(title)}</h2>${sub?`<p>${esc(sub)}</p>`:""}</div><div class="auth-body">${html}</div></div>`;
+      screen.hidden=false; return screen;
+    }
+    function hide(){ if(screen) screen.hidden=true; }
+    const $a = s => screen.querySelector(s);
+    function msg(t,err,root){ const m=(root||screen).querySelector("#authMsg"); if(!m) return; m.textContent=t||""; m.hidden=!t; m.classList.toggle("err",!!err); }
+    document.addEventListener("keydown",e=>{ if(e.key==="Escape" && screen && !screen.hidden && screen.classList.contains("dim")) hide(); });
+
+    /* ---------- Anmelden / Konto erstellen ---------- */
+    function loginView(mode){
+      const reg=mode==="register", join=parseJoin();
+      show("Ours",
+        join?`Du wurdest zu ${PAGE.label} eingeladen. Melde dich an oder erstell ein Konto.`:/^#friend-/.test(location.hash)?"Du wurdest als Freund eingeladen. Melde dich an oder erstell ein Konto.":reg?"Neues Konto erstellen.":"Bitte melde dich an.",
+        `<div class="auth-tabs" role="group"><button type="button" data-mode="login" aria-pressed="${!reg}">Anmelden</button><button type="button" data-mode="register" aria-pressed="${reg}">Konto erstellen</button></div>
+        <form id="authForm" style="display:flex;flex-direction:column;gap:12px" novalidate>
+          ${reg?`<label>Dein Name<input type="text" id="authName" autocomplete="given-name" maxlength="30" placeholder="So sehen dich die anderen"></label>`:""}
+          <label>E-Mail<input type="email" id="authMail" autocomplete="email"></label>
+          <label>Passwort<input type="password" id="authPw" autocomplete="${reg?"new-password":"current-password"}"></label>
+          ${reg?`<label>Passwort wiederholen<input type="password" id="authPw2" autocomplete="new-password"></label>
+            <p class="auth-note">Mindestens 10 Zeichen. Am besten ein Passwort, das du nirgends sonst benutzt.</p>`:""}
+          <p class="auth-msg" id="authMsg" hidden></p>
+          <button class="auth-btn" type="submit" id="authGo">${reg?"Konto erstellen":"Anmelden"}</button>
+        </form>
+        ${reg?"":`<button class="auth-link" type="button" id="authForgot">Passwort vergessen?</button>`}
+        <div class="auth-or"><span>oder</span></div>
+        <button class="auth-btn alt auth-google" type="button" id="authGoogle">${GOOGLE}Mit Google ${reg?"registrieren":"anmelden"}</button>`);
+      screen.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>loginView(b.dataset.mode));
+      (reg?$a("#authName"):$a("#authMail")).focus();
+      $a("#authForm").onsubmit=async e=>{
+        e.preventDefault();
+        const mail=$a("#authMail").value.trim(), pw=$a("#authPw").value;
+        if(!mail || !pw) return msg("Gib E-Mail und Passwort ein.",true);
+        if(reg){
+          if(pw.length<10) return msg("Das Passwort braucht mindestens 10 Zeichen.",true);
+          if(pw!==$a("#authPw2").value) return msg("Die beiden Passwörter sind nicht gleich.",true);
+          try{ sessionStorage.setItem("auth.newName",$a("#authName").value.trim().slice(0,30)); }catch(err){}
+        }
+        $a("#authGo").disabled=true; msg("");
+        try{ reg ? await auth.createUserWithEmailAndPassword(mail,pw) : await auth.signInWithEmailAndPassword(mail,pw); }
+        catch(err){ msg(errText(err),true); $a("#authGo").disabled=false; }
+      };
+      $a("#authGoogle").onclick=async()=>{
+        msg(""); const prov=new firebase.auth.GoogleAuthProvider(); prov.setCustomParameters({prompt:"select_account"});
+        try{ await auth.signInWithPopup(prov); }
+        catch(err){
+          if(err && (err.code==="auth/popup-closed-by-user"||err.code==="auth/cancelled-popup-request")) return;
+          if(err && err.code==="auth/popup-blocked"){ try{ await auth.signInWithRedirect(prov); return; }catch(e){} }
+          msg(errText(err),true);
+        }
+      };
+      const f=$a("#authForgot");
+      if(f) f.onclick=async()=>{
+        const mail=$a("#authMail").value.trim();
+        if(!mail) return msg("Trag oben deine E-Mail ein, dann schicken wir dir einen Link zum Zurücksetzen.",true);
+        try{ await auth.sendPasswordResetEmail(mail); msg("Wenn es ein Konto mit dieser E-Mail gibt, ist eine Mail zum Zurücksetzen unterwegs. Schau auch im Spam nach."); }
+        catch(err){ msg(errText(err),true); }
+      };
+    }
+
+    /* ---------- Profil-Knopf mit Menü ---------- */
+    function installMenu(){
+      const head=document.querySelector("header"); if(!head || head.querySelector(".pf-btn")) { updateMenu(); return; }
+      head.insertAdjacentHTML("beforeend",`<button class="pf-btn" type="button" id="pfBtn" aria-haspopup="true" aria-expanded="false" aria-controls="pfMenu" aria-label="Profil und Seiten"><span id="pfInit"></span><span class="pf-dot" id="pfDot" hidden></span></button>
+        <nav class="pf-menu" id="pfMenu" hidden aria-label="Profil und Seiten">
+          <div class="pf-who"><span id="pfBig"></span><b id="pfName"></b><small id="pfMail"></small></div>
+          <div class="pf-sep"></div>
+          <button type="button" data-pf="people">${IC.people}Personen bei ${esc(PAGE.label)}</button>
+          <a href="chat.html?from=${type}" class="pf-chat"${type==="chat"?' aria-current="page"':""}>${IC.chat}Chats<span class="pf-badge" id="pfChatBadge" hidden></span></a>
+          <button type="button" data-pf="friends">${IC.heart}Freunde<span class="pf-badge" id="pfFriendBadge" hidden></span></button>
+          <button type="button" data-pf="profile">${IC.user}Mein Profil</button>
+          <button type="button" data-pf="settings">${IC.gear}Einstellungen</button>
+          <button type="button" data-pf="logout">${IC.out}Abmelden</button>
+        </nav>`);
+      const btn=document.getElementById("pfBtn"), menu=document.getElementById("pfMenu");
+      const toggle=open=>{ menu.hidden=!open; btn.setAttribute("aria-expanded",open); };
+      btn.onclick=e=>{ e.stopPropagation(); pgToggle(false); toggle(menu.hidden); };
+      window.Auth._closePf=()=>toggle(false);
+      document.addEventListener("click",e=>{ if(!menu.hidden && !menu.contains(e.target)) toggle(false); });
+      document.addEventListener("keydown",e=>{ if(e.key==="Escape") toggle(false); });
+      menu.querySelectorAll("[data-pf]").forEach(b=>b.onclick=()=>{ toggle(false);
+        ({people:peopleView,friends:()=>friendsView(),profile:()=>window.Auth.profileHandler?window.Auth.profileHandler(user.uid):profileView(),settings:settingsView,logout:()=>auth.signOut()})[b.dataset.pf](); });
+      updateMenu();
+    }
+    function updateMenu(){
+      const name=profile.name||user.email.split("@")[0];
+      const b=document.getElementById("pfBtn"); if(!b) return;
+      document.getElementById("pfInit").innerHTML=avatar(user.uid,name,37); updateFriendBadge();
+      const big=document.getElementById("pfBig"); if(big) big.innerHTML=avatar(user.uid,name,48);
+      document.getElementById("pfName").textContent=name;
+      document.getElementById("pfMail").textContent=user.email;
+      const pp=document.querySelector('[data-pf="people"]'); pp.disabled=!sid; pp.hidden=!!PAGE.noSpace;
+    }
+
+    /* ---------- Profil, Einstellungen ---------- */
+    function profileView(){
+      const pb=pubCache.get(user.uid)||{}; let photo=okPhoto(pb.photo)?pb.photo:null;
+      show("Mein Profil","Name, Bild und ein paar Worte über dich sehen deine Freunde.",`
+        <div class="pf-photo"><span class="ours-av" id="pfPrev">${photo?`<img src="${photo}" alt="">`:esc(initial(profile.name))}</span>
+          <div><button class="auth-btn alt" type="button" id="pfPick">${photo?"Bild ändern":"Profilbild wählen"}</button>
+          <button class="auth-link" type="button" id="pfDrop"${photo?"":" hidden"}>Bild entfernen</button></div></div>
+        <input type="file" id="pfFile" accept="image/*" hidden>
+        <label>Dein Name<input type="text" id="pfIn" maxlength="30" value="${esc(profile.name||"")}"></label>
+        <label>Über mich <small>(optional)</small><textarea id="pfBio" maxlength="140" placeholder="z.B. Koche am liebsten Asiatisch, backe sonntags">${esc(pb.bio||"")}</textarea></label>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <button class="auth-btn" type="button" id="pfSave">Speichern</button>
+        <button class="auth-link" type="button" id="pfClose">Abbrechen</button>`,true);
+      $a("#pfClose").onclick=hide;
+      $a("#pfPick").onclick=()=>$a("#pfFile").click();
+      $a("#pfDrop").onclick=()=>{ photo=null; $a("#pfPrev").textContent=initial($a("#pfIn").value||profile.name); $a("#pfDrop").hidden=true; $a("#pfPick").textContent="Profilbild wählen"; };
+      $a("#pfFile").onchange=async e=>{
+        const f=e.target.files[0]; e.target.value=""; if(!f) return;
+        try{ // quadratisch zuschneiden, klein halten
+          const bmp=await createImageBitmap(f), m=Math.min(bmp.width,bmp.height), c=document.createElement("canvas"); c.width=c.height=256;
+          c.getContext("2d").drawImage(bmp,(bmp.width-m)/2,(bmp.height-m)/2,m,m,0,0,256,256);
+          photo=c.toDataURL("image/jpeg",.82); $a("#pfPrev").innerHTML=`<img src="${photo}" alt="">`; $a("#pfDrop").hidden=false; $a("#pfPick").textContent="Bild ändern";
+        }catch(err){ msg("Das Bild konnte nicht gelesen werden. Nimm ein JPG oder PNG.",true); }
+      };
+      $a("#pfSave").onclick=async()=>{
+        const name=$a("#pfIn").value.trim().slice(0,30), bio=$a("#pfBio").value.trim().slice(0,140); if(!name) return msg("Gib einen Namen ein.",true);
+        $a("#pfSave").disabled=true;
+        try{
+          await db.ref(`pub/${user.uid}`).set({name,bio:bio||null,photo:photo||null,at:Date.now()});
+          pubSet({name,bio:bio||null,photo:photo||null});
+          if(name!==profile.name){
+            await db.ref(`users/${user.uid}/profile/name`).set(name); profile.name=name;
+            const ptr=(await db.ref(`users/${user.uid}/spaces`).once("value")).val()||{};
+            for(const s of Object.values(ptr)) await db.ref(`spaces/${s}/profiles/${user.uid}/name`).set(name).catch(()=>{});
+          }
+          updateMenu(); hide();
+        }catch(err){ $a("#pfSave").disabled=false; msg("Speichern hat nicht geklappt. Prüf die Regeln in Firebase.",true); }
+      };
+    }
+    function settingsView(){
+      show("Einstellungen","",`<p class="auth-sec">Konto</p>
+        <p class="auth-note">Angemeldet als <b>${esc(user.email)}</b></p>
+        <button class="auth-btn alt" type="button" id="stPw">Passwort ändern</button>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <p class="auth-sec">Diese Seite</p>
+        <p class="auth-note">${sid?`Du bist in einer ${esc(PAGE.noun)}. Wer sie sieht, steht unter „Personen bei ${esc(PAGE.label)}“.`:`Für ${esc(PAGE.label)} gibt es noch keine Liste.`}</p>
+        <button class="auth-btn alt" type="button" id="stOut">Abmelden</button>
+        <button class="auth-link" type="button" id="stClose">Schließen</button>`,true);
+      $a("#stClose").onclick=hide;
+      $a("#stOut").onclick=()=>auth.signOut();
+      $a("#stPw").onclick=async()=>{
+        try{ await auth.sendPasswordResetEmail(user.email); msg(`Wir haben dir eine Mail an ${user.email} geschickt. Darüber legst du ein neues Passwort fest.`); }
+        catch(err){ msg(errText(err),true); }
+      };
+    }
+
+    /* ---------- Personen und Einladungen für diese Seite ---------- */
+    let rmConfirm=null;
+    async function peopleView(){
+      if(!sid) return;
+      let profiles={}, access={}, meta={}, invites={};
+      try{
+        [profiles,access,meta,invites]=(await Promise.all(["profiles","access","meta","invites"].map(k=>db.ref(`spaces/${sid}/${k}`).once("value")))).map(s=>s.val()||{});
+      }catch(err){ return; }
+      const coOwn=id=>meta.owner===id || (meta.owners&&meta.owners[id]);
+      const owner=!!coOwn(user.uid), ids=Object.keys(access);
+      const list=ids.map(id=>({id,name:(profiles[id]&&profiles[id].name)||"Ohne Namen",mail:profiles[id]&&profiles[id].email||"",own:!!coOwn(id)}))
+        .sort((a,b)=>(b.own-a.own)||(a.id===user.uid?-1:b.id===user.uid?1:0));
+      const nInv=Object.keys(invites).length;
+      show(`Personen bei ${PAGE.label}`,
+        PAGE.type==="budget"&&ids.length<=1?"Im Moment siehst nur du dein Budget.":`${ids.length} ${ids.length===1?"Person sieht":"Personen sehen"} diese ${PAGE.noun}.`,
+        `<ul class="auth-people">${list.map(p=>`<li>${avatar(p.id,p.name,30)}
+            <span class="nm"><b>${esc(p.name)}${p.id===user.uid?" (du)":""}</b><small>${p.own?(type==="recipes"&&ids.length>1?"Besitzer":"Hat die Liste angelegt"):esc(p.mail)}</small></span>
+            ${owner&&p.id!==user.uid?`<button type="button" class="rm${rmConfirm===p.id?" sure":""}" data-rm="${esc(p.id)}">${rmConfirm===p.id?"Entfernen?":"Entfernen"}</button>`:""}</li>`).join("")}</ul>
+        ${(()=>{ const fl=Object.entries(friends).filter(([id])=>!access[id]); return fl.length?`<p class="auth-sec">Freunde einladen</p>
+          <ul class="auth-people">${fl.map(([id,f])=>`<li>${avatar(id,f.name,30)}<span class="nm"><b>${esc(f.name||"Freund")}</b><small>bekommt die Einladung unter „Freunde“</small></span>
+          <button type="button" class="rm yes" data-fr-inv="${esc(id)}">Einladen</button></li>`).join("")}</ul>`:""; })()}
+        <p class="auth-sec">Per Link einladen</p>
+        <p class="auth-note">Der Link gilt nur für ${esc(PAGE.label)} und nur für eine Person. Wer ihn öffnet, tritt mit eigenem Konto bei. Deine anderen Seiten sieht die Person nicht.</p>
+        <button class="auth-btn" type="button" id="invNew">Einladungslink erstellen</button>
+        <div class="auth-copy" id="invBox" hidden><input type="text" id="invLink" readonly aria-label="Einladungslink"><button class="auth-btn" type="button" id="invCopy">Kopieren</button></div>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        ${nInv?`<button class="auth-link" type="button" id="invRevoke">${nInv} offene${nInv===1?"r Link":" Links"} · alle zurückziehen</button>`:""}
+        ${(type==="recipes"?ids.length>1:!owner)?`<button class="auth-link danger" type="button" id="leave">Diese ${esc(PAGE.noun)} verlassen</button>`:""}
+        <button class="auth-btn alt" type="button" id="ppClose">Fertig</button>`,true);
+      $a("#ppClose").onclick=()=>{ rmConfirm=null; hide(); };
+      $a("#invNew").onclick=async()=>{
+        const code=rand(20);
+        try{
+          await db.ref(`spaces/${sid}/invites/${code}`).set({by:user.uid,at:Date.now()});
+          const base=location.href.split("#")[0].replace(/[^/]*$/,"");
+          $a("#invLink").value=`${base}${PAGE.file}#join-${sid}-${code}`; $a("#invBox").hidden=false; msg("");
+        }catch(err){ msg("Der Link konnte nicht erstellt werden.",true); }
+      };
+      $a("#invCopy").onclick=async()=>{
+        try{ await navigator.clipboard.writeText($a("#invLink").value); msg("Kopiert. Jetzt per WhatsApp oder Mail verschicken."); }
+        catch(e){ $a("#invLink").select(); msg("Markiert. Jetzt kopieren und verschicken."); }
+      };
+      screen.querySelectorAll("[data-fr-inv]").forEach(b=>b.onclick=async()=>{
+        b.disabled=true; b.textContent="…";
+        try{ await inviteFriend(b.dataset.frInv); b.textContent="Eingeladen ✓"; b.classList.remove("yes"); b.classList.add("done"); }
+        catch(err){ b.disabled=false; b.textContent="Einladen"; msg("Die Einladung hat nicht geklappt. Prüf die Regeln in Firebase.",true); }
+      });
+      const rv=$a("#invRevoke"); if(rv) rv.onclick=async()=>{ await db.ref(`spaces/${sid}/invites`).remove().catch(()=>{}); peopleView(); };
+      screen.querySelectorAll("[data-rm]").forEach(b=>b.onclick=async()=>{
+        const id=b.dataset.rm;
+        if(rmConfirm!==id){ rmConfirm=id; peopleView(); return; }
+        rmConfirm=null;
+        await db.ref(`spaces/${sid}/access/${id}`).remove().catch(()=>{});
+        await db.ref(`spaces/${sid}/profiles/${id}`).remove().catch(()=>{});
+        peopleView();
+      });
+      const lv=$a("#leave"); if(lv) lv.onclick=async()=>{
+        if(lv.dataset.sure!=="1"){ lv.dataset.sure="1"; lv.textContent=type==="recipes"?"Wirklich austreten? Du behältst alle Rezepte als eigene Sammlung, neue teilt ihr nicht mehr.":"Wirklich verlassen? Du kommst nur mit einer neuen Einladung zurück."; return; }
+        if(type==="recipes"){
+          // alle Rezepte in eine eigene, neue Sammlung mitnehmen
+          lv.textContent="Rezepte werden mitgenommen …"; lv.disabled=true;
+          const nid=rand(20);
+          try{
+            await db.ref(`spaces/${nid}/access/${user.uid}`).set("owner");
+            await db.ref(`spaces/${nid}/meta`).set({type,owner:user.uid,createdAt:Date.now()});
+            await copyRecipes(sid,nid);
+            await db.ref(`users/${user.uid}/spaces/${type}`).set(nid);
+            const rd=(await db.ref(`spaces/${sid}/readers`).once("value")).val()||{};
+            for(const [k,v] of Object.entries(rd)) if(v&&v.by===user.uid) await db.ref(`spaces/${sid}/readers/${k}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/share/${user.uid}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/meta/owners/${user.uid}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/profiles/${user.uid}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/access/${user.uid}`).remove().catch(()=>{});
+          }catch(err){ lv.disabled=false; lv.textContent="Austreten hat nicht geklappt. Versuch es noch einmal."; return; }
+          location.reload(); return;
+        }
+        await db.ref(`spaces/${sid}/profiles/${user.uid}`).remove().catch(()=>{});
+        await db.ref(`spaces/${sid}/access/${user.uid}`).remove().catch(()=>{});
+        await db.ref(`users/${user.uid}/spaces/${type}`).remove().catch(()=>{});
+        location.reload();
+      };
+    }
+
+
+    /* ---------- Freunde ---------- */
+    let friends={}, requestsIn={}, inbox={}, friendCode=null, friendsOpen=false, frConfirm=null;
+    const frBadge=()=>Object.keys(requestsIn).length+Object.keys(inbox).length;
+    let chatUnread=0;
+    function updateFriendBadge(){
+      const n=frBadge(), b=document.getElementById("pfFriendBadge"), d=document.getElementById("pfDot"), c=document.getElementById("pfChatBadge");
+      if(b){ b.textContent=n; b.hidden=!n; } if(c){ c.textContent=chatUnread; c.hidden=!chatUnread; } if(d) d.hidden=!(n||chatUnread);
+      const cb=document.getElementById("oursChatN"); if(cb){ cb.textContent=chatUnread>99?"99+":chatUnread; cb.hidden=!chatUnread; }
+    }
+    function watchChats(){
+      db.ref(`chatIndex/${user.uid}`).on("value",s=>{ const v=s.val()||{}; chatUnread=Object.values(v).reduce((a,x)=>a+(x&&+x.unread>0?+x.unread:0),0);
+        updateFriendBadge(); document.dispatchEvent(new CustomEvent("ours-chat",{detail:{unread:chatUnread,index:v}})); },()=>{});
+    }
+    async function ensureFriendCode(){
+      friendCode=(await db.ref(`users/${user.uid}/friendCode`).once("value")).val();
+      if(friendCode) return;
+      for(let i=0;i<5 && !friendCode;i++){
+        const c=rand(8).toUpperCase().replace(/[^A-Z0-9]/g,"X");
+        try{ await db.ref(`friendCodes/${c}`).set(user.uid); await db.ref(`users/${user.uid}/friendCode`).set(c); friendCode=c; }catch(e){}
+      }
+    }
+    function watchFriends(){
+      db.ref(`friends/${user.uid}`).on("value",s=>{ friends=s.val()||{}; if(friendsOpen) friendsView(); },()=>{});
+      db.ref(`requests/${user.uid}`).on("value",s=>{ requestsIn=s.val()||{}; updateFriendBadge(); if(friendsOpen) friendsView(); },()=>{});
+      db.ref(`inbox/${user.uid}`).on("value",s=>{ inbox=s.val()||{}; updateFriendBadge(); if(friendsOpen) friendsView(); },()=>{});
+    }
+    const myName=()=>profile.name||user.email.split("@")[0];
+    async function sendRequest(code){
+      code=String(code||"").trim().toUpperCase().replace(/^.*#FRIEND-/,"").replace(/[^A-Z0-9]/g,"");
+      if(code.length<6) return {err:"Gib einen Freundescode ein. Er hat 8 Zeichen."};
+      const uid=(await db.ref(`friendCodes/${code}`).once("value")).val();
+      if(!uid) return {err:"Zu diesem Code gibt es niemanden. Prüf die Schreibweise."};
+      if(uid===user.uid) return {err:"Das ist dein eigener Code."};
+      if(friends[uid]) return {ok:`${friends[uid].name||"Diese Person"} ist schon dein Freund.`};
+      if(requestsIn[uid]){ await acceptRequest(uid); return {ok:`Ihr seid jetzt befreundet.`}; }
+      await db.ref(`requests/${uid}/${user.uid}`).set({name:myName(),at:Date.now()});
+      return {ok:"Freundschaftsanfrage gesendet. Sobald sie angenommen ist, erscheint die Person hier."};
+    }
+    async function acceptRequest(from){
+      const req=requestsIn[from]||{}, now=Date.now();
+      await db.ref(`friends/${user.uid}/${from}`).set({name:req.name||"Freund",since:now});
+      await db.ref(`friends/${from}/${user.uid}`).set({name:myName(),since:now});
+      await db.ref(`requests/${user.uid}/${from}`).remove();
+    }
+    function friendsView(msgText,isErr){
+      friendsOpen=true;
+      const base=location.href.split("#")[0].replace(/[^/]*$/,"");
+      const link=friendCode?`${base}index.html#friend-${friendCode}`:"";
+      const reqs=Object.entries(requestsIn), inv=Object.entries(inbox), fl=Object.entries(friends).sort((a,b)=>(a[1].name||"").localeCompare(b[1].name||""));
+      const pageOf=t=>PAGES.find(p=>p.type===(t==="swipe"?"recipes":t))||PAGES[0];
+      show("Freunde",fl.length?`${fl.length} ${fl.length===1?"Freund":"Freunde"}`:"Füg Freunde hinzu, um sie schnell zu deinen Listen einzuladen.",`
+        ${inv.length?`<p class="auth-sec">Einladungen</p><ul class="auth-people">${inv.map(([id,x])=>`<li>${avatar(x.from,x.fromName,30)}
+          <span class="nm"><b>${esc(x.fromName||"Jemand")}</b><small>${x.type==="swipe"?"will mit dir Rezepte swipen":`lädt dich zu ${esc(pageOf(x.type).label)} ein`}</small></span>
+          <button type="button" class="rm" data-inv-no="${esc(id)}">Nein</button><button type="button" class="rm yes" data-inv-yes="${esc(id)}">Annehmen</button></li>`).join("")}</ul>`:""}
+        ${reqs.length?`<p class="auth-sec">Anfragen</p><ul class="auth-people">${reqs.map(([id,x])=>`<li>${avatar(id,x.name,30)}
+          <span class="nm"><b>${esc(x.name||"Jemand")}</b><small>möchte mit dir befreundet sein</small></span>
+          <button type="button" class="rm" data-req-no="${esc(id)}">Ablehnen</button><button type="button" class="rm yes" data-req-yes="${esc(id)}">Annehmen</button></li>`).join("")}</ul>`:""}
+        <p class="auth-sec">Deine Freunde</p>
+        ${fl.length?`<ul class="auth-people">${fl.map(([id,f])=>`<li>${avatar(id,f.name,30)}<span class="nm"><b>${esc(f.name||"Freund")}</b><small>befreundet seit ${new Date(f.since||Date.now()).toLocaleDateString("de-DE")}</small></span>
+          <button type="button" class="rm${frConfirm===id?" sure":""}" data-fr-rm="${esc(id)}">${frConfirm===id?"Entfernen?":"Entfernen"}</button></li>`).join("")}</ul>`
+          :`<p class="auth-note">Noch keine Freunde. Schick deinen Code oder Link, oder gib unten einen Code ein.</p>`}
+        <p class="auth-sec">Dein Freundescode</p>
+        <div class="fr-code">${esc(friendCode||"…")}</div>
+        <div class="auth-copy"><input type="text" id="frLink" readonly value="${esc(link)}" aria-label="Dein Freundes-Link"><button class="auth-btn" type="button" id="frCopy">Link kopieren</button></div>
+        <p class="auth-sec">Freund hinzufügen</p>
+        <form class="auth-copy" id="frAdd" autocomplete="off"><input type="text" id="frIn" maxlength="40" placeholder="Code, z.B. K7M2QX9A" aria-label="Freundescode"><button class="auth-btn" type="submit">Senden</button></form>
+        <p class="auth-msg${isErr?" err":""}" id="authMsg"${msgText?"":" hidden"}>${esc(msgText||"")}</p>
+        <button class="auth-btn alt" type="button" id="frClose">Fertig</button>`,true);
+      $a("#frClose").onclick=()=>{ friendsOpen=false; frConfirm=null; hide(); };
+      $a("#frCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText(link); msg("Kopiert. Schick den Link an deine Freunde."); }catch(e){ $a("#frLink").select(); msg("Markiert. Jetzt kopieren und verschicken."); } };
+      $a("#frAdd").onsubmit=async e=>{ e.preventDefault(); try{ const r=await sendRequest($a("#frIn").value); friendsView(r.err||r.ok,!!r.err); }catch(err){ friendsView("Das hat nicht geklappt. Prüf die Regeln in Firebase.",true); } };
+      screen.querySelectorAll("[data-req-yes]").forEach(b=>b.onclick=async()=>{ try{ await acceptRequest(b.dataset.reqYes); }catch(e){ friendsView("Annehmen hat nicht geklappt.",true); } });
+      screen.querySelectorAll("[data-req-no]").forEach(b=>b.onclick=()=>db.ref(`requests/${user.uid}/${b.dataset.reqNo}`).remove().catch(()=>{}));
+      screen.querySelectorAll("[data-inv-no]").forEach(b=>b.onclick=()=>db.ref(`inbox/${user.uid}/${b.dataset.invNo}`).remove().catch(()=>{}));
+      screen.querySelectorAll("[data-inv-yes]").forEach(b=>b.onclick=async()=>{
+        const x=inbox[b.dataset.invYes]; if(!x) return; const p=pageOf(x.type);
+        if(x.type==="swipe"){ friendsOpen=false; hide(); const t=`${p.file}#swipe-${x.sid}`; if(p.type===type){ history.replaceState(null,"",t); location.reload(); } else location.href=t; return; }
+        await db.ref(`inbox/${user.uid}/${b.dataset.invYes}`).remove().catch(()=>{});
+        const target=`${p.file}#join-${x.sid}-${x.code}`;
+        if(p.type===type){ history.replaceState(null,"",target); location.reload(); } else location.href=target;
+      });
+      screen.querySelectorAll("[data-fr-rm]").forEach(b=>b.onclick=async()=>{
+        const id=b.dataset.frRm; if(frConfirm!==id){ frConfirm=id; friendsView(); return; }
+        frConfirm=null;
+        await db.ref(`friends/${user.uid}/${id}`).remove().catch(()=>{});
+        await db.ref(`friends/${id}/${user.uid}`).remove().catch(()=>{});
+      });
+    }
+    // Freund direkt zu dieser Liste einladen (landet bei ihm unter "Freunde")
+    async function inviteFriend(fid){
+      const code=rand(20);
+      await db.ref(`spaces/${sid}/invites/${code}`).set({by:user.uid,at:Date.now(),for:fid});
+      await db.ref(`inbox/${fid}`).push().set({type,sid,code,from:user.uid,fromName:myName(),at:Date.now()});
+    }
+
+    /* ---------- Seite ohne Bereich: neu anlegen ---------- */
+    function setupView(problem){
+      hide();
+      const wrap=document.querySelector(".wrap"), head=document.querySelector("header");
+      if(!setupEl){ setupEl=document.createElement("div"); setupEl.className="auth-setup"; wrap.style.position="relative"; wrap.appendChild(setupEl); }
+      setupEl.style.top=(head.offsetTop+head.offsetHeight)+"px";
+      const cnt=document.getElementById("count"); if(cnt) cnt.textContent="";
+      let oldCode=null; try{ oldCode=localStorage.getItem("dateideen.code"); }catch(e){}
+      setupEl.innerHTML=`<div class="box">
+        <h3>${esc(PAGE.empty)}</h3>
+        ${problem?`<p class="auth-msg err">${esc(problem)}</p>`:""}
+        <p class="auth-note">${esc(PAGE.hint)}</p>
+        ${oldCode?`<label class="auth-check"><input type="checkbox" id="setMig" checked> Bisherige ${esc(PAGE.label)} von diesem Gerät übernehmen</label>`:""}
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <button class="auth-btn" type="button" id="setNew">${PAGE.type==="chores"?"Neuen Haushalt anlegen":PAGE.type==="budget"?"Budget anlegen":`${esc(PAGE.noun)} anlegen`}</button>
+        <p class="auth-note">Hat dich jemand eingeladen? Dann öffne einfach den Einladungslink.</p>
+      </div>`;
+      setupEl.hidden=false;
+      setupEl.querySelector("#setNew").onclick=async()=>{
+        const btn=setupEl.querySelector("#setNew"); btn.disabled=true; msg("Wird angelegt …",false,setupEl);
+        const id=rand(20);
+        try{
+          await db.ref(`spaces/${id}/access/${user.uid}`).set("owner");
+          await db.ref(`spaces/${id}/meta`).set({type,owner:user.uid,createdAt:Date.now()});
+          const mig=setupEl.querySelector("#setMig");
+          if(mig && mig.checked && oldCode){ msg("Bisherige Daten werden übernommen …",false,setupEl); await migrate(oldCode,id); }
+          await db.ref(`users/${user.uid}/spaces/${type}`).set(id);
+          ready(id);
+        }catch(err){ msg("Das Anlegen hat nicht geklappt. Prüf die Internetverbindung und die Regeln in Firebase.",true,setupEl); btn.disabled=false; }
+      };
+    }
+    // alte Daten vom geheimen Link übernehmen, nur was zu dieser Seite gehört
+    async function migrate(code,id){
+      if(type==="budget"){
+        const b=(await db.ref(`lists/${code}/budget`).once("value")).val();
+        if(b) await db.ref(`spaces/${id}`).update(b);
+        return;
+      }
+      const out={};
+      for(const k of PAGE.keys){ const v=(await db.ref(`lists/${code}/${k}`).once("value")).val(); if(v!=null) out[k]=v; }
+      const ids=new Set();
+      if(out.ideas) Object.values(out.ideas).forEach(i=>(Array.isArray(i.photos)?i.photos:[]).forEach(p=>ids.add(p)));
+      if(out.recipes) Object.values(out.recipes).forEach(r=>{ if(r.cover) ids.add(r.cover); });
+      if(ids.size){ out.photos={}; for(const p of ids){ const v=(await db.ref(`lists/${code}/photos/${p}`).once("value")).val(); if(v) out.photos[p]=v; } }
+      if(Object.keys(out).length) await db.ref(`spaces/${id}`).update(out);
+    }
+
+    /* ---------- Einladung annehmen ---------- */
+    async function join(j,current){
+      if(current && current!==j.sid && !confirm_ && type==="recipes"){
+        let n=0; try{ n=Object.keys((await db.ref(`spaces/${current}/recipes`).once("value")).val()||{}).length; }catch(e){}
+        show("Sammlungen zusammenlegen?","",`<p class="auth-note">Du hast schon eine eigene Rezeptsammlung${n?` mit ${n} ${n===1?"Rezept":"Rezepten"}`:""}. Beim Beitreten werden deine Rezepte in die gemeinsame Sammlung übernommen. Die Sammlung gehört dann euch beiden.</p>
+          <p class="auth-note">Wenn du später austrittst, behältst du alle Rezepte.</p>
+          <button class="auth-btn" type="button" id="jYes">Zusammenlegen</button>
+          <button class="auth-btn alt" type="button" id="jNo">Abbrechen</button>`);
+        $a("#jYes").onclick=()=>{ confirm_=true; $a("#jYes").disabled=true; $a("#jYes").textContent="Wird zusammengelegt …"; join(j,current); };
+        $a("#jNo").onclick=()=>{ clearHash(); hide(); open(current); };
+        return;
+      }
+      if(current && current!==j.sid && !confirm_){
+        show(`Einladung zu ${PAGE.label}`,"",`<p class="auth-note">Du bist schon in einer anderen ${esc(PAGE.noun)}. Möchtest du zur neuen wechseln? Die alte bleibt bestehen, du siehst sie dann aber nicht mehr.</p>
+          <button class="auth-btn" type="button" id="jYes">Zur neuen wechseln</button>
+          <button class="auth-btn alt" type="button" id="jNo">Bei meiner bleiben</button>`);
+        $a("#jYes").onclick=()=>{ confirm_=true; join(j,current); };
+        $a("#jNo").onclick=()=>{ clearHash(); hide(); open(current); };
+        return;
+      }
+      try{
+        await db.ref(`spaces/${j.sid}/access/${user.uid}`).set(j.code);
+        if(type==="recipes"){
+          await db.ref(`spaces/${j.sid}/meta/owners/${user.uid}`).set(true);   // gehört dann allen gemeinsam
+          if(current && current!==j.sid){
+            await copyRecipes(current,j.sid);
+            // alte Sammlung aufräumen, wenn sonst niemand drin war
+            try{ const acc=(await db.ref(`spaces/${current}/access`).once("value")).val()||{};
+              if(Object.keys(acc).length<=1) await db.ref(`spaces/${current}`).remove();
+              else { await db.ref(`spaces/${current}/profiles/${user.uid}`).remove(); await db.ref(`spaces/${current}/access/${user.uid}`).remove(); } }catch(e){}
+          }
+        }
+        await db.ref(`users/${user.uid}/spaces/${type}`).set(j.sid);
+        await db.ref(`spaces/${j.sid}/invites/${j.code}`).remove().catch(()=>{});   // Link gilt nur einmal
+        clearHash(); ready(j.sid);
+      }catch(err){ clearHash(); if(current) open(current); else setupView("Der Einladungslink ist ungültig oder wurde zurückgezogen."); }
+    }
+    let confirm_=false;
+    // Rezepte samt Titelbildern von einer Sammlung in eine andere kopieren (vorhandene bleiben)
+    async function copyRecipes(from,to){
+      const rs=(await db.ref(`spaces/${from}/recipes`).once("value")).val()||{};
+      const have=(await db.ref(`spaces/${to}/recipes`).once("value")).val()||{};
+      const out={};
+      for(const [id,r] of Object.entries(rs)){
+        if(have[id] || !r) continue;
+        if(r.cover && /^[0-9a-f]{32}$/.test(r.cover)){
+          const ph=(await db.ref(`spaces/${from}/photos/${r.cover}`).once("value")).val();
+          if(ph) await db.ref(`spaces/${to}/photos/${r.cover}`).set(ph);
+        }
+        out[id]=r;
+      }
+      if(Object.keys(out).length) await db.ref(`spaces/${to}/recipes`).update(out);
+    }
+
+    async function open(id){
+      try{ await db.ref(`spaces/${id}/meta`).once("value"); ready(id); }
+      catch(err){ await db.ref(`users/${user.uid}/spaces/${type}`).remove().catch(()=>{}); setupView("Du hast keinen Zugriff mehr auf diese Liste. Leg eine neue an oder lass dich wieder einladen."); }
+    }
+    function ready(id){
+      sid=id; hide(); if(setupEl) setupEl.hidden=true; updateMenu();
+      db.ref(`spaces/${id}/profiles/${user.uid}`).update({name:profile.name||user.email.split("@")[0],email:user.email}).catch(()=>{});
+      if(started) return; started=true;
+      cb(db.ref("spaces/"+id),{uid:user.uid,sid:id,email:user.email,name:profile.name});
+    }
+
+    auth.onAuthStateChanged(async u=>{
+      if(!u){ if(user){ location.reload(); return; } loginView(parseJoin()||/^#friend-/.test(location.hash)?"register":"login"); return; }
+      user=u;
+      show(PAGE.label,"",`<p class="auth-note">Lädt …</p>`);
+      try{
+        pubDb=db;
+        profile=(await db.ref(`users/${u.uid}/profile`).once("value")).val()||{};
+        if(!profile.name){
+          let n=""; try{ n=sessionStorage.getItem("auth.newName")||""; sessionStorage.removeItem("auth.newName"); }catch(e){}
+          profile.name=n||u.displayName||u.email.split("@")[0];
+          await db.ref(`users/${u.uid}/profile/name`).set(profile.name);
+        }
+        try{ const pb=(await db.ref(`pub/${u.uid}`).once("value")).val()||{}; pubCache.set(u.uid,pb);
+          if(pb.name!==profile.name) await db.ref(`pub/${u.uid}/name`).set(profile.name); pubCache.get(u.uid).name=profile.name; }catch(e){}
+        window.Auth._profileView=profileView; window.Auth.me=u.uid;
+        installMenu();
+        try{ await ensureFriendCode(); watchFriends(); watchChats(); }catch(e){}
+        const fr=location.hash.match(/^#friend-([A-Za-z0-9]{6,12})$/);
+        if(fr){ clearHash(); setTimeout(async()=>{ let r; try{ r=await sendRequest(fr[1]); }catch(e){ r={err:"Die Anfrage hat nicht geklappt."}; } friendsView(r.err||r.ok,!!r.err); },400); }
+        if(PAGE.noSpace){ hide(); updateMenu(); if(!started){ started=true; cb(null,{uid:u.uid,email:u.email,name:profile.name,db}); } return; }
+        const current=(await db.ref(`users/${u.uid}/spaces/${type}`).once("value")).val();
+        const j=parseJoin();
+        if(j){ await join(j,current); return; }
+        if(current){ await open(current); return; }
+        setupView();
+      }catch(err){
+        show(PAGE.label,"",`<p class="auth-msg err">Die Daten konnten nicht geladen werden. Prüf die Internetverbindung und die Regeln in Firebase.</p>
+          <button class="auth-btn" type="button" onclick="location.reload()">Neu laden</button>
+          <button class="auth-link" type="button" id="authOut">Abmelden</button>`);
+        $a("#authOut").onclick=()=>auth.signOut();
+      }
+    });
+  }};
+})();
+
+</script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=t=>String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const firebaseConfig = {
+  apiKey: "AIzaSyD6JNwGczfmHYTqHp9qI5bnutz-JLphgGI",
+  authDomain: "oursapp-ff4cf.firebaseapp.com",
+  databaseURL: "https://oursapp-ff4cf-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "oursapp-ff4cf",
+  storageBucket: "oursapp-ff4cf.firebasestorage.app",
+  messagingSenderId: "509984933255",
+  appId: "1:509984933255:web:1f2e8b0850c94056f87f22"
+};
+
+/* ---------- Muskelgruppen ---------- */
+const GROUPS=[
+  {id:"brust",     name:"Brust",           emo:"🏋️", col:"#c8574a", sug:["Bankdrücken","Schrägbankdrücken","Kurzhantel-Flys","Butterfly","Dips","Liegestütze"]},
+  {id:"ruecken",   name:"Rücken",          emo:"🧗", col:"#3f7a8c", sug:["Klimmzüge","Latziehen","Rudern am Kabel","Langhantelrudern","Kreuzheben","Hyperextensions"]},
+  {id:"schulter",  name:"Schultern",       emo:"🙆", col:"#8a6bbf", sug:["Schulterdrücken","Seitheben","Frontheben","Face Pulls","Reverse Flys","Arnold Press"]},
+  {id:"bizeps",    name:"Bizeps",          emo:"💪", col:"#d08a2c", sug:["Langhantelcurls","Kurzhantelcurls","Hammercurls","Konzentrationscurls","Kabelcurls"]},
+  {id:"trizeps",   name:"Trizeps",         emo:"🦾", col:"#b8642f", sug:["Trizepsdrücken am Kabel","French Press","Dips","Überkopf-Trizeps","Enges Bankdrücken"]},
+  {id:"bauch",     name:"Bauch",           emo:"🔥", col:"#5d8f5a", sug:["Crunches","Plank","Beinheben","Russian Twists","Ab-Roller","Kabel-Crunches"]},
+  {id:"quads",     name:"Oberschenkel vorne", emo:"🦵", col:"#2f6f9f", sug:["Kniebeugen","Beinpresse","Beinstrecker","Ausfallschritte","Bulgarian Split Squats"]},
+  {id:"hams",      name:"Oberschenkel hinten", emo:"🦵", col:"#2e5b7a", sug:["Beinbeuger liegend","Beinbeuger sitzend","Rumänisches Kreuzheben"]},
+  {id:"po",        name:"Po",              emo:"🍑", col:"#c0607d", sug:["Hip Thrusts","Abduktoren-Maschine","Glute Kickbacks","Sumo-Kniebeugen"]},
+  {id:"waden",     name:"Waden",           emo:"🦶", col:"#6f7d3a", sug:["Wadenheben stehend","Wadenheben sitzend","Wadenheben an der Beinpresse"]},
+  {id:"unterarme", name:"Unterarme",       emo:"✊", col:"#8a7350", sug:["Handgelenk-Curls","Farmer's Walk","Reverse Curls"]},
+  {id:"cardio",    name:"Cardio",          emo:"🏃", col:"#4a7f7a", sug:["Laufband","Fahrrad","Crosstrainer","Rudergerät","Treppensteiger","Seilspringen"]},
+];
+const grpOf=id=>GROUPS.find(g=>g.id===id)||GROUPS[0];
+const DAYS=["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"], DSHORT=["Mo","Di","Mi","Do","Fr","Sa","So"];
+const DAY_SUG=["Push","Pull","Beine","Oberkörper","Unterkörper","Ganzkörper","Brust & Trizeps","Rücken & Bizeps","Schultern & Arme","Cardio"];
+const CHECK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CHEV='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const NEXT='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const PREV='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+/* ---------- Zustand ---------- */
+let root=null, exercises={}, week={}, log={}, view="week", weekOff=0, openDay=null, openGrp=new Set(), exForm=null, delSure=false;
+try{ view=localStorage.getItem("gym.view")==="ex"?"ex":"week"; }catch(e){}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function showErr(e){ $("#status").textContent=/permission/i.test(String(e&&(e.code||e.message)))?"Keine Berechtigung. Prüf die Regeln in Firebase.":"Speichern hat nicht geklappt. Prüf die Internetverbindung."; }
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const monday=off=>{ const d=new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()-((d.getDay()+6)%7)+off*7); return d; };
+const exList=()=>Object.entries(exercises).map(([id,x])=>({id,...x})).filter(x=>x&&x.name);
+const dayEx=i=>{ const d=week[i]||{}; return (Array.isArray(d.ex)?d.ex:[]).map(id=>exercises[id]?{id,...exercises[id]}:null).filter(Boolean); };
+const fmtEx=x=>{ const p=[]; if(x.sets||x.reps) p.push(`${x.sets||"?"} × ${x.reps||"?"}`); if(x.kg) p.push(`${String(x.kg).replace(".",",")} kg`); return p.join(" · ")||grpOf(x.group).name; };
+
+/* ---------- Anzeige ---------- */
+function render(){
+  document.querySelectorAll("[data-view]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.view===view));
+  if(view==="week") renderWeek(); else renderEx();
+}
+function renderWeek(){
+  const mon=monday(weekOff), todayIso=iso(new Date()), dates=DAYS.map((_,i)=>{ const d=new Date(mon); d.setDate(mon.getDate()+i); return d; });
+  const sun=dates[6], label=weekOff===0?"Diese Woche":weekOff===1?"Nächste Woche":weekOff===-1?"Letzte Woche":`KW ${kw(mon)}`;
+  if(openDay==null){ const ti=dates.findIndex(d=>iso(d)===todayIso); openDay=ti>=0?ti:0; }
+  if(!exList().length && !Object.keys(week).length){
+    $("#list").innerHTML=`<div class="empty"><strong>Dein Gymplan</strong><span>So fängst du an:</span>
+      <span>1. Tipp auf <b>„+ Übung“</b> und leg deine Übungen an, sortiert nach Muskelgruppen.</span>
+      <span>2. Tipp hier im <b>Wochenplan</b> auf einen Tag und wähl aus, was du an dem Tag trainierst.</span>
+      <span>3. Im Gym hakst du die Übungen ab.</span></div>`+daysHtml(dates,todayIso);
+    return;
+  }
+  $("#list").innerHTML=`<div class="weeknav"><button class="arr" type="button" data-wk="-1" aria-label="Woche zurück">${PREV}</button>
+      <span style="text-align:center"><b>${label}</b><small>${dates[0].toLocaleDateString("de-DE",{day:"numeric",month:"short"})} – ${sun.toLocaleDateString("de-DE",{day:"numeric",month:"short"})}${weekOff?` · <button class="linkish" type="button" data-wk="0">heute</button>`:""}</small></span>
+      <button class="arr" type="button" data-wk="1" aria-label="Woche vor">${NEXT}</button></div>
+    <div class="wstrip">${dates.map((d,i)=>{ const ex=dayEx(i), done=ex.length&&ex.every(x=>(log[iso(d)]||{})[x.id]);
+      return `<button type="button" class="wd${ex.length?" train":""}${done?" done":""}${iso(d)===todayIso?" today":""}" data-day="${i}" aria-pressed="${openDay===i}">${DSHORT[i]}<b>${d.getDate()}</b><i></i></button>`; }).join("")}</div>`
+    +daysHtml(dates,todayIso);
+}
+function daysHtml(dates,todayIso){
+  return dates.map((d,i)=>{ const w=week[i]||{}, ex=dayEx(i), di=iso(d), lg=log[di]||{}, n=ex.filter(x=>lg[x.id]).length, open=openDay===i;
+    const groups=[...new Set(ex.map(x=>x.group))].map(g=>grpOf(g).name);
+    return `<section class="day${di===todayIso?" today":""}${ex.length?"":" rest"}" id="day-${i}">
+      <button type="button" class="day-head" data-open-day="${i}" aria-expanded="${open}">
+        <span class="dn"><small>${DSHORT[i]}</small><b>${d.getDate()}</b></span>
+        <span class="dt"><b>${esc(w.title||(ex.length?"Training":"Ruhetag"))}</b><small>${ex.length?esc(groups.join(" · ")):"Tippen, um Übungen auszuwählen"}</small></span>
+        ${ex.length?`<span class="prog${n===ex.length?" ok":""}">${n}/${ex.length}</span>`:""}</button>
+      ${open?`<div class="day-body">
+        ${ex.length?`<ul class="exl">${ex.map(x=>`<li${lg[x.id]?' class="done"':""}><button type="button" class="ck${lg[x.id]?" on":""}" data-ck="${di}|${esc(x.id)}" aria-pressed="${!!lg[x.id]}" aria-label="${esc(x.name)} erledigt">${CHECK}</button>
+            <span class="gdot" style="background:${grpOf(x.group).col}"></span><span class="exn"><b>${esc(x.name)}</b><small>${esc(fmtEx(x))}</small></span></li>`).join("")}</ul>`
+          :`<p class="note" style="margin:0;color:var(--muted);font-size:.88rem">Kein Training geplant.</p>`}
+        <div class="day-actions"><button class="btn" type="button" data-edit-day="${i}">${ex.length?"Tag bearbeiten":"Übungen auswählen"}</button>
+          ${ex.length&&n?`<button class="linkish" type="button" data-reset-day="${di}">Haken zurücksetzen</button>`:""}</div>
+      </div>`:""}
+    </section>`; }).join("");
+}
+function kw(d){ const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())); const n=t.getUTCDay()||7; t.setUTCDate(t.getUTCDate()+4-n); const y=new Date(Date.UTC(t.getUTCFullYear(),0,1)); return Math.ceil(((t-y)/864e5+1)/7); }
+function renderEx(){
+  const list=exList();
+  if(!list.length){ $("#list").innerHTML=`<div class="empty"><strong>Noch keine Übungen</strong><span>Tipp auf „+ Übung“. Du wählst eine Muskelgruppe und bekommst passende Vorschläge.</span></div>`+GROUPS.map(g=>grpHtml(g,[])).join(""); return; }
+  $("#list").innerHTML=GROUPS.map(g=>grpHtml(g,list.filter(x=>x.group===g.id).sort((a,b)=>a.name.localeCompare(b.name,"de")))).join("");
+}
+function grpHtml(g,items){
+  const open=openGrp.has(g.id);
+  return `<section class="grp${open?" open":""}"><button type="button" class="grp-head" data-grp="${g.id}" aria-expanded="${open}">
+      <span class="gi" style="background:${g.col}22">${g.emo}</span><b>${esc(g.name)}</b><span class="n">${items.length||""}</span>${CHEV}</button>
+    ${open?`<div class="grp-body">${items.length?`<div class="exl">${items.map(x=>`<button type="button" class="exrow" data-ex="${esc(x.id)}"><span class="exn"><b>${esc(x.name)}</b><small>${esc(fmtEx(x))}</small></span>${NEXT}</button>`).join("")}</div>`:""}
+      <button type="button" class="add-in" data-add-in="${g.id}">+ Übung für ${esc(g.name)}</button></div>`:""}
+  </section>`;
+}
+
+/* ---------- Übung anlegen/ändern ---------- */
+function openEx(id,group){
+  const x=id?exercises[id]:null; delSure=false;
+  exForm={id:id||null,group:(x&&x.group)||group||GROUPS[0].id};
+  $("#exTitle").textContent=x?"Übung ändern":"Neue Übung";
+  $("#exName").value=x?x.name:""; $("#exSets").value=x&&x.sets||""; $("#exReps").value=x&&x.reps||""; $("#exKg").value=x&&x.kg?String(x.kg).replace(".",","):"";
+  $("#exDel").hidden=!x; $("#exDel").textContent="Löschen"; $("#exDel").classList.remove("sure"); $("#exErr").hidden=true;
+  renderExChips(); $("#exModal").hidden=false; if(!x) setTimeout(()=>$("#exName").focus(),30);
+}
+function renderExChips(){
+  $("#exGroups").innerHTML=GROUPS.map(g=>`<button type="button" class="chip" data-eg="${g.id}" aria-pressed="${exForm.group===g.id}">${g.emo} ${esc(g.name)}</button>`).join("");
+  const have=new Set(exList().map(x=>x.name.toLowerCase()));
+  $("#exSug").innerHTML=exForm.id?"":grpOf(exForm.group).sug.filter(s=>!have.has(s.toLowerCase())).map(s=>`<button type="button" class="chip sug" data-sug="${esc(s)}">${esc(s)}</button>`).join("");
+}
+const closeEx=()=>{ $("#exModal").hidden=true; exForm=null; };
+$("#addEx").addEventListener("click",()=>openEx(null,openGrp.size===1?[...openGrp][0]:null));
+$("#exCancel").addEventListener("click",closeEx);
+$("#exModal").addEventListener("click",e=>{
+  if(e.target.id==="exModal") return closeEx();
+  const g=e.target.closest("[data-eg]"); if(g){ exForm.group=g.dataset.eg; renderExChips(); return; }
+  const s=e.target.closest("[data-sug]"); if(s){ $("#exName").value=s.dataset.sug; if(!$("#exSets").value) $("#exSets").value=exForm.group==="cardio"?"":"3"; if(!$("#exReps").value) $("#exReps").value=exForm.group==="cardio"?"20 min":"10"; }
+});
+$("#exForm").addEventListener("submit",e=>{
+  e.preventDefault(); if(!root||!exForm) return;
+  const name=$("#exName").value.trim().slice(0,60); if(!name){ $("#exErr").textContent="Gib der Übung einen Namen."; $("#exErr").hidden=false; return; }
+  const sets=parseInt($("#exSets").value,10), kg=parseFloat(String($("#exKg").value).replace(",","."));
+  const data={name,group:exForm.group,sets:sets>0&&sets<100?sets:null,reps:$("#exReps").value.trim().slice(0,7)||null,kg:kg>0&&kg<1000?Math.round(kg*10)/10:null,at:(exForm.id&&exercises[exForm.id].at)||Date.now()};
+  const id=exForm.id||uid(); exercises[id]=data; root.child("exercises/"+id).set(data).catch(showErr);
+  openGrp.add(data.group); closeEx(); render();
+});
+$("#exDel").addEventListener("click",()=>{
+  if(!delSure){ delSure=true; $("#exDel").textContent="Wirklich löschen?"; $("#exDel").classList.add("sure"); return; }
+  const id=exForm.id; delete exercises[id]; root.child("exercises/"+id).remove().catch(showErr);
+  // aus dem Wochenplan nehmen
+  Object.entries(week).forEach(([i,d])=>{ if(d&&Array.isArray(d.ex)&&d.ex.includes(id)) root.child(`week/${i}/ex`).set(d.ex.filter(x=>x!==id)).catch(()=>{}); });
+  closeEx(); render();
+});
+
+/* ---------- Tag bearbeiten ---------- */
+let dayEdit=null;
+function openDayEdit(i){
+  dayEdit={i,sel:new Set((week[i]&&Array.isArray(week[i].ex))?week[i].ex:[])};
+  $("#dayTitle").textContent=DAYS[i]; $("#dayName").value=(week[i]&&week[i].title)||"";
+  $("#daySug").innerHTML=DAY_SUG.map(s=>`<button type="button" class="chip sug" data-ds="${esc(s)}">${esc(s)}</button>`).join("");
+  const list=exList();
+  $("#dayPicks").innerHTML=list.length?GROUPS.map(g=>{ const it=list.filter(x=>x.group===g.id).sort((a,b)=>a.name.localeCompare(b.name,"de")); if(!it.length) return "";
+      return `<div class="pg"><b><span class="gdot" style="background:${g.col}"></span>${esc(g.name)}</b>${it.map(x=>`<label class="pick"><input type="checkbox" data-pick="${esc(x.id)}"${dayEdit.sel.has(x.id)?" checked":""}><span class="exn"><b>${esc(x.name)}</b><small>${esc(fmtEx(x))}</small></span></label>`).join("")}</div>`; }).join("")
+    :`<p class="err" style="color:var(--muted)">Du hast noch keine Übungen. Leg sie zuerst unter „Übungen“ an.</p>`;
+  $("#dayModal").hidden=false;
+}
+const closeDay=()=>{ $("#dayModal").hidden=true; dayEdit=null; };
+$("#dayCancel").addEventListener("click",closeDay);
+$("#dayModal").addEventListener("click",e=>{ if(e.target.id==="dayModal") return closeDay(); const s=e.target.closest("[data-ds]"); if(s) $("#dayName").value=s.dataset.ds; });
+$("#dayModal").addEventListener("change",e=>{ const c=e.target.closest("[data-pick]"); if(!c||!dayEdit) return; if(c.checked) dayEdit.sel.add(c.dataset.pick); else dayEdit.sel.delete(c.dataset.pick); });
+$("#dayForm").addEventListener("submit",e=>{
+  e.preventDefault(); if(!dayEdit||!root) return;
+  const order=exList().filter(x=>dayEdit.sel.has(x.id)).sort((a,b)=>GROUPS.findIndex(g=>g.id===a.group)-GROUPS.findIndex(g=>g.id===b.group)||a.name.localeCompare(b.name,"de")).map(x=>x.id);
+  const data=order.length?{title:$("#dayName").value.trim().slice(0,30)||null,ex:order}:null;
+  week[dayEdit.i]=data; root.child("week/"+dayEdit.i).set(data).catch(showErr); openDay=dayEdit.i; closeDay(); render();
+});
+$("#dayRest").addEventListener("click",()=>{ if(!dayEdit||!root) return; week[dayEdit.i]=null; root.child("week/"+dayEdit.i).remove().catch(showErr); closeDay(); render(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if(!$("#exModal").hidden) closeEx(); if(!$("#dayModal").hidden) closeDay(); } });
+
+/* ---------- Klicks ---------- */
+document.addEventListener("click",e=>{
+  const v=e.target.closest("[data-view]"); if(v){ view=v.dataset.view; try{ localStorage.setItem("gym.view",view); }catch(err){} render(); return; }
+  const wk=e.target.closest("[data-wk]"); if(wk){ weekOff=wk.dataset.wk==="0"?0:weekOff+(+wk.dataset.wk); openDay=null; render(); return; }
+  const d=e.target.closest("[data-day]"); if(d){ openDay=+d.dataset.day; render(); const el=$("#day-"+openDay); if(el) el.scrollIntoView({behavior:"smooth",block:"nearest"}); return; }
+  const od=e.target.closest("[data-open-day]"); if(od){ const i=+od.dataset.openDay; openDay=openDay===i?-1:i; render(); return; }
+  const ed=e.target.closest("[data-edit-day]"); if(ed) return openDayEdit(+ed.dataset.editDay);
+  const ck=e.target.closest("[data-ck]"); if(ck){ const [di,id]=ck.dataset.ck.split("|"); log[di]=log[di]||{}; const on=!log[di][id];
+    if(on) log[di][id]=true; else delete log[di][id]; root.child(`log/${di}/${id}`).set(on||null).catch(showErr); render(); return; }
+  const rd=e.target.closest("[data-reset-day]"); if(rd){ const di=rd.dataset.resetDay; log[di]={}; root.child("log/"+di).remove().catch(showErr); render(); return; }
+  const g=e.target.closest("[data-grp]"); if(g){ const id=g.dataset.grp; if(openGrp.has(id)) openGrp.delete(id); else openGrp.add(id); render(); return; }
+  const ai=e.target.closest("[data-add-in]"); if(ai) return openEx(null,ai.dataset.addIn);
+  const x=e.target.closest("[data-ex]"); if(x) return openEx(x.dataset.ex);
+});
+// Beim Runterscrollen schiebt sich der helle Bereich über den Kopf
+(()=>{ const wrap=$(".wrap"), head=$("#head"), sc=$("#list");
+  const measure=()=>{ if(!wrap.classList.contains("compact")) wrap.style.setProperty("--headH",head.offsetHeight+"px"); };
+  sc.addEventListener("scroll",()=>{ measure(); if(sc.scrollTop>24) wrap.classList.add("compact"); else if(sc.scrollTop<=2) wrap.classList.remove("compact"); },{passive:true});
+  addEventListener("resize",measure); measure(); })();
+
+/* ---------- Start ---------- */
+Auth.start(firebaseConfig,"gym",r=>{
+  root=r; history.replaceState(null,"",location.pathname); render();
+  if(!root){ $("#status").textContent="Die Datenbank konnte nicht geladen werden. Prüf die Internetverbindung und lade die Seite neu."; return; }
+  root.child("exercises").on("value",s=>{ exercises=s.val()||{}; render(); },showErr);
+  root.child("week").on("value",s=>{ const v=s.val()||{}; week=Array.isArray(v)?Object.fromEntries(v.map((x,i)=>[i,x]).filter(([,x])=>x)):v; render(); });
+  root.child("log").on("value",s=>{ log=s.val()||{}; render(); });
+});
+</script>
+</body>
+</html>
