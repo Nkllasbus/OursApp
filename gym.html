@@ -113,6 +113,7 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
 .prow.past .pdate{opacity:.55}
 .pblock{flex:1;min-width:0;background:color-mix(in srgb,var(--tc) 9%,var(--surface));border:1px solid color-mix(in srgb,var(--tc) 28%,var(--line));border-left:5px solid var(--tc);border-radius:14px;overflow:hidden}
 .prow.today .pblock{box-shadow:0 0 0 2px color-mix(in srgb,var(--tc) 35%,transparent)}
+.pblock.is-done .pb-groups span,.pblock.is-miss .pb-groups span{--gc:var(--tc)}
 .pb-head{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:10px 12px 4px;text-align:left;color:var(--ink)}
 .pb-emo{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--tc) 18%,#fff);font-size:1.1rem}
 .pb-txt{flex:1;min-width:0;display:flex;flex-direction:column}
@@ -177,8 +178,15 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
 .mark{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:.95rem;color:#fff}
 .mark.ok{background:var(--ok)}
 .mark.miss{background:#c0453a}
-.pblock.is-miss{opacity:.78}
-.pblock.is-done .pb-txt b::after{content:"";}
+.pblock.is-done{--tc:#3f8a4f;background:#e2f2e4;border-color:#9fd0a8;border-left-color:#3f8a4f}
+.pblock.is-done .pb-emo{background:#c8e8cd}
+.pblock.is-done .pb-txt b{color:#1f5a2c}
+.pblock.is-done .pb-groups span{background:#cfeAd3;color:#2c6a39}
+.pblock.is-miss{--tc:#c0453a;background:#f9e0dd;border-color:#eba59d;border-left-color:#c0453a}
+.pblock.is-miss .pb-emo{background:#f2c4be}
+.pblock.is-miss .pb-txt b{color:#8a2318}
+.pblock.is-miss .pb-txt small{color:#9a4a42}
+.pblock.is-miss .pb-groups span{background:#f3cdc8;color:#8a2318}
 .train.edit{border-color:#d0a03c}
 .edit-dur label{display:flex;align-items:center;gap:8px;font-size:.9rem}
 .edit-dur input{width:80px;font:inherit;text-align:center;padding:7px 8px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg)}
@@ -593,7 +601,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-04-234315";
+  const APP_VERSION="2026-11-04-235256";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1233,7 +1241,7 @@ const onDate=di=>Object.entries(workouts).filter(([,w])=>occurs(w,di)&&wEx(w).le
 function repText(w){ const r=w.rep||{};
   if(r.type==="once") return "einmalig";
   if(r.type==="weekly"){ const d=(r.days||[]).slice().sort(); return d.length===7?"jeden Tag":d.length?"jeden "+d.map(i=>DSHORT[i]).join(", "):"wöchentlich"; }
-  if(r.type==="every") return `alle ${r.n} Tage`;
+  if(r.type==="every") return +r.n===1?"jeden Tag":`alle ${r.n} Tage`;
   return ""; }
 const fmtEx=x=>{ const p=[]; if(x.sets||x.reps) p.push(`${x.sets||"?"} × ${x.reps||"?"}`); if(x.kg) p.push(`${String(x.kg).replace(".",",")} kg`); return p.join(" · ")||grpOf(x.group).name; };
 
@@ -1465,7 +1473,7 @@ function trainingHtml(todayIso){
   }
   const today=onDate(todayIso), doneToday=mySessions().filter(x=>x.end&&x.date===todayIso);
   let h=`<section class="train"><div class="train-head"><div><small>Heute</small><b>${today.length?today.map(([,w])=>esc(wTitle(w))).join(" & "):"Kein Training geplant"}</b></div></div>`;
-  doneToday.forEach(x=>{ const t=templates[x.tpl]||{}; h+=`<button type="button" class="done-row" data-sum="${esc(x.id)}">✓ ${esc(t.title||"Training")} · ${fmtDur(x.dur||0)}${x.kcal?` · ca. ${x.kcal} kcal`:""}<span>Zusammenfassung</span></button>`; });
+  doneToday.forEach(x=>{ const t=templates[x.tpl]||{}; h+=`<button type="button" class="done-row" data-sum="${esc(x.id)}">✓ ${esc(t.title||"Training")} · ${fmtDur(x.dur||0)} · ca. ${kcalOf(x)} kcal<span>Zusammenfassung</span></button>`; });
   if(today.length) h+=today.map(([wid,w])=>{ const tid=w.tpl; return `<button class="btn primary big" type="button" data-start="${esc(tid||"")}" data-plan="${esc(wid)}">${doneToday.some(x=>x.plan===wid)?"Nochmal":"▶"} ${esc(wTitle(w))} starten</button>`; }).join("");
   const others=tplList().filter(t=>!today.some(([,w])=>w.tpl===t.id));
   if(others.length) h+=`<p class="card-note">${today.length?"Oder ein anderes Workout:":"Freies Training starten:"}</p><div class="chips">${others.map(t=>`<button type="button" class="chip" data-start="${esc(t.id)}">▶ ${esc(t.title)}</button>`).join("")}</div>`;
@@ -1502,12 +1510,12 @@ let histN=8;
 function historyHtml(){
   const list=mySessions().filter(x=>x.end).sort((a,b)=>b.start-a.start);
   if(!list.length) return `<section class="hist-sec"><div class="sec-h"><b>Historie</b></div><p class="card-note">Hier erscheinen deine Trainings, sobald du eins beendet hast.</p></section>`;
-  const week=list.filter(x=>Date.now()-x.start<7*864e5), mins=week.reduce((a,x)=>a+(x.dur||0),0)/60, kc=week.reduce((a,x)=>a+(x.kcal||0),0);
+  const week=list.filter(x=>Date.now()-x.start<7*864e5), mins=week.reduce((a,x)=>a+(x.dur||0),0)/60, kc=week.reduce((a,x)=>a+kcalOf(x),0);
   return `<section class="hist-sec"><div class="sec-h"><b>Historie</b><span class="card-note">letzte 7 Tage: ${week.length}× · ${Math.round(mins)} min · ${kc} kcal</span></div>
     <ul class="hlist">${list.slice(0,histN).map(x=>{ const t=templates[x.tpl]||{title:"Training"}, ups=tEx(t).filter(e=>{ const b=best(setsOf(x,e.id)), l=lastFor(e.id,x.start), lb=l?best(setsOf(l,e.id)):null; return b&&lb&&(b.kg>lb.kg||(b.kg===lb.kg&&b.reps>lb.reps)); }).length;
       const ty=TYPES.find(y=>y.re.test(t.title||""))||{col:"var(--band)",emo:"🏋️"};
       return `<li><button type="button" data-sum="${esc(x.id)}" style="--tc:${ty.col}"><span class="hd"><b>${new Date(x.start).getDate()}</b><small>${new Date(x.start).toLocaleDateString("de-DE",{month:"short"})}</small></span>
-        <span class="pb-txt"><b>${esc(t.title)}</b><small>${new Date(x.start).toLocaleDateString("de-DE",{weekday:"long"})} · ${fmtDur(x.dur||0)} · ${x.kcal||0} kcal${x.vol?` · ${fmtKg(x.vol/1000)} t`:""}</small></span>
+        <span class="pb-txt"><b>${esc(t.title)}</b><small>${new Date(x.start).toLocaleDateString("de-DE",{weekday:"long"})} · ${fmtDur(x.dur||0)} · ${kcalOf(x)} kcal${x.vol?` · ${fmtKg(x.vol/1000)} t`:""}</small></span>
         ${ups?`<span class="dif up">▲ ${ups}</span>`:""}</button></li>`; }).join("")}</ul>
     ${list.length>histN?`<button class="linkish" type="button" id="histMore">Ältere anzeigen (${list.length-histN})</button>`:""}</section>`;
 }
@@ -1549,16 +1557,45 @@ let body={};
 const bodyKg=()=>num(body.weight)||num(bw[myUid])||75;
 const ageOf=()=>{ const y=+body.birth; return y>1900?new Date().getFullYear()-y:null; };
 const hrMaxOf=()=>num(body.hrMax)||(ageOf()?Math.round(208-0.7*ageOf()):null);   // Tanaka-Formel, wenn nicht gemessen
-// Training: mit Ø-Puls Formel nach Keytel (2005), sonst MET × Gewicht × Zeit (Kraft ≈ 5, Cardio ≈ 7)
+// Grundumsatz pro Stunde aus Größe, Gewicht, Alter, Geschlecht (Mifflin-St Jeor); ohne Angaben: 1 kcal je kg und Stunde
+function bmrPerHour(){
+  const kg=bodyKg(), cm=num(body.height), age=ageOf(), sx=body.sex;
+  if(!cm||!age||!sx) return kg;
+  const m=10*kg+6.25*cm-5*age+5, w=10*kg+6.25*cm-5*age-161;
+  return (sx==="m"?m:sx==="w"?w:(m+w)/2)/24;
+}
+// Wie anstrengend war das Training? (Sätze pro Minute) → MET für Krafttraining zwischen 3,5 und 6
+function metOf(se,ex){
+  if(ex.length&&ex.filter(x=>x.group==="cardio").length>=ex.length/2) return 7;
+  const sets=ex.reduce((a,x)=>a+doneSets(setsOf(se,x.id)).length,0), min=Math.max(1,(se.dur||0)/60), rate=sets/min;
+  return rate>=0.4?6:rate>=0.25?5:rate>0?4:5;
+}
+// Kalorien eines Trainings: mit Ø-Puls nach Keytel (2005, nutzt Puls, Gewicht, Alter, Geschlecht),
+// sonst „korrigierter MET“: MET × eigener Grundumsatz pro Stunde × Stunden (nutzt Größe, Gewicht, Alter, Geschlecht)
 function kcalFor(se,ex){
+  ex=ex||tEx(templates[se.tpl]||{});
   const kg=bodyKg(), min=(se.dur||0)/60, cardio=ex.length&&ex.filter(x=>x.group==="cardio").length>=ex.length/2;
   const hr=num(se.hrAvg), age=ageOf(), sx=body.sex;
-  if(hr&&hr>60&&age&&min>0){
+  if(hr&&hr>60&&age&&sx&&min>0){
     const m=(-55.0969+0.6309*hr+0.1988*kg+0.2017*age)/4.184, w=(-20.4022+0.4472*hr-0.1263*kg+0.074*age)/4.184;
     const perMin=sx==="m"?m:sx==="w"?w:(m+w)/2;
     return Math.max(0,Math.round(perMin*min*(cardio?1:0.8)));   // beim Krafttraining treibt Anspannung den Puls höher als der Verbrauch: 20 % weniger
   }
-  return Math.round((cardio?7:5)*kg*min/60);
+  return Math.round(metOf(se,ex)*bmrPerHour()*min/60);
+}
+const kcalOf=se=>se&&se.end?kcalFor(se):0;
+function kcalBasis(se){
+  const hr=num(se.hrAvg), full=num(body.height)&&ageOf()&&body.sex&&num(body.weight);
+  if(hr&&ageOf()&&body.sex) return `Berechnet aus deinem Ø-Puls, Gewicht, Alter und Geschlecht${hrMaxOf()?` · Intensität ca. ${Math.round(hr/hrMaxOf()*100)} % vom Maximalpuls`:""}.`;
+  if(hr) return "Für die Berechnung aus dem Puls fehlen Geburtsjahr und Geschlecht unter „Ich“.";
+  return full?"Berechnet aus Dauer, Satz-Tempo und deinem Grundumsatz (Größe, Gewicht, Alter, Geschlecht). Mit Ø-Puls wird es noch genauer."
+    :"Grob geschätzt. Trag unter „Ich“ Größe, Gewicht, Geburtsjahr und Geschlecht ein, dann wird es genauer.";
+}
+// gespeicherte Werte (für Freunde sichtbar) an die aktuelle Berechnung anpassen
+function syncKcal(){
+  if(!root) return; const upd={};
+  mySessions().filter(x=>x.end).forEach(x=>{ const k=kcalFor(x); if(k!==x.kcal){ upd[x.id+"/kcal"]=k; sessions[x.id].kcal=k; } });
+  if(Object.keys(upd).length) root.child("sessions").update(upd).catch(()=>{});
 }
 function bodyCalc(){
   const kg=num(body.weight), cm=num(body.height), age=ageOf(), sx=body.sex;
@@ -1571,7 +1608,7 @@ function bodyCalc(){
 }
 const bmiText=b=>b<18.5?"Untergewicht":b<25?"Normalgewicht":b<30?"Übergewicht":"Adipositas";
 function renderMe(){
-  const c=bodyCalc(), hm=hrMaxOf(), wk=mySessions().filter(x=>x.end&&Date.now()-x.start<7*864e5), wkK=wk.reduce((a,x)=>a+(x.kcal||0),0);
+  const c=bodyCalc(), hm=hrMaxOf(), wk=mySessions().filter(x=>x.end&&Date.now()-x.start<7*864e5), wkK=wk.reduce((a,x)=>a+kcalOf(x),0);
   const opt=(id,v,l)=>`<button type="button" class="chip" data-body="${id}" data-val="${v}" aria-pressed="${String(body[id])===String(v)}">${l}</button>`;
   $("#list").innerHTML=`<p class="card-note">Damit schätzen wir, wie viele Kalorien du am Tag brauchst und beim Training verbrennst. Das bleibt bei dir: Freunde sehen diese Angaben nicht.</p>
     <section class="me-card"><b class="me-t">Über dich</b>
@@ -1596,11 +1633,12 @@ function renderMe(){
       <ul class="me-list"><li><span>BMI</span><b>${c.bmi.toFixed(1).replace(".",",")} · ${bmiText(c.bmi)}</b></li><li><span>Eiweiß pro Tag</span><b>ca. ${c.prot} g</b></li>
         ${hm?`<li><span>Maximalpuls</span><b>${hm}${body.hrMax?"":" (geschätzt)"}</b></li>`:""}${hm&&num(body.hrRest)?`<li><span>Fettverbrennung / Ausdauer</span><b>${Math.round(num(body.hrRest)+.6*(hm-num(body.hrRest)))}–${Math.round(num(body.hrRest)+.75*(hm-num(body.hrRest)))} Puls</b></li>`:""}
         <li><span>Training letzte 7 Tage</span><b>${wk.length}× · ca. ${wkK.toLocaleString("de-DE")} kcal</b></li>
+        <li><span>1 Std. Krafttraining</span><b>ca. ${Math.round(5*bmrPerHour())} kcal</b></li>
         <li><span>Pro Trainingstag zusätzlich</span><b>ca. ${wk.length?Math.round(wkK/wk.length).toLocaleString("de-DE"):"–"} kcal</b></li></ul>
       <p class="card-note">Grundumsatz nach Mifflin-St Jeor, mal Aktivitätsfaktor. „Für dein Ziel“: −400 kcal zum Abnehmen, +300 kcal zum Aufbauen. Das sind Richtwerte, keine medizinische Beratung.</p></section>`
       :`<section class="me-card res"><p class="card-note">Gib Geschlecht, Geburtsjahr, Größe und Gewicht an, dann siehst du hier deinen Kalorienbedarf.</p></section>`}`;
 }
-function saveBody(k,v){ body[k]=v; if(myUid) fdb().ref(`users/${myUid}/body/${k}`).set(v==null||v===""?null:v).catch(showErr); }
+function saveBody(k,v){ body[k]=v; if(myUid) fdb().ref(`users/${myUid}/body/${k}`).set(v==null||v===""?null:v).catch(showErr); syncKcal(); }
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-body]"); if(!b) return; const k=b.dataset.body, v=k==="act"?+b.dataset.val:b.dataset.val; saveBody(k,v); render(); });
 document.addEventListener("change",e=>{ const i=e.target.closest("[data-bodyin]"); if(!i) return; const k=i.dataset.bodyin, v=num(i.value);
   if(k==="birth"&&v&&(v<1920||v>new Date().getFullYear()-10)) return; saveBody(k,v); if(k==="weight"&&v) { bw[myUid]=v; } render(); });
@@ -1608,7 +1646,7 @@ async function endTraining(){
   const a=activeSession(); if(!a) return;
   const end=Date.now(), dur=Math.round((end-a.start)/1000), t=templates[a.tpl]||{}, ex=tEx(t);
   let vol=0; ex.forEach(x=>{ const b=best(setsOf(a,x.id)); if(b) vol+=b.vol; });
-  const upd={end,dur,vol:Math.round(vol)}; upd.kcal=kcalFor({dur},ex);
+  const upd={end,dur,vol:Math.round(vol)}; upd.kcal=kcalFor({...a,dur},ex);
   const anyDone=ex.some(x=>doneSets(setsOf(a,x.id)).length);
   if(!anyDone){ const b=$("#endTrain"); if(b&&b.dataset.sure!=="1"){ b.dataset.sure="1"; b.textContent="Noch kein Satz abgehakt – trotzdem beenden?"; return; } }
   Object.assign(sessions[a.id],upd); await root.child("sessions/"+a.id).update(upd).catch(showErr);
@@ -1616,7 +1654,7 @@ async function endTraining(){
 }
 function recalc(id){
   const se={id,...sessions[id]}, ex=tEx(templates[se.tpl]||{}); let vol=0; ex.forEach(x=>{ const b=best(setsOf(se,x.id)); if(b) vol+=b.vol; });
-  return {vol:Math.round(vol),kcal:kcalFor({dur:se.dur||0},ex)};
+  return {vol:Math.round(vol),kcal:kcalFor(se,ex)};
 }
 async function saveEdit(){
   const id=editId; if(!id||!sessions[id]) return;
@@ -1645,12 +1683,12 @@ function showSummary(id){
   const ups=rows.filter(r=>r.includes('dif up')).length;
   $("#sumBody").innerHTML=`<div class="sum-top"><span class="sum-emo">${ups?"🎉":"💪"}</span><h3>${esc(t.title)} geschafft!</h3>
       <p class="card-note">${new Date(se.start).toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"})}</p></div>
-    <div class="sum-stats"><div><b>${fmtDur(se.dur||0)}</b><small>Dauer</small></div><div><b>ca. ${se.kcal||0}</b><small>kcal</small></div>
+    <div class="sum-stats"><div><b>${fmtDur(se.dur||0)}</b><small>Dauer</small></div><div><b>ca. ${kcalOf(se)}</b><small>kcal</small></div>
       <div><b>${fmtKg((se.vol||0)/1000)} t</b><small>bewegt${dv!=null?` · <span class="${dv>=0?"up":"down"}">${dv>0?"+":""}${dv} %</span>`:""}</small></div></div>
     ${rows.length?`<p class="sec-l">Im Vergleich zum letzten Mal${ups?` · ${ups}× gesteigert`:""}</p><ul class="sum-list">${rows.join("")}</ul>`:`<p class="card-note">Du hast keine Sätze eingetragen.</p>`}
     <div class="hr-row"><span class="flabel">Herzfrequenz in diesem Training <small>optional</small></span>
       <div class="me-grid"><label>Ø Puls<input data-hr="hrAvg" inputmode="numeric" placeholder="–" value="${esc(se.hrAvg||"")}"></label><label>Max.<input data-hr="hrMax" inputmode="numeric" placeholder="–" value="${esc(se.hrMax||"")}"></label><label>Min.<input data-hr="hrMin" inputmode="numeric" placeholder="–" value="${esc(se.hrMin||"")}"></label></div>
-      <small>${se.hrAvg&&ageOf()?`Kalorien aus deinem Puls berechnet${hrMaxOf()?` · Intensität ca. ${Math.round(num(se.hrAvg)/hrMaxOf()*100)} % vom Maximalpuls`:""}.`:se.hrAvg?"Für die Berechnung aus dem Puls fehlen Geburtsjahr und Geschlecht unter „Ich“.":`Geschätzt aus Dauer und ${num(body.weight)?"deinem Gewicht":"75 kg (dein Gewicht trägst du unter „Ich“ ein)"}. Mit Ø-Puls wird es genauer.`}</small></div>
+      <small>${kcalBasis(se)}</small></div>
     <div class="sheet-actions"><button class="btn" type="button" data-edit-sess="${esc(id)}">Bearbeiten</button><button class="del" type="button" data-del-sess="${esc(id)}">Löschen</button>
       <div class="right"><button class="btn primary" type="button" id="sumClose">Fertig</button></div></div>`;
   $("#sumModal").hidden=false; $("#sumModal").dataset.id=id;
@@ -1867,7 +1905,7 @@ $("#sumModal").addEventListener("click",e=>{
 $("#sumModal").addEventListener("change",e=>{
   const h=e.target.closest("[data-hr]"); if(!h) return; const v=num(h.value); if(v!=null&&(v<30||v>230)) return;
   const id=$("#sumModal").dataset.id, se=sessions[id]; if(!se) return;
-  se[h.dataset.hr]=v; se.kcal=kcalFor(se,tEx(templates[se.tpl]||{}));
+  se[h.dataset.hr]=v; se.kcal=kcalFor(se);
   root.child("sessions/"+id).update({[h.dataset.hr]:v,kcal:se.kcal}).catch(showErr); showSummary(id); render();
 });
 
@@ -1969,7 +2007,7 @@ document.addEventListener("ours-pub",()=>{ if(view==="fr") render(); });
 Auth.start(firebaseConfig,"gym",(r,info)=>{
   root=r; if(info){ myUid=info.uid; mySid=info.sid; myName=info.name||"Ich"; }
   if(root&&info){ initShare(); if(view==="fr") loadFriends();
-    fdb().ref(`users/${myUid}/body`).on("value",s=>{ body=s.val()||{}; if(view==="me"&&!(document.activeElement&&document.activeElement.matches("[data-bodyin]"))) render(); },()=>{}); } history.replaceState(null,"",location.pathname); render();
+    fdb().ref(`users/${myUid}/body`).on("value",s=>{ body=s.val()||{}; setTimeout(syncKcal,800); if(view==="me"&&!(document.activeElement&&document.activeElement.matches("[data-bodyin]"))) render(); },()=>{}); } history.replaceState(null,"",location.pathname); render();
   if(!root){ $("#status").textContent="Die Datenbank konnte nicht geladen werden. Prüf die Internetverbindung und lade die Seite neu."; return; }
   root.child("exercises").on("value",s=>{ exercises=s.val()||{}; render(); },showErr);
   root.child("workouts").on("value",s=>{ workouts=s.val()||{}; wLoaded=true; migrateWeek(); migratePlan(); render(); });
