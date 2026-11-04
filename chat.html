@@ -1,0 +1,914 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<title>Ours · Chats</title>
+<link rel="icon" href="ours-logo.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600;700&family=Playfair+Display:wght@800;900&display=swap">
+<style>
+/* Chats: Nachrichten mit Freunden, ähnlich wie WhatsApp */
+:root{
+  --page:#18201b; --dots:rgba(255,255,255,.035); --frame-line:#121814; --shadow:rgba(8,14,10,.45);
+  --band:#3e5446; --on-band:#eef3ec; --on-band-muted:#b7c6b9;
+  --bg:#f1f0eb; --surface:#fcfbf8; --ink:#1f2622; --muted:#6c756e; --line:#e2e2da;
+  --accent:#4f6b57; --accent-soft:#e3ebe2; --btn:#e6e8e1; --mine:#d9e8d2; --theirs:#ffffff;
+  --display:"Gloock", Georgia, serif; --body:"Figtree", system-ui, -apple-system, sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;overflow:hidden;color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;background-color:var(--page);
+  background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px);background-size:18px 18px}
+button{font:inherit;cursor:pointer;color:inherit}
+button:focus-visible,a:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:620px;height:100vh;height:100dvh;margin:0 auto;display:flex;flex-direction:column;background:var(--bg);overflow:hidden;position:relative;
+  padding:0 16px max(10px,env(safe-area-inset-bottom,0px))}
+@media (min-width:661px){.wrap{border-left:1px solid var(--frame-line);border-right:1px solid var(--frame-line)}}
+header{flex:none;margin:0 -16px;background:var(--band);color:var(--on-band);position:relative}
+header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:14px;background:var(--bg);border-radius:14px 14px 0 0}
+header.brand{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:calc(12px + env(safe-area-inset-top,0px)) 64px 25px!important}
+header.brand .wordmark{font-family:"Playfair Display",var(--display);font-weight:900;font-size:clamp(2.1rem,9.5vw,2.7rem);line-height:1;color:var(--on-band);white-space:nowrap}
+header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wrap.talking header{display:none}
+.status{flex:none;font-size:.82rem;color:var(--muted)}
+.status:empty{display:none}
+
+/* Liste */
+.panel{flex:1;min-height:0;display:flex;flex-direction:column}
+.topbar{flex:none;display:flex;align-items:center;gap:10px;padding:10px 0}
+.topbar h2{margin:0;flex:1;font-family:var(--display);font-weight:400;font-size:1.4rem}
+.btn{background:var(--btn);color:var(--ink);border:0;border-radius:10px;padding:9px 14px;font-weight:600;font-size:.92rem}
+.btn.primary{background:var(--band);color:var(--on-band)}
+.back{display:inline-flex;align-items:center;gap:2px;background:none;border:0;padding:6px 4px 6px 0;color:var(--accent);font-weight:600}
+.back svg{width:22px;height:22px}
+.scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;margin:0 -16px;padding:0 16px 20px}
+.clist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.crow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;padding:10px 4px;color:var(--ink);border-bottom:1px solid var(--line)}
+.crow:hover{background:color-mix(in srgb,var(--accent-soft) 50%,transparent)}
+.cmain{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.ctop{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.ctop b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctop time{flex:none;font-size:.75rem;color:var(--muted)}
+.ctop time.new{color:var(--accent);font-weight:700}
+.cbot{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.cbot span{font-size:.88rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cbot .unread{color:#fff;overflow:visible;flex:none;min-width:20px;height:20px;border-radius:999px;background:var(--accent);color:#fff;font-size:.72rem;font-weight:700;display:grid;place-items:center;padding:0 6px}
+.empty{border:1.5px dashed var(--line);border-radius:16px;padding:20px;color:var(--muted);display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.empty strong{color:var(--ink);font-family:var(--display);font-weight:400;font-size:1.35rem}
+.sec-l{margin:14px 0 4px;font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:700}
+
+/* Unterhaltung */
+.talk{flex:1;min-height:0;display:flex;flex-direction:column;margin:0 -16px}
+.tbar{flex:none;display:flex;align-items:center;gap:10px;padding:calc(8px + env(safe-area-inset-top,0px)) 12px 8px;background:var(--band);color:var(--on-band)}
+.tbar .back{color:var(--on-band)}
+.tbar .ours-av{background:color-mix(in srgb,var(--on-band) 22%,transparent);color:var(--on-band)}
+.tbar b{font-weight:600;font-size:1.02rem;display:block}
+.tbar small{font-size:.75rem;color:var(--on-band-muted)}
+.tbar .who{flex:1;min-width:0;display:flex;align-items:center;gap:10px;background:none;border:0;color:inherit;text-align:left;padding:0}
+.msgs{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:12px 12px 8px;display:flex;flex-direction:column;gap:3px;
+  background-color:#ebe7dd;background-image:radial-gradient(rgba(62,84,70,.07) 1.2px,transparent 1.2px);background-size:16px 16px}
+.day{align-self:center;margin:10px 0 6px;font-size:.74rem;font-weight:600;color:var(--muted);background:rgba(255,255,255,.85);border-radius:8px;padding:3px 10px}
+.msg{max-width:80%;padding:6px 10px 4px;border-radius:12px;font-size:.95rem;line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere;box-shadow:0 1px 1px rgba(0,0,0,.08);position:relative}
+.msg.mine{align-self:flex-end;background:var(--mine);border-top-right-radius:4px}
+.msg.theirs{align-self:flex-start;background:var(--theirs);border-top-left-radius:4px}
+.msg.cont.mine{border-top-right-radius:12px}
+.msg.cont.theirs{border-top-left-radius:12px}
+.msg:not(.cont){margin-top:5px}
+.meta{float:right;margin:6px 0 -2px 10px;font-size:.68rem;color:var(--muted);display:inline-flex;align-items:center;gap:2px;white-space:nowrap}
+.meta svg{width:16px;height:16px}
+.meta .read{color:#3b8bd6}
+.msg a{color:var(--accent)}
+.composer{flex:none;display:flex;align-items:flex-end;gap:8px;padding:8px 10px max(8px,env(safe-area-inset-bottom,0px));background:#ebe7dd}
+.composer textarea{flex:1;min-width:0;font:inherit;font-size:1rem;line-height:1.35;resize:none;max-height:140px;border:0;border-radius:22px;padding:10px 16px;background:#fff;color:var(--ink);box-shadow:0 1px 1px rgba(0,0,0,.06)}
+.composer textarea:focus{outline:none}
+.send{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:var(--accent);color:#fff;display:grid;place-items:center}
+.send:disabled{opacity:.5}
+.send svg{width:22px;height:22px;margin-left:2px}
+.hello{align-self:center;margin:auto;text-align:center;color:var(--muted);font-size:.9rem;max-width:260px;background:rgba(255,255,255,.8);border-radius:12px;padding:10px 14px}
+.wrap.talking{padding-bottom:0}
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <header class="brand" id="head">
+    <div class="wordmark" aria-hidden="true">Chats</div>
+    <h1 class="sr-only">Chats</h1>
+  </header>
+
+  <section class="panel" id="listView">
+    <div class="topbar"><h2 id="listTitle">Unterhaltungen</h2><button class="btn primary" type="button" id="newChat">+ Neuer Chat</button></div>
+    <div class="scroll" id="list"></div>
+  </section>
+
+  <section class="talk" id="talkView" hidden>
+    <div class="tbar">
+      <button class="back" type="button" id="talkBack" aria-label="Zurück zu den Chats"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="who" id="talkWho"></div>
+    </div>
+    <div class="msgs" id="msgs" aria-live="polite"></div>
+    <form class="composer" id="composer" autocomplete="off">
+      <textarea id="msgIn" rows="1" maxlength="2000" placeholder="Nachricht" aria-label="Nachricht schreiben"></textarea>
+      <button class="send" type="submit" id="sendBtn" aria-label="Senden" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l16-8-6 16-2.5-6.5z" fill="currentColor"/></svg></button>
+    </form>
+  </section>
+  <div class="status" id="status" aria-live="polite"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+/* Anmeldung, Profil und Bereiche für alle Seiten
+   - E-Mail und Passwort über Firebase Authentication
+   - Jede Seite hat ihren eigenen Bereich unter spaces/<id> mit eigenen Personen (access/<uid>)
+   - users/<uid>/spaces/<typ> merkt sich, welcher Bereich zu welcher Seite gehört
+   Seiten rufen Auth.start(firebaseConfig, "dates" | "recipes" | "chores" | "budget" | "rooms", (ref, info) => { ... }) auf. */
+(function(){
+  const PAGES = [
+    {type:"dates",   file:"index.html",    label:"Dateideen", color:"#8c7559", noun:"Dateideen-Liste",
+     empty:"Noch keine Dateideen-Liste", hint:"Leg eine Liste an und lad danach deine Freundin oder deinen Freund ein. Nur eingeladene Personen sehen sie.",
+     keys:["ideas"]},
+    {type:"recipes", file:"rezepte.html",  label:"Rezepte",   color:"#7a2434", noun:"Rezeptsammlung",
+     empty:"Noch keine Rezeptsammlung", hint:"Leg eine Sammlung an und lad Freunde oder Familie ein. Nur eingeladene Personen sehen sie.",
+     keys:["recipes","people","swipe"]},
+    {type:"chores",  file:"haushalt.html", label:"Haushalt",  color:"#3f6f8c", noun:"Haushalt",
+     empty:"Noch kein Haushalt", hint:"Leg einen Haushalt an und lad deine Mitbewohner ein.",
+     keys:["chores","choreLog","members","rooms","people"]},
+    {type:"budget",  file:"budget.html",   label:"Budget",    color:"#1b1b1d", noun:"Budget",
+     empty:"Noch kein Budget", hint:"Dein Budget ist privat. Später kannst du jemanden dazuholen, zum Beispiel deine Freundin oder deinen Freund.",
+     keys:null},
+    {type:"rooms",   file:"raum.html",     label:"Raumdesign", color:"#8a4a30", noun:"Raumsammlung",
+     empty:"Noch keine Raumsammlung", hint:"Leg eine Sammlung an, fotografier deine Räume und probier Einrichtungsstile aus. Später kannst du jemanden dazuholen.",
+     keys:[]},
+    {type:"chat",    file:"chat.html",     label:"Chats", color:"#5f6e54", noSpace:true},
+  ];
+  const CSS = `
+  .auth-screen{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow-y:auto;background:var(--page);
+    padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+  .auth-screen.dim{background:rgba(10,12,14,.55)}
+  .auth-card{width:100%;max-width:390px;background:var(--bg);color:var(--ink);border:1px solid var(--frame-line,var(--line));border-radius:24px;overflow:hidden;
+    box-shadow:0 18px 40px -18px var(--shadow,rgba(0,0,0,.4))}
+  .auth-head{background:var(--band);color:var(--on-band);padding:18px 22px 22px;position:relative}
+  .auth-head::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:14px;background:var(--bg);border-radius:14px 14px 0 0}
+  .auth-head h2{margin:0;font-family:var(--display);font-weight:400;font-size:1.8rem;line-height:1.1}
+  .auth-head p{margin:4px 0 0;font-size:.88rem;opacity:.8}
+  .auth-body{padding:10px 22px 22px;display:flex;flex-direction:column;gap:12px}
+  .auth-tabs{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:2px}
+  .auth-tabs button{flex:1;border:0;background:none;border-radius:8px;padding:7px 10px;font:inherit;font-size:.9rem;font-weight:600;color:var(--muted);cursor:pointer}
+  .auth-tabs button[aria-pressed="true"]{background:var(--band);color:var(--on-band)}
+  .auth-body label{display:flex;flex-direction:column;gap:5px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .auth-body input[type=email],.auth-body input[type=password],.auth-body input[type=text]{font:inherit;font-size:1rem;text-transform:none;letter-spacing:0;padding:11px 12px;
+    border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);min-width:0}
+  .auth-body input:focus{outline:none;border-color:var(--accent)}
+  .auth-btn{border:0;border-radius:10px;padding:12px 16px;font:inherit;font-weight:700;cursor:pointer;background:var(--band);color:var(--on-band)}
+  .auth-btn.alt{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+  .auth-btn:disabled{opacity:.6;cursor:progress}
+  .auth-or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.8rem;margin:2px 0}
+  .auth-or::before,.auth-or::after{content:"";flex:1;height:1px;background:var(--line)}
+  .auth-google{display:flex;align-items:center;justify-content:center;gap:10px}
+  .auth-link{align-self:center;background:none;border:0;padding:4px;font:inherit;font-size:.85rem;color:var(--muted);text-decoration:underline;cursor:pointer}
+  .auth-link.danger{color:#c0533f}
+  .auth-msg{margin:0;font-size:.88rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .auth-msg.err{border-color:#c0533f;color:#c0533f}
+  .auth-note{margin:0;font-size:.88rem;color:var(--muted)}
+  .auth-check{flex-direction:row!important;align-items:center;gap:8px!important;text-transform:none!important;letter-spacing:0!important;font-size:.9rem!important;color:var(--ink)!important;font-weight:500!important}
+  .auth-check input{accent-color:var(--band);width:18px;height:18px}
+  .auth-copy{display:flex;gap:6px}
+  .auth-copy input{flex:1;font-size:.82rem!important;padding:9px 10px!important}
+  .auth-people{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .auth-people li{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+  .auth-people .av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.85rem;background:var(--band);color:var(--on-band);flex:none}
+  .auth-people .nm{flex:1;min-width:0;display:flex;flex-direction:column}
+  .auth-people .nm b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .auth-people .nm small{font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .auth-people .rm{border:1px solid var(--line);background:none;color:var(--muted);border-radius:999px;padding:3px 10px;font:inherit;font-size:.8rem;cursor:pointer}
+  .auth-people .rm.sure{color:#c0533f;border-color:#c0533f;font-weight:600}
+  .auth-sec{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 -4px}
+
+  /* Profilbilder */
+  .ours-av{flex:none;display:inline-grid;place-items:center;border-radius:50%;overflow:hidden;background:var(--band);color:var(--on-band);font-weight:700;line-height:1}
+  .ours-av img{width:100%;height:100%;object-fit:cover;display:block}
+  .pf-btn{padding:0;overflow:visible}
+  #pfInit{position:absolute;inset:0;display:block;border-radius:50%;overflow:hidden}
+  .pf-btn .ours-av{width:100%!important;height:100%!important;font-size:1rem!important;background:none;color:inherit;display:grid}
+  .pf-photo{display:flex;align-items:center;gap:14px}
+  .pf-photo .ours-av{width:72px;height:72px;font-size:1.6rem}
+  .pf-photo div{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+  .auth-card textarea{font:inherit;font-size:1rem;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface,#fff);color:var(--ink);resize:vertical;min-height:64px;width:100%;box-sizing:border-box}
+
+  /* Profil-Knopf und Menü */
+  header{padding-right:64px!important}
+  .pf-btn{position:absolute;top:14px;right:16px;z-index:31;width:40px;height:40px;border-radius:50%;cursor:pointer;
+    border:1.5px solid color-mix(in srgb,var(--on-band) 40%,transparent);background:color-mix(in srgb,var(--on-band) 16%,transparent);
+    color:var(--on-band);font:inherit;font-weight:700;font-size:1rem;display:grid;place-items:center}
+  .pf-btn:focus-visible{outline:2px solid var(--on-band);outline-offset:2px}
+  .pf-menu{position:absolute;top:60px;right:12px;z-index:32;min-width:230px;display:flex;flex-direction:column;gap:2px;padding:6px;
+    background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 36px -14px rgba(0,0,0,.4)}
+  .pf-menu a,.pf-menu button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border:0;border-radius:10px;background:none;
+    color:inherit;font:inherit;font-weight:500;text-decoration:none;cursor:pointer}
+  .pf-menu a:hover,.pf-menu button:hover{background:var(--accent-soft)}
+  .pf-menu a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+  .pf-menu .dot{width:10px;height:10px;border-radius:50%;flex:none;box-shadow:0 0 0 1px rgba(128,128,128,.4) inset}
+  .pf-menu svg{width:17px;height:17px;flex:none;opacity:.75}
+  .pf-sep{height:1px;background:var(--line);margin:4px 6px}
+  .pf-who{padding:6px 12px 4px;display:flex;flex-direction:column}
+  .pf-who b{font-weight:600}
+  .pf-who small{font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pf-menu button:disabled{opacity:.45;cursor:not-allowed}
+
+  /* Freunde */
+  .pf-badge{margin-left:auto;min-width:20px;height:20px;border-radius:10px;padding:0 6px;background:#d9534f;color:#fff;font-size:.72rem;font-weight:700;display:inline-grid;place-items:center}
+  .pf-dot{position:absolute;top:-1px;right:-1px;width:12px;height:12px;border-radius:50%;background:#d9534f;border:2px solid var(--band)}
+  .ours-mark{display:none!important}
+  .ours-logo{position:absolute;left:16px;top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2);z-index:31;width:40px;height:40px;border-radius:11px;overflow:hidden;
+    box-shadow:0 0 0 1.5px color-mix(in srgb,var(--on-band) 30%,transparent),0 4px 10px -4px rgba(0,0,0,.4);display:block}
+  .ours-logo img{width:100%;height:100%;display:block}
+  header{padding-left:64px!important}
+  .pf-menu .pf-logo{width:34px;height:34px;border-radius:9px;margin:0 auto 4px;display:block}
+  .pf-brand{font-family:var(--display);font-size:1.15rem;line-height:1;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+  .fr-code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.5rem;font-weight:700;letter-spacing:.18em;text-align:center;padding:10px;border-radius:12px;
+    background:var(--surface);border:1.5px dashed var(--line);color:var(--ink)}
+  .auth-people .rm.yes{background:var(--band);color:var(--on-band);border-color:var(--band);font-weight:600}
+  .auth-people .rm.done{opacity:.6;cursor:default}
+
+  /* Seite ohne Bereich */
+  .auth-setup{position:absolute;left:0;right:0;bottom:0;z-index:20;background:var(--bg);overflow-y:auto;padding:18px 22px 22px;display:flex;flex-direction:column;align-items:stretch}
+  .auth-setup .box{margin:auto 0;display:flex;flex-direction:column;gap:12px;max-width:420px;align-self:center;width:100%;color:var(--ink)}
+  .auth-setup h3{margin:0;font-family:var(--display);font-weight:400;font-size:1.6rem;line-height:1.15}
+  `;
+  const IC = {
+    people:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M16.5 6.2a2.8 2.8 0 0 1 0 5.4M17 14.3c2 .5 3.2 2 3.5 4.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    gear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    heart:'<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    chat:'<svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4h0A1.5 1.5 0 0 1 4 14.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    out:'<svg viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 16l4-4-4-4M14 12H4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  };
+  const ERR = {
+    "auth/invalid-email":"Die E-Mail-Adresse sieht nicht richtig aus.",
+    "auth/user-not-found":"E-Mail oder Passwort stimmt nicht.",
+    "auth/wrong-password":"E-Mail oder Passwort stimmt nicht.",
+    "auth/invalid-credential":"E-Mail oder Passwort stimmt nicht.",
+    "auth/invalid-login-credentials":"E-Mail oder Passwort stimmt nicht.",
+    "auth/email-already-in-use":"Mit dieser E-Mail gibt es schon ein Konto. Melde dich an.",
+    "auth/weak-password":"Das Passwort ist zu kurz.",
+    "auth/too-many-requests":"Zu viele Versuche. Warte ein paar Minuten und versuch es dann noch einmal.",
+    "auth/network-request-failed":"Keine Verbindung. Prüf dein Internet.",
+    "auth/operation-not-allowed":"Diese Anmeldeart ist in Firebase noch nicht eingeschaltet.",
+    "auth/unauthorized-domain":"Diese Seite ist in Firebase noch nicht als erlaubte Domain eingetragen (Authentication → Einstellungen → Autorisierte Domains).",
+    "auth/account-exists-with-different-credential":"Mit dieser E-Mail gibt es schon ein Konto mit Passwort. Melde dich mit E-Mail und Passwort an.",
+    "auth/popup-blocked":"Das Anmeldefenster wurde blockiert. Erlaube Pop-ups für diese Seite und versuch es noch einmal.",
+  };
+  const errText = e => ERR[e && e.code] || "Das hat nicht geklappt. Versuch es noch einmal.";
+  const rand = n => { const a="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    return [...crypto.getRandomValues(new Uint8Array(n))].map(x=>a[x%a.length]).join(""); };
+  const esc = t => String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const parseJoin = () => { const m=location.hash.match(/^#join-([A-Za-z0-9]{12,40})-([A-Za-z0-9]{12,40})$/); return m?{sid:m[1],code:m[2]}:null; };
+  const clearHash = () => history.replaceState(history.state,"",location.pathname);
+  const initial = n => (String(n||"?").trim()[0]||"?").toUpperCase();
+  // Öffentliches Profil (Name, Bild, Über mich) unter pub/<uid>; Bilder werden nachgeladen und überall ausgetauscht
+  const pubCache = new Map(), pubWait = new Set();
+  let pubDb = null;
+  function loadPub(uid){
+    if(!uid || !pubDb || pubCache.has(uid) || pubWait.has(uid)) return;
+    pubWait.add(uid);
+    pubDb.ref("pub/"+uid).once("value").then(s=>{ pubCache.set(uid,s.val()||{}); paintAv(uid); document.dispatchEvent(new CustomEvent("ours-pub",{detail:uid})); })
+      .catch(()=>pubCache.set(uid,{})).finally(()=>pubWait.delete(uid));
+  }
+  const okPhoto = p => typeof p==="string" && /^data:image\/(jpeg|png|webp);base64,/.test(p);
+  function avInner(uid,name){ const p=pubCache.get(uid), ph=p&&okPhoto(p.photo)?p.photo:null;
+    return ph?`<img src="${ph}" alt="">`:esc(initial((p&&p.name)||name)); }
+  function avatar(uid,name,size,extra){ loadPub(uid); const z=size||32;
+    return `<span class="ours-av${extra?" "+extra:""}" data-av="${esc(uid||"")}" data-avname="${esc(name||"")}" style="width:${z}px;height:${z}px;font-size:${Math.round(z*.42)}px">${avInner(uid,name)}</span>`; }
+  function paintAv(uid){ document.querySelectorAll(`[data-av="${uid}"]`).forEach(el=>{ el.innerHTML=avInner(uid,el.dataset.avname); }); }
+  const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
+
+  window.Auth = {
+    avatar, pub:uid=>{ loadPub(uid); return pubCache.get(uid)||null; },
+    refreshPub(uid){ pubCache.delete(uid); loadPub(uid); },
+    editProfile(){ if(window.Auth._profileView) window.Auth._profileView(); },
+    start(config, type, cb){
+    const PAGE = PAGES.find(p=>p.type===type);
+    const st=document.createElement("style"); st.textContent=CSS; document.head.appendChild(st);
+    // Name der App oben in jeder Seite
+    const hd=document.querySelector("header");
+    if(hd && !hd.querySelector(".ours-logo")) hd.insertAdjacentHTML("afterbegin",'<span class="ours-logo" role="img" aria-label="Ours"><img src="ours-logo.png" alt=""></span>');
+    let auth, db;
+    try{ if(!firebase.apps.length) firebase.initializeApp(config); auth=firebase.auth(); db=firebase.database(); }
+    catch(e){ cb(null); return; }
+    let user=null, profile={}, sid=null, started=false, setupEl=null;
+    const pubSet=v=>{ pubCache.set(user.uid,{...(pubCache.get(user.uid)||{}),...v}); paintAv(user.uid); document.dispatchEvent(new CustomEvent("ours-pub",{detail:user.uid})); };
+
+    /* ---------- Fenster (Anmelden und Pop-ups) ---------- */
+    let screen=null;
+    function show(title,sub,html,dim){
+      if(!screen){ screen=document.createElement("div"); screen.className="auth-screen"; document.body.appendChild(screen);
+        screen.addEventListener("click",e=>{ if(e.target===screen && screen.classList.contains("dim")) hide(); }); }
+      screen.classList.toggle("dim",!!dim);
+      screen.innerHTML=`<div class="auth-card" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="auth-head"><h2>${esc(title)}</h2>${sub?`<p>${esc(sub)}</p>`:""}</div><div class="auth-body">${html}</div></div>`;
+      screen.hidden=false; return screen;
+    }
+    function hide(){ if(screen) screen.hidden=true; }
+    const $a = s => screen.querySelector(s);
+    function msg(t,err,root){ const m=(root||screen).querySelector("#authMsg"); if(!m) return; m.textContent=t||""; m.hidden=!t; m.classList.toggle("err",!!err); }
+    document.addEventListener("keydown",e=>{ if(e.key==="Escape" && screen && !screen.hidden && screen.classList.contains("dim")) hide(); });
+
+    /* ---------- Anmelden / Konto erstellen ---------- */
+    function loginView(mode){
+      const reg=mode==="register", join=parseJoin();
+      show("Ours",
+        join?`Du wurdest zu ${PAGE.label} eingeladen. Melde dich an oder erstell ein Konto.`:/^#friend-/.test(location.hash)?"Du wurdest als Freund eingeladen. Melde dich an oder erstell ein Konto.":reg?"Neues Konto erstellen.":"Bitte melde dich an.",
+        `<div class="auth-tabs" role="group"><button type="button" data-mode="login" aria-pressed="${!reg}">Anmelden</button><button type="button" data-mode="register" aria-pressed="${reg}">Konto erstellen</button></div>
+        <form id="authForm" style="display:flex;flex-direction:column;gap:12px" novalidate>
+          ${reg?`<label>Dein Name<input type="text" id="authName" autocomplete="given-name" maxlength="30" placeholder="So sehen dich die anderen"></label>`:""}
+          <label>E-Mail<input type="email" id="authMail" autocomplete="email"></label>
+          <label>Passwort<input type="password" id="authPw" autocomplete="${reg?"new-password":"current-password"}"></label>
+          ${reg?`<label>Passwort wiederholen<input type="password" id="authPw2" autocomplete="new-password"></label>
+            <p class="auth-note">Mindestens 10 Zeichen. Am besten ein Passwort, das du nirgends sonst benutzt.</p>`:""}
+          <p class="auth-msg" id="authMsg" hidden></p>
+          <button class="auth-btn" type="submit" id="authGo">${reg?"Konto erstellen":"Anmelden"}</button>
+        </form>
+        ${reg?"":`<button class="auth-link" type="button" id="authForgot">Passwort vergessen?</button>`}
+        <div class="auth-or"><span>oder</span></div>
+        <button class="auth-btn alt auth-google" type="button" id="authGoogle">${GOOGLE}Mit Google ${reg?"registrieren":"anmelden"}</button>`);
+      screen.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>loginView(b.dataset.mode));
+      (reg?$a("#authName"):$a("#authMail")).focus();
+      $a("#authForm").onsubmit=async e=>{
+        e.preventDefault();
+        const mail=$a("#authMail").value.trim(), pw=$a("#authPw").value;
+        if(!mail || !pw) return msg("Gib E-Mail und Passwort ein.",true);
+        if(reg){
+          if(pw.length<10) return msg("Das Passwort braucht mindestens 10 Zeichen.",true);
+          if(pw!==$a("#authPw2").value) return msg("Die beiden Passwörter sind nicht gleich.",true);
+          try{ sessionStorage.setItem("auth.newName",$a("#authName").value.trim().slice(0,30)); }catch(err){}
+        }
+        $a("#authGo").disabled=true; msg("");
+        try{ reg ? await auth.createUserWithEmailAndPassword(mail,pw) : await auth.signInWithEmailAndPassword(mail,pw); }
+        catch(err){ msg(errText(err),true); $a("#authGo").disabled=false; }
+      };
+      $a("#authGoogle").onclick=async()=>{
+        msg(""); const prov=new firebase.auth.GoogleAuthProvider(); prov.setCustomParameters({prompt:"select_account"});
+        try{ await auth.signInWithPopup(prov); }
+        catch(err){
+          if(err && (err.code==="auth/popup-closed-by-user"||err.code==="auth/cancelled-popup-request")) return;
+          if(err && err.code==="auth/popup-blocked"){ try{ await auth.signInWithRedirect(prov); return; }catch(e){} }
+          msg(errText(err),true);
+        }
+      };
+      const f=$a("#authForgot");
+      if(f) f.onclick=async()=>{
+        const mail=$a("#authMail").value.trim();
+        if(!mail) return msg("Trag oben deine E-Mail ein, dann schicken wir dir einen Link zum Zurücksetzen.",true);
+        try{ await auth.sendPasswordResetEmail(mail); msg("Wenn es ein Konto mit dieser E-Mail gibt, ist eine Mail zum Zurücksetzen unterwegs. Schau auch im Spam nach."); }
+        catch(err){ msg(errText(err),true); }
+      };
+    }
+
+    /* ---------- Profil-Knopf mit Menü ---------- */
+    function installMenu(){
+      const head=document.querySelector("header"); if(!head || head.querySelector(".pf-btn")) { updateMenu(); return; }
+      head.insertAdjacentHTML("beforeend",`<button class="pf-btn" type="button" id="pfBtn" aria-haspopup="true" aria-expanded="false" aria-controls="pfMenu" aria-label="Profil und Seiten"><span id="pfInit"></span><span class="pf-dot" id="pfDot" hidden></span></button>
+        <nav class="pf-menu" id="pfMenu" hidden aria-label="Profil und Seiten">
+          <div class="pf-who"><img class="pf-logo" src="ours-logo.png" alt=""><span class="pf-brand">Ours</span><b id="pfName"></b><small id="pfMail"></small></div>
+          <div class="pf-sep"></div>
+          ${PAGES.filter(p=>!p.noSpace).map(p=>`<a href="${p.file}" data-page="${p.type}"${p.type===type?' aria-current="page"':""}><span class="dot" style="background:${p.color}"></span>${p.label}</a>`).join("")}
+          <div class="pf-sep"></div>
+          <button type="button" data-pf="people">${IC.people}Personen bei ${esc(PAGE.label)}</button>
+          <a href="chat.html" class="pf-chat"${type==="chat"?' aria-current="page"':""}>${IC.chat}Chats<span class="pf-badge" id="pfChatBadge" hidden></span></a>
+          <button type="button" data-pf="friends">${IC.heart}Freunde<span class="pf-badge" id="pfFriendBadge" hidden></span></button>
+          <button type="button" data-pf="profile">${IC.user}Mein Profil</button>
+          <button type="button" data-pf="settings">${IC.gear}Einstellungen</button>
+          <button type="button" data-pf="logout">${IC.out}Abmelden</button>
+        </nav>`);
+      const btn=document.getElementById("pfBtn"), menu=document.getElementById("pfMenu");
+      const toggle=open=>{ menu.hidden=!open; btn.setAttribute("aria-expanded",open); };
+      btn.onclick=e=>{ e.stopPropagation(); toggle(menu.hidden); };
+      document.addEventListener("click",e=>{ if(!menu.hidden && !menu.contains(e.target)) toggle(false); });
+      document.addEventListener("keydown",e=>{ if(e.key==="Escape") toggle(false); });
+      menu.querySelectorAll("[data-pf]").forEach(b=>b.onclick=()=>{ toggle(false);
+        ({people:peopleView,friends:()=>friendsView(),profile:()=>window.Auth.profileHandler?window.Auth.profileHandler(user.uid):profileView(),settings:settingsView,logout:()=>auth.signOut()})[b.dataset.pf](); });
+      updateMenu();
+    }
+    function updateMenu(){
+      const name=profile.name||user.email.split("@")[0];
+      const b=document.getElementById("pfBtn"); if(!b) return;
+      document.getElementById("pfInit").innerHTML=avatar(user.uid,name,37); updateFriendBadge();
+      document.getElementById("pfName").textContent=name;
+      document.getElementById("pfMail").textContent=user.email;
+      const pp=document.querySelector('[data-pf="people"]'); pp.disabled=!sid; pp.hidden=!!PAGE.noSpace;
+    }
+
+    /* ---------- Profil, Einstellungen ---------- */
+    function profileView(){
+      const pb=pubCache.get(user.uid)||{}; let photo=okPhoto(pb.photo)?pb.photo:null;
+      show("Mein Profil","Name, Bild und ein paar Worte über dich sehen deine Freunde.",`
+        <div class="pf-photo"><span class="ours-av" id="pfPrev">${photo?`<img src="${photo}" alt="">`:esc(initial(profile.name))}</span>
+          <div><button class="auth-btn alt" type="button" id="pfPick">${photo?"Bild ändern":"Profilbild wählen"}</button>
+          <button class="auth-link" type="button" id="pfDrop"${photo?"":" hidden"}>Bild entfernen</button></div></div>
+        <input type="file" id="pfFile" accept="image/*" hidden>
+        <label>Dein Name<input type="text" id="pfIn" maxlength="30" value="${esc(profile.name||"")}"></label>
+        <label>Über mich <small>(optional)</small><textarea id="pfBio" maxlength="140" placeholder="z.B. Koche am liebsten Asiatisch, backe sonntags">${esc(pb.bio||"")}</textarea></label>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <button class="auth-btn" type="button" id="pfSave">Speichern</button>
+        <button class="auth-link" type="button" id="pfClose">Abbrechen</button>`,true);
+      $a("#pfClose").onclick=hide;
+      $a("#pfPick").onclick=()=>$a("#pfFile").click();
+      $a("#pfDrop").onclick=()=>{ photo=null; $a("#pfPrev").textContent=initial($a("#pfIn").value||profile.name); $a("#pfDrop").hidden=true; $a("#pfPick").textContent="Profilbild wählen"; };
+      $a("#pfFile").onchange=async e=>{
+        const f=e.target.files[0]; e.target.value=""; if(!f) return;
+        try{ // quadratisch zuschneiden, klein halten
+          const bmp=await createImageBitmap(f), m=Math.min(bmp.width,bmp.height), c=document.createElement("canvas"); c.width=c.height=256;
+          c.getContext("2d").drawImage(bmp,(bmp.width-m)/2,(bmp.height-m)/2,m,m,0,0,256,256);
+          photo=c.toDataURL("image/jpeg",.82); $a("#pfPrev").innerHTML=`<img src="${photo}" alt="">`; $a("#pfDrop").hidden=false; $a("#pfPick").textContent="Bild ändern";
+        }catch(err){ msg("Das Bild konnte nicht gelesen werden. Nimm ein JPG oder PNG.",true); }
+      };
+      $a("#pfSave").onclick=async()=>{
+        const name=$a("#pfIn").value.trim().slice(0,30), bio=$a("#pfBio").value.trim().slice(0,140); if(!name) return msg("Gib einen Namen ein.",true);
+        $a("#pfSave").disabled=true;
+        try{
+          await db.ref(`pub/${user.uid}`).set({name,bio:bio||null,photo:photo||null,at:Date.now()});
+          pubSet({name,bio:bio||null,photo:photo||null});
+          if(name!==profile.name){
+            await db.ref(`users/${user.uid}/profile/name`).set(name); profile.name=name;
+            const ptr=(await db.ref(`users/${user.uid}/spaces`).once("value")).val()||{};
+            for(const s of Object.values(ptr)) await db.ref(`spaces/${s}/profiles/${user.uid}/name`).set(name).catch(()=>{});
+          }
+          updateMenu(); hide();
+        }catch(err){ $a("#pfSave").disabled=false; msg("Speichern hat nicht geklappt. Prüf die Regeln in Firebase.",true); }
+      };
+    }
+    function settingsView(){
+      show("Einstellungen","",`<p class="auth-sec">Konto</p>
+        <p class="auth-note">Angemeldet als <b>${esc(user.email)}</b></p>
+        <button class="auth-btn alt" type="button" id="stPw">Passwort ändern</button>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <p class="auth-sec">Diese Seite</p>
+        <p class="auth-note">${sid?`Du bist in einer ${esc(PAGE.noun)}. Wer sie sieht, steht unter „Personen bei ${esc(PAGE.label)}“.`:`Für ${esc(PAGE.label)} gibt es noch keine Liste.`}</p>
+        <button class="auth-btn alt" type="button" id="stOut">Abmelden</button>
+        <button class="auth-link" type="button" id="stClose">Schließen</button>`,true);
+      $a("#stClose").onclick=hide;
+      $a("#stOut").onclick=()=>auth.signOut();
+      $a("#stPw").onclick=async()=>{
+        try{ await auth.sendPasswordResetEmail(user.email); msg(`Wir haben dir eine Mail an ${user.email} geschickt. Darüber legst du ein neues Passwort fest.`); }
+        catch(err){ msg(errText(err),true); }
+      };
+    }
+
+    /* ---------- Personen und Einladungen für diese Seite ---------- */
+    let rmConfirm=null;
+    async function peopleView(){
+      if(!sid) return;
+      let profiles={}, access={}, meta={}, invites={};
+      try{
+        [profiles,access,meta,invites]=(await Promise.all(["profiles","access","meta","invites"].map(k=>db.ref(`spaces/${sid}/${k}`).once("value")))).map(s=>s.val()||{});
+      }catch(err){ return; }
+      const coOwn=id=>meta.owner===id || (meta.owners&&meta.owners[id]);
+      const owner=!!coOwn(user.uid), ids=Object.keys(access);
+      const list=ids.map(id=>({id,name:(profiles[id]&&profiles[id].name)||"Ohne Namen",mail:profiles[id]&&profiles[id].email||"",own:!!coOwn(id)}))
+        .sort((a,b)=>(b.own-a.own)||(a.id===user.uid?-1:b.id===user.uid?1:0));
+      const nInv=Object.keys(invites).length;
+      show(`Personen bei ${PAGE.label}`,
+        PAGE.type==="budget"&&ids.length<=1?"Im Moment siehst nur du dein Budget.":`${ids.length} ${ids.length===1?"Person sieht":"Personen sehen"} diese ${PAGE.noun}.`,
+        `<ul class="auth-people">${list.map(p=>`<li>${avatar(p.id,p.name,30)}
+            <span class="nm"><b>${esc(p.name)}${p.id===user.uid?" (du)":""}</b><small>${p.own?(type==="recipes"&&ids.length>1?"Besitzer":"Hat die Liste angelegt"):esc(p.mail)}</small></span>
+            ${owner&&p.id!==user.uid?`<button type="button" class="rm${rmConfirm===p.id?" sure":""}" data-rm="${esc(p.id)}">${rmConfirm===p.id?"Entfernen?":"Entfernen"}</button>`:""}</li>`).join("")}</ul>
+        ${(()=>{ const fl=Object.entries(friends).filter(([id])=>!access[id]); return fl.length?`<p class="auth-sec">Freunde einladen</p>
+          <ul class="auth-people">${fl.map(([id,f])=>`<li>${avatar(id,f.name,30)}<span class="nm"><b>${esc(f.name||"Freund")}</b><small>bekommt die Einladung unter „Freunde“</small></span>
+          <button type="button" class="rm yes" data-fr-inv="${esc(id)}">Einladen</button></li>`).join("")}</ul>`:""; })()}
+        <p class="auth-sec">Per Link einladen</p>
+        <p class="auth-note">Der Link gilt nur für ${esc(PAGE.label)} und nur für eine Person. Wer ihn öffnet, tritt mit eigenem Konto bei. Deine anderen Seiten sieht die Person nicht.</p>
+        <button class="auth-btn" type="button" id="invNew">Einladungslink erstellen</button>
+        <div class="auth-copy" id="invBox" hidden><input type="text" id="invLink" readonly aria-label="Einladungslink"><button class="auth-btn" type="button" id="invCopy">Kopieren</button></div>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        ${nInv?`<button class="auth-link" type="button" id="invRevoke">${nInv} offene${nInv===1?"r Link":" Links"} · alle zurückziehen</button>`:""}
+        ${(type==="recipes"?ids.length>1:!owner)?`<button class="auth-link danger" type="button" id="leave">Diese ${esc(PAGE.noun)} verlassen</button>`:""}
+        <button class="auth-btn alt" type="button" id="ppClose">Fertig</button>`,true);
+      $a("#ppClose").onclick=()=>{ rmConfirm=null; hide(); };
+      $a("#invNew").onclick=async()=>{
+        const code=rand(20);
+        try{
+          await db.ref(`spaces/${sid}/invites/${code}`).set({by:user.uid,at:Date.now()});
+          const base=location.href.split("#")[0].replace(/[^/]*$/,"");
+          $a("#invLink").value=`${base}${PAGE.file}#join-${sid}-${code}`; $a("#invBox").hidden=false; msg("");
+        }catch(err){ msg("Der Link konnte nicht erstellt werden.",true); }
+      };
+      $a("#invCopy").onclick=async()=>{
+        try{ await navigator.clipboard.writeText($a("#invLink").value); msg("Kopiert. Jetzt per WhatsApp oder Mail verschicken."); }
+        catch(e){ $a("#invLink").select(); msg("Markiert. Jetzt kopieren und verschicken."); }
+      };
+      screen.querySelectorAll("[data-fr-inv]").forEach(b=>b.onclick=async()=>{
+        b.disabled=true; b.textContent="…";
+        try{ await inviteFriend(b.dataset.frInv); b.textContent="Eingeladen ✓"; b.classList.remove("yes"); b.classList.add("done"); }
+        catch(err){ b.disabled=false; b.textContent="Einladen"; msg("Die Einladung hat nicht geklappt. Prüf die Regeln in Firebase.",true); }
+      });
+      const rv=$a("#invRevoke"); if(rv) rv.onclick=async()=>{ await db.ref(`spaces/${sid}/invites`).remove().catch(()=>{}); peopleView(); };
+      screen.querySelectorAll("[data-rm]").forEach(b=>b.onclick=async()=>{
+        const id=b.dataset.rm;
+        if(rmConfirm!==id){ rmConfirm=id; peopleView(); return; }
+        rmConfirm=null;
+        await db.ref(`spaces/${sid}/access/${id}`).remove().catch(()=>{});
+        await db.ref(`spaces/${sid}/profiles/${id}`).remove().catch(()=>{});
+        peopleView();
+      });
+      const lv=$a("#leave"); if(lv) lv.onclick=async()=>{
+        if(lv.dataset.sure!=="1"){ lv.dataset.sure="1"; lv.textContent=type==="recipes"?"Wirklich austreten? Du behältst alle Rezepte als eigene Sammlung, neue teilt ihr nicht mehr.":"Wirklich verlassen? Du kommst nur mit einer neuen Einladung zurück."; return; }
+        if(type==="recipes"){
+          // alle Rezepte in eine eigene, neue Sammlung mitnehmen
+          lv.textContent="Rezepte werden mitgenommen …"; lv.disabled=true;
+          const nid=rand(20);
+          try{
+            await db.ref(`spaces/${nid}/access/${user.uid}`).set("owner");
+            await db.ref(`spaces/${nid}/meta`).set({type,owner:user.uid,createdAt:Date.now()});
+            await copyRecipes(sid,nid);
+            await db.ref(`users/${user.uid}/spaces/${type}`).set(nid);
+            const rd=(await db.ref(`spaces/${sid}/readers`).once("value")).val()||{};
+            for(const [k,v] of Object.entries(rd)) if(v&&v.by===user.uid) await db.ref(`spaces/${sid}/readers/${k}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/share/${user.uid}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/meta/owners/${user.uid}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/profiles/${user.uid}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/access/${user.uid}`).remove().catch(()=>{});
+          }catch(err){ lv.disabled=false; lv.textContent="Austreten hat nicht geklappt. Versuch es noch einmal."; return; }
+          location.reload(); return;
+        }
+        await db.ref(`spaces/${sid}/profiles/${user.uid}`).remove().catch(()=>{});
+        await db.ref(`spaces/${sid}/access/${user.uid}`).remove().catch(()=>{});
+        await db.ref(`users/${user.uid}/spaces/${type}`).remove().catch(()=>{});
+        location.reload();
+      };
+    }
+
+
+    /* ---------- Freunde ---------- */
+    let friends={}, requestsIn={}, inbox={}, friendCode=null, friendsOpen=false, frConfirm=null;
+    const frBadge=()=>Object.keys(requestsIn).length+Object.keys(inbox).length;
+    let chatUnread=0;
+    function updateFriendBadge(){
+      const n=frBadge(), b=document.getElementById("pfFriendBadge"), d=document.getElementById("pfDot"), c=document.getElementById("pfChatBadge");
+      if(b){ b.textContent=n; b.hidden=!n; } if(c){ c.textContent=chatUnread; c.hidden=!chatUnread; } if(d) d.hidden=!(n||chatUnread);
+    }
+    function watchChats(){
+      db.ref(`chatIndex/${user.uid}`).on("value",s=>{ const v=s.val()||{}; chatUnread=Object.values(v).reduce((a,x)=>a+(x&&+x.unread>0?+x.unread:0),0);
+        updateFriendBadge(); document.dispatchEvent(new CustomEvent("ours-chat",{detail:{unread:chatUnread,index:v}})); },()=>{});
+    }
+    async function ensureFriendCode(){
+      friendCode=(await db.ref(`users/${user.uid}/friendCode`).once("value")).val();
+      if(friendCode) return;
+      for(let i=0;i<5 && !friendCode;i++){
+        const c=rand(8).toUpperCase().replace(/[^A-Z0-9]/g,"X");
+        try{ await db.ref(`friendCodes/${c}`).set(user.uid); await db.ref(`users/${user.uid}/friendCode`).set(c); friendCode=c; }catch(e){}
+      }
+    }
+    function watchFriends(){
+      db.ref(`friends/${user.uid}`).on("value",s=>{ friends=s.val()||{}; if(friendsOpen) friendsView(); },()=>{});
+      db.ref(`requests/${user.uid}`).on("value",s=>{ requestsIn=s.val()||{}; updateFriendBadge(); if(friendsOpen) friendsView(); },()=>{});
+      db.ref(`inbox/${user.uid}`).on("value",s=>{ inbox=s.val()||{}; updateFriendBadge(); if(friendsOpen) friendsView(); },()=>{});
+    }
+    const myName=()=>profile.name||user.email.split("@")[0];
+    async function sendRequest(code){
+      code=String(code||"").trim().toUpperCase().replace(/^.*#FRIEND-/,"").replace(/[^A-Z0-9]/g,"");
+      if(code.length<6) return {err:"Gib einen Freundescode ein. Er hat 8 Zeichen."};
+      const uid=(await db.ref(`friendCodes/${code}`).once("value")).val();
+      if(!uid) return {err:"Zu diesem Code gibt es niemanden. Prüf die Schreibweise."};
+      if(uid===user.uid) return {err:"Das ist dein eigener Code."};
+      if(friends[uid]) return {ok:`${friends[uid].name||"Diese Person"} ist schon dein Freund.`};
+      if(requestsIn[uid]){ await acceptRequest(uid); return {ok:`Ihr seid jetzt befreundet.`}; }
+      await db.ref(`requests/${uid}/${user.uid}`).set({name:myName(),at:Date.now()});
+      return {ok:"Freundschaftsanfrage gesendet. Sobald sie angenommen ist, erscheint die Person hier."};
+    }
+    async function acceptRequest(from){
+      const req=requestsIn[from]||{}, now=Date.now();
+      await db.ref(`friends/${user.uid}/${from}`).set({name:req.name||"Freund",since:now});
+      await db.ref(`friends/${from}/${user.uid}`).set({name:myName(),since:now});
+      await db.ref(`requests/${user.uid}/${from}`).remove();
+    }
+    function friendsView(msgText,isErr){
+      friendsOpen=true;
+      const base=location.href.split("#")[0].replace(/[^/]*$/,"");
+      const link=friendCode?`${base}index.html#friend-${friendCode}`:"";
+      const reqs=Object.entries(requestsIn), inv=Object.entries(inbox), fl=Object.entries(friends).sort((a,b)=>(a[1].name||"").localeCompare(b[1].name||""));
+      const pageOf=t=>PAGES.find(p=>p.type===(t==="swipe"?"recipes":t))||PAGES[0];
+      show("Freunde",fl.length?`${fl.length} ${fl.length===1?"Freund":"Freunde"}`:"Füg Freunde hinzu, um sie schnell zu deinen Listen einzuladen.",`
+        ${inv.length?`<p class="auth-sec">Einladungen</p><ul class="auth-people">${inv.map(([id,x])=>`<li>${avatar(x.from,x.fromName,30)}
+          <span class="nm"><b>${esc(x.fromName||"Jemand")}</b><small>${x.type==="swipe"?"will mit dir Rezepte swipen":`lädt dich zu ${esc(pageOf(x.type).label)} ein`}</small></span>
+          <button type="button" class="rm" data-inv-no="${esc(id)}">Nein</button><button type="button" class="rm yes" data-inv-yes="${esc(id)}">Annehmen</button></li>`).join("")}</ul>`:""}
+        ${reqs.length?`<p class="auth-sec">Anfragen</p><ul class="auth-people">${reqs.map(([id,x])=>`<li>${avatar(id,x.name,30)}
+          <span class="nm"><b>${esc(x.name||"Jemand")}</b><small>möchte mit dir befreundet sein</small></span>
+          <button type="button" class="rm" data-req-no="${esc(id)}">Ablehnen</button><button type="button" class="rm yes" data-req-yes="${esc(id)}">Annehmen</button></li>`).join("")}</ul>`:""}
+        <p class="auth-sec">Deine Freunde</p>
+        ${fl.length?`<ul class="auth-people">${fl.map(([id,f])=>`<li>${avatar(id,f.name,30)}<span class="nm"><b>${esc(f.name||"Freund")}</b><small>befreundet seit ${new Date(f.since||Date.now()).toLocaleDateString("de-DE")}</small></span>
+          <button type="button" class="rm${frConfirm===id?" sure":""}" data-fr-rm="${esc(id)}">${frConfirm===id?"Entfernen?":"Entfernen"}</button></li>`).join("")}</ul>`
+          :`<p class="auth-note">Noch keine Freunde. Schick deinen Code oder Link, oder gib unten einen Code ein.</p>`}
+        <p class="auth-sec">Dein Freundescode</p>
+        <div class="fr-code">${esc(friendCode||"…")}</div>
+        <div class="auth-copy"><input type="text" id="frLink" readonly value="${esc(link)}" aria-label="Dein Freundes-Link"><button class="auth-btn" type="button" id="frCopy">Link kopieren</button></div>
+        <p class="auth-sec">Freund hinzufügen</p>
+        <form class="auth-copy" id="frAdd" autocomplete="off"><input type="text" id="frIn" maxlength="40" placeholder="Code, z.B. K7M2QX9A" aria-label="Freundescode"><button class="auth-btn" type="submit">Senden</button></form>
+        <p class="auth-msg${isErr?" err":""}" id="authMsg"${msgText?"":" hidden"}>${esc(msgText||"")}</p>
+        <button class="auth-btn alt" type="button" id="frClose">Fertig</button>`,true);
+      $a("#frClose").onclick=()=>{ friendsOpen=false; frConfirm=null; hide(); };
+      $a("#frCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText(link); msg("Kopiert. Schick den Link an deine Freunde."); }catch(e){ $a("#frLink").select(); msg("Markiert. Jetzt kopieren und verschicken."); } };
+      $a("#frAdd").onsubmit=async e=>{ e.preventDefault(); try{ const r=await sendRequest($a("#frIn").value); friendsView(r.err||r.ok,!!r.err); }catch(err){ friendsView("Das hat nicht geklappt. Prüf die Regeln in Firebase.",true); } };
+      screen.querySelectorAll("[data-req-yes]").forEach(b=>b.onclick=async()=>{ try{ await acceptRequest(b.dataset.reqYes); }catch(e){ friendsView("Annehmen hat nicht geklappt.",true); } });
+      screen.querySelectorAll("[data-req-no]").forEach(b=>b.onclick=()=>db.ref(`requests/${user.uid}/${b.dataset.reqNo}`).remove().catch(()=>{}));
+      screen.querySelectorAll("[data-inv-no]").forEach(b=>b.onclick=()=>db.ref(`inbox/${user.uid}/${b.dataset.invNo}`).remove().catch(()=>{}));
+      screen.querySelectorAll("[data-inv-yes]").forEach(b=>b.onclick=async()=>{
+        const x=inbox[b.dataset.invYes]; if(!x) return; const p=pageOf(x.type);
+        if(x.type==="swipe"){ friendsOpen=false; hide(); const t=`${p.file}#swipe-${x.sid}`; if(p.type===type){ history.replaceState(null,"",t); location.reload(); } else location.href=t; return; }
+        await db.ref(`inbox/${user.uid}/${b.dataset.invYes}`).remove().catch(()=>{});
+        const target=`${p.file}#join-${x.sid}-${x.code}`;
+        if(p.type===type){ history.replaceState(null,"",target); location.reload(); } else location.href=target;
+      });
+      screen.querySelectorAll("[data-fr-rm]").forEach(b=>b.onclick=async()=>{
+        const id=b.dataset.frRm; if(frConfirm!==id){ frConfirm=id; friendsView(); return; }
+        frConfirm=null;
+        await db.ref(`friends/${user.uid}/${id}`).remove().catch(()=>{});
+        await db.ref(`friends/${id}/${user.uid}`).remove().catch(()=>{});
+      });
+    }
+    // Freund direkt zu dieser Liste einladen (landet bei ihm unter "Freunde")
+    async function inviteFriend(fid){
+      const code=rand(20);
+      await db.ref(`spaces/${sid}/invites/${code}`).set({by:user.uid,at:Date.now(),for:fid});
+      await db.ref(`inbox/${fid}`).push().set({type,sid,code,from:user.uid,fromName:myName(),at:Date.now()});
+    }
+
+    /* ---------- Seite ohne Bereich: neu anlegen ---------- */
+    function setupView(problem){
+      hide();
+      const wrap=document.querySelector(".wrap"), head=document.querySelector("header");
+      if(!setupEl){ setupEl=document.createElement("div"); setupEl.className="auth-setup"; wrap.style.position="relative"; wrap.appendChild(setupEl); }
+      setupEl.style.top=(head.offsetTop+head.offsetHeight)+"px";
+      const cnt=document.getElementById("count"); if(cnt) cnt.textContent="";
+      let oldCode=null; try{ oldCode=localStorage.getItem("dateideen.code"); }catch(e){}
+      setupEl.innerHTML=`<div class="box">
+        <h3>${esc(PAGE.empty)}</h3>
+        ${problem?`<p class="auth-msg err">${esc(problem)}</p>`:""}
+        <p class="auth-note">${esc(PAGE.hint)}</p>
+        ${oldCode?`<label class="auth-check"><input type="checkbox" id="setMig" checked> Bisherige ${esc(PAGE.label)} von diesem Gerät übernehmen</label>`:""}
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <button class="auth-btn" type="button" id="setNew">${PAGE.type==="chores"?"Neuen Haushalt anlegen":PAGE.type==="budget"?"Budget anlegen":`${esc(PAGE.noun)} anlegen`}</button>
+        <p class="auth-note">Hat dich jemand eingeladen? Dann öffne einfach den Einladungslink.</p>
+      </div>`;
+      setupEl.hidden=false;
+      setupEl.querySelector("#setNew").onclick=async()=>{
+        const btn=setupEl.querySelector("#setNew"); btn.disabled=true; msg("Wird angelegt …",false,setupEl);
+        const id=rand(20);
+        try{
+          await db.ref(`spaces/${id}/access/${user.uid}`).set("owner");
+          await db.ref(`spaces/${id}/meta`).set({type,owner:user.uid,createdAt:Date.now()});
+          const mig=setupEl.querySelector("#setMig");
+          if(mig && mig.checked && oldCode){ msg("Bisherige Daten werden übernommen …",false,setupEl); await migrate(oldCode,id); }
+          await db.ref(`users/${user.uid}/spaces/${type}`).set(id);
+          ready(id);
+        }catch(err){ msg("Das Anlegen hat nicht geklappt. Prüf die Internetverbindung und die Regeln in Firebase.",true,setupEl); btn.disabled=false; }
+      };
+    }
+    // alte Daten vom geheimen Link übernehmen, nur was zu dieser Seite gehört
+    async function migrate(code,id){
+      if(type==="budget"){
+        const b=(await db.ref(`lists/${code}/budget`).once("value")).val();
+        if(b) await db.ref(`spaces/${id}`).update(b);
+        return;
+      }
+      const out={};
+      for(const k of PAGE.keys){ const v=(await db.ref(`lists/${code}/${k}`).once("value")).val(); if(v!=null) out[k]=v; }
+      const ids=new Set();
+      if(out.ideas) Object.values(out.ideas).forEach(i=>(Array.isArray(i.photos)?i.photos:[]).forEach(p=>ids.add(p)));
+      if(out.recipes) Object.values(out.recipes).forEach(r=>{ if(r.cover) ids.add(r.cover); });
+      if(ids.size){ out.photos={}; for(const p of ids){ const v=(await db.ref(`lists/${code}/photos/${p}`).once("value")).val(); if(v) out.photos[p]=v; } }
+      if(Object.keys(out).length) await db.ref(`spaces/${id}`).update(out);
+    }
+
+    /* ---------- Einladung annehmen ---------- */
+    async function join(j,current){
+      if(current && current!==j.sid && !confirm_ && type==="recipes"){
+        let n=0; try{ n=Object.keys((await db.ref(`spaces/${current}/recipes`).once("value")).val()||{}).length; }catch(e){}
+        show("Sammlungen zusammenlegen?","",`<p class="auth-note">Du hast schon eine eigene Rezeptsammlung${n?` mit ${n} ${n===1?"Rezept":"Rezepten"}`:""}. Beim Beitreten werden deine Rezepte in die gemeinsame Sammlung übernommen. Die Sammlung gehört dann euch beiden.</p>
+          <p class="auth-note">Wenn du später austrittst, behältst du alle Rezepte.</p>
+          <button class="auth-btn" type="button" id="jYes">Zusammenlegen</button>
+          <button class="auth-btn alt" type="button" id="jNo">Abbrechen</button>`);
+        $a("#jYes").onclick=()=>{ confirm_=true; $a("#jYes").disabled=true; $a("#jYes").textContent="Wird zusammengelegt …"; join(j,current); };
+        $a("#jNo").onclick=()=>{ clearHash(); hide(); open(current); };
+        return;
+      }
+      if(current && current!==j.sid && !confirm_){
+        show(`Einladung zu ${PAGE.label}`,"",`<p class="auth-note">Du bist schon in einer anderen ${esc(PAGE.noun)}. Möchtest du zur neuen wechseln? Die alte bleibt bestehen, du siehst sie dann aber nicht mehr.</p>
+          <button class="auth-btn" type="button" id="jYes">Zur neuen wechseln</button>
+          <button class="auth-btn alt" type="button" id="jNo">Bei meiner bleiben</button>`);
+        $a("#jYes").onclick=()=>{ confirm_=true; join(j,current); };
+        $a("#jNo").onclick=()=>{ clearHash(); hide(); open(current); };
+        return;
+      }
+      try{
+        await db.ref(`spaces/${j.sid}/access/${user.uid}`).set(j.code);
+        if(type==="recipes"){
+          await db.ref(`spaces/${j.sid}/meta/owners/${user.uid}`).set(true);   // gehört dann allen gemeinsam
+          if(current && current!==j.sid){
+            await copyRecipes(current,j.sid);
+            // alte Sammlung aufräumen, wenn sonst niemand drin war
+            try{ const acc=(await db.ref(`spaces/${current}/access`).once("value")).val()||{};
+              if(Object.keys(acc).length<=1) await db.ref(`spaces/${current}`).remove();
+              else { await db.ref(`spaces/${current}/profiles/${user.uid}`).remove(); await db.ref(`spaces/${current}/access/${user.uid}`).remove(); } }catch(e){}
+          }
+        }
+        await db.ref(`users/${user.uid}/spaces/${type}`).set(j.sid);
+        await db.ref(`spaces/${j.sid}/invites/${j.code}`).remove().catch(()=>{});   // Link gilt nur einmal
+        clearHash(); ready(j.sid);
+      }catch(err){ clearHash(); if(current) open(current); else setupView("Der Einladungslink ist ungültig oder wurde zurückgezogen."); }
+    }
+    let confirm_=false;
+    // Rezepte samt Titelbildern von einer Sammlung in eine andere kopieren (vorhandene bleiben)
+    async function copyRecipes(from,to){
+      const rs=(await db.ref(`spaces/${from}/recipes`).once("value")).val()||{};
+      const have=(await db.ref(`spaces/${to}/recipes`).once("value")).val()||{};
+      const out={};
+      for(const [id,r] of Object.entries(rs)){
+        if(have[id] || !r) continue;
+        if(r.cover && /^[0-9a-f]{32}$/.test(r.cover)){
+          const ph=(await db.ref(`spaces/${from}/photos/${r.cover}`).once("value")).val();
+          if(ph) await db.ref(`spaces/${to}/photos/${r.cover}`).set(ph);
+        }
+        out[id]=r;
+      }
+      if(Object.keys(out).length) await db.ref(`spaces/${to}/recipes`).update(out);
+    }
+
+    async function open(id){
+      try{ await db.ref(`spaces/${id}/meta`).once("value"); ready(id); }
+      catch(err){ await db.ref(`users/${user.uid}/spaces/${type}`).remove().catch(()=>{}); setupView("Du hast keinen Zugriff mehr auf diese Liste. Leg eine neue an oder lass dich wieder einladen."); }
+    }
+    function ready(id){
+      sid=id; hide(); if(setupEl) setupEl.hidden=true; updateMenu();
+      db.ref(`spaces/${id}/profiles/${user.uid}`).update({name:profile.name||user.email.split("@")[0],email:user.email}).catch(()=>{});
+      if(started) return; started=true;
+      cb(db.ref("spaces/"+id),{uid:user.uid,sid:id,email:user.email,name:profile.name});
+    }
+
+    auth.onAuthStateChanged(async u=>{
+      if(!u){ if(user){ location.reload(); return; } loginView(parseJoin()||/^#friend-/.test(location.hash)?"register":"login"); return; }
+      user=u;
+      show(PAGE.label,"",`<p class="auth-note">Lädt …</p>`);
+      try{
+        pubDb=db;
+        profile=(await db.ref(`users/${u.uid}/profile`).once("value")).val()||{};
+        if(!profile.name){
+          let n=""; try{ n=sessionStorage.getItem("auth.newName")||""; sessionStorage.removeItem("auth.newName"); }catch(e){}
+          profile.name=n||u.displayName||u.email.split("@")[0];
+          await db.ref(`users/${u.uid}/profile/name`).set(profile.name);
+        }
+        try{ const pb=(await db.ref(`pub/${u.uid}`).once("value")).val()||{}; pubCache.set(u.uid,pb);
+          if(pb.name!==profile.name) await db.ref(`pub/${u.uid}/name`).set(profile.name); pubCache.get(u.uid).name=profile.name; }catch(e){}
+        window.Auth._profileView=profileView; window.Auth.me=u.uid;
+        installMenu();
+        try{ await ensureFriendCode(); watchFriends(); watchChats(); }catch(e){}
+        const fr=location.hash.match(/^#friend-([A-Za-z0-9]{6,12})$/);
+        if(fr){ clearHash(); setTimeout(async()=>{ let r; try{ r=await sendRequest(fr[1]); }catch(e){ r={err:"Die Anfrage hat nicht geklappt."}; } friendsView(r.err||r.ok,!!r.err); },400); }
+        if(PAGE.noSpace){ hide(); updateMenu(); if(!started){ started=true; cb(null,{uid:u.uid,email:u.email,name:profile.name,db}); } return; }
+        const current=(await db.ref(`users/${u.uid}/spaces/${type}`).once("value")).val();
+        const j=parseJoin();
+        if(j){ await join(j,current); return; }
+        if(current){ await open(current); return; }
+        setupView();
+      }catch(err){
+        show(PAGE.label,"",`<p class="auth-msg err">Die Daten konnten nicht geladen werden. Prüf die Internetverbindung und die Regeln in Firebase.</p>
+          <button class="auth-btn" type="button" onclick="location.reload()">Neu laden</button>
+          <button class="auth-link" type="button" id="authOut">Abmelden</button>`);
+        $a("#authOut").onclick=()=>auth.signOut();
+      }
+    });
+  }};
+})();
+
+</script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=t=>String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const firebaseConfig = {
+  apiKey: "AIzaSyD6JNwGczfmHYTqHp9qI5bnutz-JLphgGI",
+  authDomain: "oursapp-ff4cf.firebaseapp.com",
+  databaseURL: "https://oursapp-ff4cf-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "oursapp-ff4cf",
+  storageBucket: "oursapp-ff4cf.firebasestorage.app",
+  messagingSenderId: "509984933255",
+  appId: "1:509984933255:web:1f2e8b0850c94056f87f22"
+};
+
+let db=null, me=null, myName="Ich", index={}, friends={}, picking=false, cur=null, msgs=[], readAt={}, msgRef=null, readRef=null;
+const cidOf=(a,b)=>[a,b].sort().join("_");
+const av=(uid,name,size)=>Auth.avatar(uid,name,size);
+const nameOf=(uid,fallback)=>{ const p=Auth.pub(uid); return (p&&p.name)||(friends[uid]&&friends[uid].name)||fallback||"Freund"; };
+const CHECK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12.5l4 4 7.5-8.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CHECK2='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12.5l4 4 7.5-8.5M10 15l1.5 1.5L19 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function showErr(e){ $("#status").textContent=/permission/i.test(String(e&&(e.code||e.message)))?"Keine Berechtigung. Prüf die Regeln in Firebase.":"Das hat nicht geklappt. Prüf die Internetverbindung."; }
+
+/* ---------- Zeiten ---------- */
+const sameDay=(a,b)=>a.toDateString()===b.toDateString();
+function dayLabel(t){ const d=new Date(t), n=new Date(), y=new Date(Date.now()-864e5);
+  if(sameDay(d,n)) return "Heute"; if(sameDay(d,y)) return "Gestern";
+  return d.toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short",year:d.getFullYear()===n.getFullYear()?undefined:"numeric"}); }
+const clock=t=>new Date(t).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+function listTime(t){ const d=new Date(t), n=new Date(); if(sameDay(d,n)) return clock(t); if(sameDay(d,new Date(Date.now()-864e5))) return "Gestern";
+  return d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"2-digit"}); }
+const linkify=t=>esc(t).replace(/https:\/\/[^\s<]+/g,u=>`<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+
+/* ---------- Liste ---------- */
+function renderList(){
+  $("#newChat").textContent=picking?"Abbrechen":"+ Neuer Chat";
+  $("#listTitle").textContent=picking?"Freund wählen":"Unterhaltungen";
+  if(picking){
+    const fl=Object.entries(friends).sort((a,b)=>nameOf(a[0],a[1].name).localeCompare(nameOf(b[0],b[1].name)));
+    $("#list").innerHTML=fl.length?`<ul class="clist">${fl.map(([id,f])=>`<li><button type="button" class="crow" data-with="${esc(id)}">${av(id,f.name,48)}
+        <span class="cmain"><span class="ctop"><b>${esc(nameOf(id,f.name))}</b></span><span class="cbot"><span>${esc((Auth.pub(id)||{}).bio||"Tippen, um zu schreiben")}</span></span></span></button></li>`).join("")}</ul>`
+      :`<div class="empty"><strong>Noch keine Freunde</strong><span>Füg über den Profil-Knopf oben rechts unter „Freunde“ jemanden hinzu. Dann könnt ihr hier schreiben.</span></div>`;
+    return;
+  }
+  const rows=Object.entries(index).filter(([,x])=>x&&x.with).sort((a,b)=>(b[1].at||0)-(a[1].at||0));
+  $("#list").innerHTML=rows.length?`<ul class="clist">${rows.map(([cid,x])=>{ const n=+x.unread||0;
+      return `<li><button type="button" class="crow" data-with="${esc(x.with)}">${av(x.with,x.name,50)}
+        <span class="cmain"><span class="ctop"><b>${esc(nameOf(x.with,x.name))}</b><time class="${n?"new":""}">${x.at?listTime(x.at):""}</time></span>
+        <span class="cbot"><span>${x.lastBy===me?"Du: ":""}${esc(x.last||"")}</span>${n?`<span class="unread">${n>99?"99+":n}</span>`:""}</span></span></button></li>`; }).join("")}</ul>`
+    :`<div class="empty"><strong>Noch keine Chats</strong><span>Tipp auf „+ Neuer Chat“ und such dir einen Freund aus. Oder öffne im Rezepte-Bereich das Profil eines Freundes und tipp auf „Nachricht“.</span></div>`;
+}
+$("#newChat").addEventListener("click",()=>{ picking=!picking; renderList(); });
+document.addEventListener("click",e=>{ const r=e.target.closest("[data-with]"); if(r) openTalk(r.dataset.with); });
+
+/* ---------- Unterhaltung ---------- */
+function openTalk(uid,replace){
+  if(!uid || uid===me) return;
+  picking=false; cur={uid,cid:cidOf(me,uid)};
+  if(replace) history.replaceState({talk:uid},"",location.pathname); else history.pushState({talk:uid},"",location.pathname);
+  $("#wrap").classList.add("talking"); $("#listView").hidden=true; $("#talkView").hidden=false;
+  const x=index[cur.cid]||{};
+  $("#talkWho").innerHTML=`${av(uid,x.name||(friends[uid]||{}).name,38)}<span><b>${esc(nameOf(uid,x.name))}</b><small>${friends[uid]?"Freund":"nicht mehr befreundet"}</small></span>`;
+  msgs=[]; readAt={}; renderMsgs(true);
+  if(msgRef) msgRef.off(); if(readRef) readRef.off();
+  const base=db.ref(`chats/${cur.cid}`);
+  msgRef=base.child("messages"); const q=msgRef.limitToLast?msgRef.limitToLast(400):msgRef;
+  q.on("value",s=>{ const v=s.val()||{}; msgs=Object.entries(v).map(([id,m])=>({id,...m})).filter(m=>m&&m.text).sort((a,b)=>a.at-b.at); renderMsgs(); markRead(); },showErr);
+  readRef=base.child("read"); readRef.on("value",s=>{ readAt=s.val()||{}; renderMsgs(); },()=>{});
+  msgRef=q;
+  setTimeout(()=>{ if(matchMedia("(pointer:fine)").matches) $("#msgIn").focus(); },50);
+}
+function closeTalk(){
+  if(msgRef) msgRef.off(); if(readRef) readRef.off(); msgRef=readRef=null; cur=null;
+  $("#wrap").classList.remove("talking"); $("#talkView").hidden=true; $("#listView").hidden=false; renderList();
+}
+$("#talkBack").addEventListener("click",()=>{ if(history.state&&history.state.talk) history.back(); else closeTalk(); });
+addEventListener("popstate",e=>{ if(e.state&&e.state.talk) openTalk(e.state.talk,true); else if(cur) closeTalk(); });
+function markRead(){
+  if(!cur || document.hidden) return;
+  const last=msgs.length?msgs[msgs.length-1].at:0;
+  if(last && (readAt[me]||0)<last){ readAt[me]=last; db.ref(`chats/${cur.cid}/read/${me}`).set(last).catch(()=>{}); }
+  if(index[cur.cid] && +index[cur.cid].unread){ index[cur.cid].unread=0; db.ref(`chatIndex/${me}/${cur.cid}/unread`).set(0).catch(()=>{}); }
+}
+document.addEventListener("visibilitychange",markRead);
+function renderMsgs(jump){
+  if(!cur) return;
+  const box=$("#msgs"), atEnd=box.scrollHeight-box.scrollTop-box.clientHeight<80;
+  if(!msgs.length){ box.innerHTML=`<p class="hello">Schreib ${esc(nameOf(cur.uid))} die erste Nachricht.</p>`; return; }
+  const seen=readAt[cur.uid]||0; let html="", prev=null;
+  msgs.forEach(m=>{
+    if(!prev || !sameDay(new Date(prev.at),new Date(m.at))) html+=`<div class="day">${dayLabel(m.at)}</div>`;
+    const mine=m.by===me, cont=prev && prev.by===m.by && sameDay(new Date(prev.at),new Date(m.at)) && m.at-prev.at<5*60e3;
+    html+=`<div class="msg ${mine?"mine":"theirs"}${cont?" cont":""}">${linkify(m.text)}<span class="meta">${clock(m.at)}${mine?`<span class="${m.at<=seen?"read":""}" aria-label="${m.at<=seen?"gelesen":"gesendet"}">${m.at<=seen?CHECK2:CHECK}</span>`:""}</span></div>`;
+    prev=m;
+  });
+  box.innerHTML=html;
+  if(jump || atEnd) box.scrollTop=box.scrollHeight;
+}
+const msgIn=$("#msgIn");
+const grow=()=>{ msgIn.style.height="auto"; msgIn.style.height=Math.min(140,msgIn.scrollHeight)+"px"; $("#sendBtn").disabled=!msgIn.value.trim(); };
+msgIn.addEventListener("input",grow);
+msgIn.addEventListener("keydown",e=>{ if(e.key==="Enter" && !e.shiftKey && matchMedia("(pointer:fine)").matches){ e.preventDefault(); $("#composer").requestSubmit(); } });
+$("#composer").addEventListener("submit",async e=>{
+  e.preventDefault(); if(!cur) return;
+  const text=msgIn.value.trim().slice(0,2000); if(!text) return;
+  msgIn.value=""; grow();
+  const at=Date.now(), c=cur, last=text.replace(/\s+/g," ").slice(0,80);
+  try{
+    await db.ref(`chats/${c.cid}/messages`).push().set({by:me,text,at});
+    await db.ref(`chatIndex/${me}/${c.cid}`).update({with:c.uid,name:nameOf(c.uid,(index[c.cid]||{}).name),last,lastBy:me,at,unread:0});
+    const inc=firebase.database.ServerValue&&firebase.database.ServerValue.increment?firebase.database.ServerValue.increment(1):1;
+    await db.ref(`chatIndex/${c.uid}/${c.cid}`).update({with:me,name:myName,last,lastBy:me,at,unread:inc});
+  }catch(err){ msgIn.value=text; grow(); showErr(err); }
+});
+
+/* ---------- Start ---------- */
+Auth.start(firebaseConfig,"chat",(r,info)=>{
+  if(!info){ $("#status").textContent="Die Verbindung hat nicht geklappt. Lade die Seite neu."; return; }
+  db=info.db||firebase.database(); me=info.uid; myName=info.name||"Ich";
+  const want=(location.hash.match(/^#with-([A-Za-z0-9_-]{6,64})$/)||[])[1];
+  history.replaceState(null,"",location.pathname);
+  db.ref(`friends/${me}`).on("value",s=>{ friends=s.val()||{}; if(!cur) renderList(); },()=>{});
+  db.ref(`chatIndex/${me}`).on("value",s=>{ index=s.val()||{}; if(!cur) renderList(); else markRead(); },err=>showErr(err));
+  renderList();
+  if(want) openTalk(want);
+});
+document.addEventListener("ours-pub",()=>{ if(!cur) renderList(); });
+</script>
+</body>
+</html>

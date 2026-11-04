@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Ours · Rezepte</title>
+<link rel="icon" href="ours-logo.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600&family=Playfair+Display:wght@800;900&display=swap">
 <style>
@@ -292,6 +294,11 @@ header p{margin-top:4px;font-size:.88rem}
 .srcrow .filter-btn{margin:0;padding:0 12px;border-radius:10px;gap:4px;min-width:44px;justify-content:center}
 .srcrow .filter-btn span:empty{display:none}
 .fab-left{right:auto;left:0}
+.fab-mid{right:auto;left:calc(50% - 28px)}
+a.fab{text-decoration:none}
+.fab-badge{position:absolute;top:-2px;right:-2px;min-width:20px;height:20px;border-radius:999px;background:#e8a33d;color:#2b1e21;font-size:.72rem;font-weight:700;display:grid;place-items:center;padding:0 5px;border:2px solid var(--bg)}
+.tabn{font-weight:500;opacity:.7;font-size:.82em}
+.tabn:empty{display:none}
 #swipeBtn{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;transition:transform .5s ease}
 #swipeBtn.holding{transform:scale(1.12)}
 #swipeBtn.dot::after{content:"";position:absolute;top:4px;right:4px;width:12px;height:12px;border-radius:50%;background:#e8a33d;border:2px solid var(--bg)}
@@ -374,6 +381,7 @@ header p{margin-top:4px;font-size:.88rem}
 .post-head .av-btn .ours-av{font-size:.9rem}
 .prof-sheet{max-width:460px}
 #profEdit{align-self:center;margin:2px auto 4px;display:block}
+.prof-msg{display:block;text-align:center;text-decoration:none;margin:2px auto 4px;width:max-content}
 .prof-cat{margin:10px 0 2px;font-weight:600;font-size:.92rem;display:flex;gap:6px;align-items:baseline}
 .prof-cat span{color:var(--muted);font-weight:500;font-size:.82rem}
 .av-zoom{border:0;background:none;padding:0;border-radius:50%;cursor:zoom-in}
@@ -588,7 +596,7 @@ body{background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px)!impor
   </header>
 
   <section class="panel" id="listView">
-    <div class="srcrow"><div class="seg" role="group" aria-label="Welche Rezepte"><button type="button" data-src="mine" aria-pressed="true">Meine</button><button type="button" data-src="friends" aria-pressed="false">Freunde</button><button type="button" data-src="feed" aria-pressed="false">Feed<span class="nbadge" id="feedBadge" hidden></span></button></div><button class="btn filter-btn" id="filterBtn" type="button" aria-expanded="false" aria-controls="filters" aria-label="Nach Kategorie filtern"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7.5V18l-4 2v-7.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span id="filterLabel"></span></button></div>
+    <div class="srcrow"><div class="seg" role="group" aria-label="Welche Rezepte"><button type="button" data-src="mine" aria-pressed="true">Meine <span class="tabn" id="mineN"></span></button><button type="button" data-src="friends" aria-pressed="false">Freunde</button><button type="button" data-src="feed" aria-pressed="false">Feed<span class="nbadge" id="feedBadge" hidden></span></button></div><button class="btn filter-btn" id="filterBtn" type="button" aria-expanded="false" aria-controls="filters" aria-label="Nach Kategorie filtern"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7.5V18l-4 2v-7.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span id="filterLabel"></span></button></div>
     <form class="newform" id="newForm" hidden autocomplete="off">
       <button class="pick" type="button" id="pickCover"><span id="pickLabel">Titelbild auswählen</span></button>
       <input id="newName" placeholder="Name, z.B. Linsen-Curry mit Kokos" maxlength="120" aria-label="Name des Rezepts">
@@ -606,8 +614,9 @@ body{background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px)!impor
         <span>Tipp unten rechts auf das Plus: Trag ein Rezept selbst ein, füg einen Video-Link ein oder fotografier ein Rezept.</span>
       </div>
     </div>
-    <div class="count fab-count" id="count" aria-live="polite">Verbindet …</div>
-    <button class="fab fab-left" id="swipeBtn" type="button" aria-label="Swipen. Gedrückt halten, um mit einem Freund zu swipen" title="Swipen – gedrückt halten für Freunde"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="currentColor"/></svg></button>
+    <div class="count fab-count" id="count" aria-live="polite" hidden>Verbindet …</div>
+    <a class="fab fab-left" id="chatBtn" href="chat.html" aria-label="Chats mit Freunden" title="Chats"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A1.5 1.5 0 0 1 4 14.5z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg><span class="fab-badge" id="chatBadge" hidden></span></a>
+    <button class="fab fab-mid" id="swipeBtn" type="button" aria-label="Swipen. Gedrückt halten, um mit einem Freund zu swipen" title="Swipen – gedrückt halten für Freunde"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="currentColor"/></svg></button>
     <div class="fab-menu" id="fabMenu" aria-hidden="true">
       <button class="fab-opt" type="button" id="newBtn" tabindex="-1"><span>Selbst eintragen</span><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19h4l10-10-4-4L5 15zM13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg></i></button>
       <button class="fab-opt" type="button" id="optLink" tabindex="-1"><span>Per Link</span><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.2 1.2M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.2-1.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></i></button>
@@ -722,6 +731,7 @@ body{background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px)!impor
     {type:"rooms",   file:"raum.html",     label:"Raumdesign", color:"#8a4a30", noun:"Raumsammlung",
      empty:"Noch keine Raumsammlung", hint:"Leg eine Sammlung an, fotografier deine Räume und probier Einrichtungsstile aus. Später kannst du jemanden dazuholen.",
      keys:[]},
+    {type:"chat",    file:"chat.html",     label:"Chats", color:"#5f6e54", noSpace:true},
   ];
   const CSS = `
   .auth-screen{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow-y:auto;background:var(--page);
@@ -800,8 +810,12 @@ body{background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px)!impor
   /* Freunde */
   .pf-badge{margin-left:auto;min-width:20px;height:20px;border-radius:10px;padding:0 6px;background:#d9534f;color:#fff;font-size:.72rem;font-weight:700;display:inline-grid;place-items:center}
   .pf-dot{position:absolute;top:-1px;right:-1px;width:12px;height:12px;border-radius:50%;background:#d9534f;border:2px solid var(--band)}
-  .ours-mark{display:flex;align-items:center;gap:7px;font-family:var(--display);font-size:1.05rem;line-height:1;letter-spacing:.04em;color:var(--on-band);margin-bottom:6px}
-  .ours-mark::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;opacity:.7}
+  .ours-mark{display:none!important}
+  .ours-logo{position:absolute;left:16px;top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2);z-index:31;width:40px;height:40px;border-radius:11px;overflow:hidden;
+    box-shadow:0 0 0 1.5px color-mix(in srgb,var(--on-band) 30%,transparent),0 4px 10px -4px rgba(0,0,0,.4);display:block}
+  .ours-logo img{width:100%;height:100%;display:block}
+  header{padding-left:64px!important}
+  .pf-menu .pf-logo{width:34px;height:34px;border-radius:9px;margin:0 auto 4px;display:block}
   .pf-brand{font-family:var(--display);font-size:1.15rem;line-height:1;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
   .fr-code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.5rem;font-weight:700;letter-spacing:.18em;text-align:center;padding:10px;border-radius:12px;
     background:var(--surface);border:1.5px dashed var(--line);color:var(--ink)}
@@ -818,6 +832,7 @@ body{background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px)!impor
     user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
     gear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
     heart:'<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    chat:'<svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4h0A1.5 1.5 0 0 1 4 14.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
     out:'<svg viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 16l4-4-4-4M14 12H4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   };
   const ERR = {
@@ -868,7 +883,7 @@ body{background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px)!impor
     const st=document.createElement("style"); st.textContent=CSS; document.head.appendChild(st);
     // Name der App oben in jeder Seite
     const hd=document.querySelector("header");
-    if(hd && !hd.querySelector(".ours-mark")) hd.insertAdjacentHTML("afterbegin",'<div class="ours-mark">Ours</div>');
+    if(hd && !hd.querySelector(".ours-logo")) hd.insertAdjacentHTML("afterbegin",'<span class="ours-logo" role="img" aria-label="Ours"><img src="ours-logo.png" alt=""></span>');
     let auth, db;
     try{ if(!firebase.apps.length) firebase.initializeApp(config); auth=firebase.auth(); db=firebase.database(); }
     catch(e){ cb(null); return; }
@@ -945,11 +960,12 @@ body{background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px)!impor
       const head=document.querySelector("header"); if(!head || head.querySelector(".pf-btn")) { updateMenu(); return; }
       head.insertAdjacentHTML("beforeend",`<button class="pf-btn" type="button" id="pfBtn" aria-haspopup="true" aria-expanded="false" aria-controls="pfMenu" aria-label="Profil und Seiten"><span id="pfInit"></span><span class="pf-dot" id="pfDot" hidden></span></button>
         <nav class="pf-menu" id="pfMenu" hidden aria-label="Profil und Seiten">
-          <div class="pf-who"><span class="pf-brand">Ours</span><b id="pfName"></b><small id="pfMail"></small></div>
+          <div class="pf-who"><img class="pf-logo" src="ours-logo.png" alt=""><span class="pf-brand">Ours</span><b id="pfName"></b><small id="pfMail"></small></div>
           <div class="pf-sep"></div>
-          ${PAGES.map(p=>`<a href="${p.file}" data-page="${p.type}"${p.type===type?' aria-current="page"':""}><span class="dot" style="background:${p.color}"></span>${p.label}</a>`).join("")}
+          ${PAGES.filter(p=>!p.noSpace).map(p=>`<a href="${p.file}" data-page="${p.type}"${p.type===type?' aria-current="page"':""}><span class="dot" style="background:${p.color}"></span>${p.label}</a>`).join("")}
           <div class="pf-sep"></div>
           <button type="button" data-pf="people">${IC.people}Personen bei ${esc(PAGE.label)}</button>
+          <a href="chat.html" class="pf-chat"${type==="chat"?' aria-current="page"':""}>${IC.chat}Chats<span class="pf-badge" id="pfChatBadge" hidden></span></a>
           <button type="button" data-pf="friends">${IC.heart}Freunde<span class="pf-badge" id="pfFriendBadge" hidden></span></button>
           <button type="button" data-pf="profile">${IC.user}Mein Profil</button>
           <button type="button" data-pf="settings">${IC.gear}Einstellungen</button>
@@ -970,7 +986,7 @@ body{background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px)!impor
       document.getElementById("pfInit").innerHTML=avatar(user.uid,name,37); updateFriendBadge();
       document.getElementById("pfName").textContent=name;
       document.getElementById("pfMail").textContent=user.email;
-      document.querySelector('[data-pf="people"]').disabled=!sid;
+      const pp=document.querySelector('[data-pf="people"]'); pp.disabled=!sid; pp.hidden=!!PAGE.noSpace;
     }
 
     /* ---------- Profil, Einstellungen ---------- */
@@ -1116,9 +1132,14 @@ body{background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px)!impor
     /* ---------- Freunde ---------- */
     let friends={}, requestsIn={}, inbox={}, friendCode=null, friendsOpen=false, frConfirm=null;
     const frBadge=()=>Object.keys(requestsIn).length+Object.keys(inbox).length;
+    let chatUnread=0;
     function updateFriendBadge(){
-      const n=frBadge(), b=document.getElementById("pfFriendBadge"), d=document.getElementById("pfDot");
-      if(b){ b.textContent=n; b.hidden=!n; } if(d) d.hidden=!n;
+      const n=frBadge(), b=document.getElementById("pfFriendBadge"), d=document.getElementById("pfDot"), c=document.getElementById("pfChatBadge");
+      if(b){ b.textContent=n; b.hidden=!n; } if(c){ c.textContent=chatUnread; c.hidden=!chatUnread; } if(d) d.hidden=!(n||chatUnread);
+    }
+    function watchChats(){
+      db.ref(`chatIndex/${user.uid}`).on("value",s=>{ const v=s.val()||{}; chatUnread=Object.values(v).reduce((a,x)=>a+(x&&+x.unread>0?+x.unread:0),0);
+        updateFriendBadge(); document.dispatchEvent(new CustomEvent("ours-chat",{detail:{unread:chatUnread,index:v}})); },()=>{});
     }
     async function ensureFriendCode(){
       friendCode=(await db.ref(`users/${user.uid}/friendCode`).once("value")).val();
@@ -1330,9 +1351,10 @@ body{background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px)!impor
           if(pb.name!==profile.name) await db.ref(`pub/${u.uid}/name`).set(profile.name); pubCache.get(u.uid).name=profile.name; }catch(e){}
         window.Auth._profileView=profileView; window.Auth.me=u.uid;
         installMenu();
-        try{ await ensureFriendCode(); watchFriends(); }catch(e){}
+        try{ await ensureFriendCode(); watchFriends(); watchChats(); }catch(e){}
         const fr=location.hash.match(/^#friend-([A-Za-z0-9]{6,12})$/);
         if(fr){ clearHash(); setTimeout(async()=>{ let r; try{ r=await sendRequest(fr[1]); }catch(e){ r={err:"Die Anfrage hat nicht geklappt."}; } friendsView(r.err||r.ok,!!r.err); },400); }
+        if(PAGE.noSpace){ hide(); updateMenu(); if(!started){ started=true; cb(null,{uid:u.uid,email:u.email,name:profile.name,db}); } return; }
         const current=(await db.ref(`users/${u.uid}/spaces/${type}`).once("value")).val();
         const j=parseJoin();
         if(j){ await join(j,current); return; }
@@ -1504,6 +1526,7 @@ const cur=()=>recipes.find(r=>r.id===view);
 /* ---------- Rendern ---------- */
 function render(){
   $("#count").textContent = recipes.length===1?"1 Rezept":`${recipes.length} Rezepte`;
+  $("#mineN").textContent = recipes.length||"";
   const r=cur(); if(view && !r) view=null;
   const mode = view ? "detail" : swipeOpen ? "swipe" : "list";
   $("#head").hidden = mode!=="list"; $("#listView").hidden = mode!=="list";
@@ -2455,6 +2478,7 @@ function renderProfile(){
       :f.recipes.length?friendCards(f):`<p class="card-meta">${esc(name)} hat noch keine Rezepte.</p>`;
   }
   const hasPic=p.photo&&/^data:image\//.test(p.photo);
+  if(!me && f) body=`<a class="btn primary prof-msg" href="chat.html#with-${esc(uid)}">Nachricht schreiben</a>`+body;
   $("#profBody").innerHTML=`<div class="prof-head">${hasPic?`<button type="button" class="av-zoom" data-zoom="${esc(uid)}" aria-label="Profilbild groß ansehen">${av(uid,name,128)}</button>`:av(uid,name,128)}<h3>${esc(name)}${me?" <small>(du)</small>":""}</h3>
       ${p.bio?`<p class="prof-bio">${esc(p.bio)}</p>`:me?`<p class="prof-bio muted">Noch nichts über dich. Erzähl unter „Profil bearbeiten“, was du gern kochst.</p>`:""}
       <div class="prof-stats">${stats}</div></div>${body}`;
@@ -2466,6 +2490,7 @@ document.addEventListener("click",e=>{ const z=e.target.closest("[data-zoom]"); 
   o.onclick=()=>o.remove(); document.body.appendChild(o); });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ const o=document.querySelector(".av-light"); if(o) o.remove(); } });
 if(window.Auth) Auth.profileHandler=uid=>openProfile(uid);
+document.addEventListener("ours-chat",e=>{ const n=e.detail.unread||0, b=$("#chatBadge"); b.textContent=n>99?"99+":n; b.hidden=!n; });
 $("#profClose").addEventListener("click",closeProfile);
 $("#profModal").addEventListener("click",e=>{ if(e.target.id==="profModal") return closeProfile(); if(e.target.closest("#profEdit")){ closeProfile(); window.Auth&&Auth.editProfile(); } });
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-prof]"); if(b){ e.preventDefault(); $("#frx").hidden=true; openProfile(b.dataset.prof); return; }
