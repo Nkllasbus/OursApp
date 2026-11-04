@@ -47,6 +47,8 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
 .seg button[aria-pressed="true"]{background:var(--band);color:var(--on-band)}
 .btn{background:var(--btn);color:var(--ink);border:0;border-radius:10px;padding:9px 14px;font-weight:600;font-size:.92rem}
 .btn.primary{background:var(--band);color:var(--on-band)}
+#addEx{white-space:nowrap;flex:none}
+@media (max-width:430px){.wide{display:none} #addEx{width:42px;padding:9px 0;font-size:1.2rem}}
 .ghost{background:none;border:0;color:var(--muted);padding:8px 4px}
 .linkish{background:none;border:0;padding:0;color:var(--accent);font-weight:600;text-decoration:underline;font-size:.88rem}
 .scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:2px 2px 90px;margin:0 -2px;display:flex;flex-direction:column;gap:10px}
@@ -157,7 +159,35 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
 .exset{border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--bg)}
 .exset-h{display:flex;align-items:center;gap:10px}
 .sets{display:flex;flex-direction:column;gap:6px}
-.set-h,.set{display:grid;grid-template-columns:34px 1fr 1fr 22px;gap:8px;align-items:center}
+.set-h,.set{display:grid;grid-template-columns:34px 1fr 1fr;gap:8px;align-items:center}
+.set.cardio,.set-h:has(+.set.cardio){grid-template-columns:34px 1fr}
+.stp{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden}
+.stp input{border:0!important;border-radius:0!important;padding:8px 2px!important;flex:1;min-width:0}
+.stp input.up-in{color:var(--ok);font-weight:700}
+.sb{flex:none;width:32px;height:38px;border:0;background:var(--accent-soft);color:var(--accent);font-size:1.15rem;font-weight:700;padding:0;line-height:1}
+.sb:active{background:var(--band);color:var(--on-band)}
+.set button.sn{cursor:pointer;padding:0}
+.set button.sn svg{width:16px;height:16px}
+.set-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.set-foot small{font-size:.74rem;color:var(--muted)}
+.sdone{flex:none;font-size:.78rem;font-weight:700;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
+.exset.all{border-color:var(--ok)}
+.exset.all .sdone{background:var(--ok);border-color:var(--ok);color:#fff}
+.mark{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:.95rem;color:#fff}
+.mark.ok{background:var(--ok)}
+.mark.miss{background:#c0453a}
+.pblock.is-miss{opacity:.78}
+.pblock.is-done .pb-txt b::after{content:"";}
+.train.edit{border-color:#d0a03c}
+.edit-dur label{display:flex;align-items:center;gap:8px;font-size:.9rem}
+.edit-dur input{width:80px;font:inherit;text-align:center;padding:7px 8px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg)}
+.danger-l{color:#b0412e;align-self:center}
+.hist-sec{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.hlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.hlist button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--tc);border-radius:12px;padding:8px 12px;color:var(--ink)}
+.hd{flex:none;width:38px;text-align:center;line-height:1.05}
+.hd b{display:block;font-size:1.15rem}
+.hd small{font-size:.7rem;color:var(--muted);text-transform:uppercase}
 .set-h{font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
 .set-h span:first-child{text-align:center}
 .set .sn{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line);font-size:.82rem;font-weight:700;justify-self:center}
@@ -165,7 +195,7 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
 .set input{font:inherit;font-size:1rem;text-align:center;padding:8px 6px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);min-width:0;width:100%}
 .set input:focus{outline:none;border-color:var(--accent)}
 .set input::placeholder{color:#a3a6b8}
-.set .up{color:var(--ok);font-weight:700;font-size:.85rem}
+
 .add-set{align-self:flex-start;border:1px dashed var(--line);background:none;color:var(--accent);border-radius:10px;padding:6px 12px;font-weight:600;font-size:.85rem}
 .sum-sheet{gap:14px}
 .sum-top{text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px}
@@ -282,7 +312,7 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
   <section class="panel">
     <div class="topbar">
       <div class="seg" role="group" aria-label="Ansicht"><button type="button" data-view="week" aria-pressed="true">Wochenplan</button><button type="button" data-view="ex" aria-pressed="false">Übungen</button><button type="button" data-view="fr" aria-pressed="false">Freunde</button></div>
-      <button class="btn primary" type="button" id="addEx">+ Übung</button>
+      <button class="btn primary" type="button" id="addEx" aria-label="Übung hinzufügen">+<span class="wide"> Übung</span></button>
     </div>
     <div class="scroll" id="list"></div>
   </section>
@@ -524,7 +554,7 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-04-225939";
+  const APP_VERSION="2026-11-04-233233";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1110,7 +1140,7 @@ const GROUPS=[
 ];
 const grpOf=id=>GROUPS.find(g=>g.id===id)||GROUPS[0];
 // Die gängigsten Übungen mit Bildern (Start und Ende) aus der freien „Free Exercise DB“ (gemeinfrei)
-const CATALOG=[{"g": "brust", "n": "Bankdrücken", "img": "Barbell_Bench_Press_-_Medium_Grip", "s": "3", "r": "8"},{"g": "brust", "n": "Schrägbankdrücken", "img": "Barbell_Incline_Bench_Press_-_Medium_Grip", "s": "3", "r": "10"},{"g": "brust", "n": "Kurzhantel-Bankdrücken", "img": "Dumbbell_Bench_Press", "s": "3", "r": "10"},{"g": "brust", "n": "Kurzhantel-Flys", "img": "Dumbbell_Flyes", "s": "3", "r": "12"},{"g": "brust", "n": "Butterfly", "img": "Butterfly", "s": "3", "r": "12"},{"g": "brust", "n": "Kabelzug-Crossover", "img": "Cable_Crossover", "s": "3", "r": "12"},{"g": "brust", "n": "Dips (Brust)", "img": "Dips_-_Chest_Version", "s": "3", "r": "10"},{"g": "brust", "n": "Liegestütze", "img": "Pushups", "s": "3", "r": "15"},{"g": "ruecken", "n": "Klimmzüge", "img": "Pullups", "s": "3", "r": "8"},{"g": "ruecken", "n": "Latziehen", "img": "Wide-Grip_Lat_Pulldown", "s": "3", "r": "10"},{"g": "ruecken", "n": "Rudern am Kabel", "img": "Seated_Cable_Rows", "s": "3", "r": "10"},{"g": "ruecken", "n": "Langhantelrudern", "img": "Bent_Over_Barbell_Row", "s": "3", "r": "8"},{"g": "ruecken", "n": "Kurzhantelrudern einarmig", "img": "One-Arm_Dumbbell_Row", "s": "3", "r": "10"},{"g": "ruecken", "n": "Kreuzheben", "img": "Barbell_Deadlift", "s": "3", "r": "6"},{"g": "ruecken", "n": "Hyperextensions", "img": "Hyperextensions_Back_Extensions", "s": "3", "r": "12"},{"g": "schulter", "n": "Schulterdrücken (Langhantel)", "img": "Barbell_Shoulder_Press", "s": "3", "r": "8"},{"g": "schulter", "n": "Schulterdrücken (Kurzhantel)", "img": "Dumbbell_Shoulder_Press", "s": "3", "r": "10"},{"g": "schulter", "n": "Seitheben", "img": "Side_Lateral_Raise", "s": "3", "r": "12"},{"g": "schulter", "n": "Frontheben", "img": "Front_Dumbbell_Raise", "s": "3", "r": "12"},{"g": "schulter", "n": "Face Pulls", "img": "Face_Pull", "s": "3", "r": "15"},{"g": "schulter", "n": "Reverse Flys", "img": "Reverse_Flyes", "s": "3", "r": "12"},{"g": "schulter", "n": "Arnold Press", "img": "Arnold_Dumbbell_Press", "s": "3", "r": "10"},{"g": "schulter", "n": "Aufrechtes Rudern", "img": "Upright_Barbell_Row", "s": "3", "r": "10"},{"g": "bizeps", "n": "Langhantelcurls", "img": "Barbell_Curl", "s": "3", "r": "10"},{"g": "bizeps", "n": "Kurzhantelcurls", "img": "Dumbbell_Bicep_Curl", "s": "3", "r": "10"},{"g": "bizeps", "n": "Hammercurls", "img": "Hammer_Curls", "s": "3", "r": "10"},{"g": "bizeps", "n": "Konzentrationscurls", "img": "Concentration_Curls", "s": "3", "r": "12"},{"g": "bizeps", "n": "Scottcurls", "img": "Preacher_Curl", "s": "3", "r": "10"},{"g": "bizeps", "n": "Kabelcurls", "img": "Standing_Biceps_Cable_Curl", "s": "3", "r": "12"},{"g": "trizeps", "n": "Trizepsdrücken am Kabel", "img": "Triceps_Pushdown", "s": "3", "r": "12"},{"g": "trizeps", "n": "Trizepsdrücken mit Seil", "img": "Triceps_Pushdown_-_Rope_Attachment", "s": "3", "r": "12"},{"g": "trizeps", "n": "French Press", "img": "Lying_Triceps_Press", "s": "3", "r": "10"},{"g": "trizeps", "n": "Überkopf-Trizepsdrücken", "img": "Cable_Rope_Overhead_Triceps_Extension", "s": "3", "r": "12"},{"g": "trizeps", "n": "Dips (Trizeps)", "img": "Dips_-_Triceps_Version", "s": "3", "r": "10"},{"g": "trizeps", "n": "Enges Bankdrücken", "img": "Close-Grip_Barbell_Bench_Press", "s": "3", "r": "8"},{"g": "trizeps", "n": "Kickbacks", "img": "Tricep_Dumbbell_Kickback", "s": "3", "r": "12"},{"g": "bauch", "n": "Crunches", "img": "Crunches", "s": "3", "r": "15"},{"g": "bauch", "n": "Plank", "img": "Plank", "s": "3", "r": "45 s"},{"g": "bauch", "n": "Hängendes Beinheben", "img": "Hanging_Leg_Raise", "s": "3", "r": "12"},{"g": "bauch", "n": "Russian Twists", "img": "Russian_Twist", "s": "3", "r": "20"},{"g": "bauch", "n": "Ab-Roller", "img": "Ab_Roller", "s": "3", "r": "10"},{"g": "bauch", "n": "Kabel-Crunches", "img": "Cable_Crunch", "s": "3", "r": "15"},{"g": "quads", "n": "Kniebeugen", "img": "Barbell_Squat", "s": "3", "r": "8"},{"g": "quads", "n": "Frontkniebeugen", "img": "Front_Barbell_Squat", "s": "3", "r": "8"},{"g": "quads", "n": "Beinpresse", "img": "Leg_Press", "s": "3", "r": "10"},{"g": "quads", "n": "Beinstrecker", "img": "Leg_Extensions", "s": "3", "r": "12"},{"g": "quads", "n": "Ausfallschritte", "img": "Dumbbell_Lunges", "s": "3", "r": "10"},{"g": "quads", "n": "Bulgarian Split Squats", "img": "Split_Squat_with_Dumbbells", "s": "3", "r": "10"},{"g": "quads", "n": "Hackenschmidt-Kniebeugen", "img": "Barbell_Hack_Squat", "s": "3", "r": "10"},{"g": "hams", "n": "Beinbeuger liegend", "img": "Lying_Leg_Curls", "s": "3", "r": "12"},{"g": "hams", "n": "Beinbeuger sitzend", "img": "Seated_Leg_Curl", "s": "3", "r": "12"},{"g": "hams", "n": "Rumänisches Kreuzheben", "img": "Romanian_Deadlift", "s": "3", "r": "10"},{"g": "po", "n": "Hip Thrusts", "img": "Barbell_Hip_Thrust", "s": "3", "r": "10"},{"g": "po", "n": "Glute Bridge", "img": "Barbell_Glute_Bridge", "s": "3", "r": "12"},{"g": "po", "n": "Glute Kickbacks", "img": "Glute_Kickback", "s": "3", "r": "12"},{"g": "po", "n": "Abduktoren-Maschine", "img": "Thigh_Abductor", "s": "3", "r": "15"},{"g": "waden", "n": "Wadenheben stehend", "img": "Standing_Calf_Raises", "s": "3", "r": "15"},{"g": "waden", "n": "Wadenheben sitzend", "img": "Barbell_Seated_Calf_Raise", "s": "3", "r": "15"},{"g": "waden", "n": "Wadenheben an der Beinpresse", "img": "Calf_Press_On_The_Leg_Press_Machine", "s": "3", "r": "15"},{"g": "unterarme", "n": "Handgelenk-Curls", "img": "Palms-Up_Barbell_Wrist_Curl_Over_A_Bench", "s": "3", "r": "15"},{"g": "unterarme", "n": "Farmer's Walk", "img": "Farmers_Walk", "s": "3", "r": "40 m"},{"g": "unterarme", "n": "Reverse Curls", "img": "Reverse_Barbell_Curl", "s": "3", "r": "12"},{"g": "cardio", "n": "Laufband", "img": "Running_Treadmill", "s": "", "r": "20 min"},{"g": "cardio", "n": "Fahrrad", "img": "Bicycling_Stationary", "s": "", "r": "20 min"},{"g": "cardio", "n": "Crosstrainer", "img": "Elliptical_Trainer", "s": "", "r": "20 min"},{"g": "cardio", "n": "Rudergerät", "img": "Rowing_Stationary", "s": "", "r": "15 min"},{"g": "cardio", "n": "Treppensteiger", "img": "Stairmaster", "s": "", "r": "15 min"},{"g": "cardio", "n": "Seilspringen", "img": "Rope_Jumping", "s": "", "r": "10 min"}];
+const CATALOG=[{"g": "brust", "n": "Bankdrücken", "img": "Barbell_Bench_Press_-_Medium_Grip", "s": "3", "r": "10"},{"g": "brust", "n": "Schrägbankdrücken", "img": "Barbell_Incline_Bench_Press_-_Medium_Grip", "s": "3", "r": "10"},{"g": "brust", "n": "Kurzhantel-Bankdrücken", "img": "Dumbbell_Bench_Press", "s": "3", "r": "10"},{"g": "brust", "n": "Kurzhantel-Flys", "img": "Dumbbell_Flyes", "s": "3", "r": "10"},{"g": "brust", "n": "Butterfly", "img": "Butterfly", "s": "3", "r": "10"},{"g": "brust", "n": "Kabelzug-Crossover", "img": "Cable_Crossover", "s": "3", "r": "10"},{"g": "brust", "n": "Dips (Brust)", "img": "Dips_-_Chest_Version", "s": "3", "r": "10"},{"g": "brust", "n": "Liegestütze", "img": "Pushups", "s": "3", "r": "10"},{"g": "ruecken", "n": "Klimmzüge", "img": "Pullups", "s": "3", "r": "10"},{"g": "ruecken", "n": "Latziehen", "img": "Wide-Grip_Lat_Pulldown", "s": "3", "r": "10"},{"g": "ruecken", "n": "Rudern am Kabel", "img": "Seated_Cable_Rows", "s": "3", "r": "10"},{"g": "ruecken", "n": "Langhantelrudern", "img": "Bent_Over_Barbell_Row", "s": "3", "r": "10"},{"g": "ruecken", "n": "Kurzhantelrudern einarmig", "img": "One-Arm_Dumbbell_Row", "s": "3", "r": "10"},{"g": "ruecken", "n": "Kreuzheben", "img": "Barbell_Deadlift", "s": "3", "r": "10"},{"g": "ruecken", "n": "Hyperextensions", "img": "Hyperextensions_Back_Extensions", "s": "3", "r": "10"},{"g": "schulter", "n": "Schulterdrücken (Langhantel)", "img": "Barbell_Shoulder_Press", "s": "3", "r": "10"},{"g": "schulter", "n": "Schulterdrücken (Kurzhantel)", "img": "Dumbbell_Shoulder_Press", "s": "3", "r": "10"},{"g": "schulter", "n": "Seitheben", "img": "Side_Lateral_Raise", "s": "3", "r": "10"},{"g": "schulter", "n": "Frontheben", "img": "Front_Dumbbell_Raise", "s": "3", "r": "10"},{"g": "schulter", "n": "Face Pulls", "img": "Face_Pull", "s": "3", "r": "10"},{"g": "schulter", "n": "Reverse Flys", "img": "Reverse_Flyes", "s": "3", "r": "10"},{"g": "schulter", "n": "Arnold Press", "img": "Arnold_Dumbbell_Press", "s": "3", "r": "10"},{"g": "schulter", "n": "Aufrechtes Rudern", "img": "Upright_Barbell_Row", "s": "3", "r": "10"},{"g": "bizeps", "n": "Langhantelcurls", "img": "Barbell_Curl", "s": "3", "r": "10"},{"g": "bizeps", "n": "Kurzhantelcurls", "img": "Dumbbell_Bicep_Curl", "s": "3", "r": "10"},{"g": "bizeps", "n": "Hammercurls", "img": "Hammer_Curls", "s": "3", "r": "10"},{"g": "bizeps", "n": "Konzentrationscurls", "img": "Concentration_Curls", "s": "3", "r": "10"},{"g": "bizeps", "n": "Scottcurls", "img": "Preacher_Curl", "s": "3", "r": "10"},{"g": "bizeps", "n": "Kabelcurls", "img": "Standing_Biceps_Cable_Curl", "s": "3", "r": "10"},{"g": "trizeps", "n": "Trizepsdrücken am Kabel", "img": "Triceps_Pushdown", "s": "3", "r": "10"},{"g": "trizeps", "n": "Trizepsdrücken mit Seil", "img": "Triceps_Pushdown_-_Rope_Attachment", "s": "3", "r": "10"},{"g": "trizeps", "n": "French Press", "img": "Lying_Triceps_Press", "s": "3", "r": "10"},{"g": "trizeps", "n": "Überkopf-Trizepsdrücken", "img": "Cable_Rope_Overhead_Triceps_Extension", "s": "3", "r": "10"},{"g": "trizeps", "n": "Dips (Trizeps)", "img": "Dips_-_Triceps_Version", "s": "3", "r": "10"},{"g": "trizeps", "n": "Enges Bankdrücken", "img": "Close-Grip_Barbell_Bench_Press", "s": "3", "r": "10"},{"g": "trizeps", "n": "Kickbacks", "img": "Tricep_Dumbbell_Kickback", "s": "3", "r": "10"},{"g": "bauch", "n": "Crunches", "img": "Crunches", "s": "3", "r": "10"},{"g": "bauch", "n": "Plank", "img": "Plank", "s": "3", "r": "45 s"},{"g": "bauch", "n": "Hängendes Beinheben", "img": "Hanging_Leg_Raise", "s": "3", "r": "10"},{"g": "bauch", "n": "Russian Twists", "img": "Russian_Twist", "s": "3", "r": "10"},{"g": "bauch", "n": "Ab-Roller", "img": "Ab_Roller", "s": "3", "r": "10"},{"g": "bauch", "n": "Kabel-Crunches", "img": "Cable_Crunch", "s": "3", "r": "10"},{"g": "quads", "n": "Kniebeugen", "img": "Barbell_Squat", "s": "3", "r": "10"},{"g": "quads", "n": "Frontkniebeugen", "img": "Front_Barbell_Squat", "s": "3", "r": "10"},{"g": "quads", "n": "Beinpresse", "img": "Leg_Press", "s": "3", "r": "10"},{"g": "quads", "n": "Beinstrecker", "img": "Leg_Extensions", "s": "3", "r": "10"},{"g": "quads", "n": "Ausfallschritte", "img": "Dumbbell_Lunges", "s": "3", "r": "10"},{"g": "quads", "n": "Bulgarian Split Squats", "img": "Split_Squat_with_Dumbbells", "s": "3", "r": "10"},{"g": "quads", "n": "Hackenschmidt-Kniebeugen", "img": "Barbell_Hack_Squat", "s": "3", "r": "10"},{"g": "hams", "n": "Beinbeuger liegend", "img": "Lying_Leg_Curls", "s": "3", "r": "10"},{"g": "hams", "n": "Beinbeuger sitzend", "img": "Seated_Leg_Curl", "s": "3", "r": "10"},{"g": "hams", "n": "Rumänisches Kreuzheben", "img": "Romanian_Deadlift", "s": "3", "r": "10"},{"g": "po", "n": "Hip Thrusts", "img": "Barbell_Hip_Thrust", "s": "3", "r": "10"},{"g": "po", "n": "Glute Bridge", "img": "Barbell_Glute_Bridge", "s": "3", "r": "10"},{"g": "po", "n": "Glute Kickbacks", "img": "Glute_Kickback", "s": "3", "r": "10"},{"g": "po", "n": "Abduktoren-Maschine", "img": "Thigh_Abductor", "s": "3", "r": "10"},{"g": "waden", "n": "Wadenheben stehend", "img": "Standing_Calf_Raises", "s": "3", "r": "10"},{"g": "waden", "n": "Wadenheben sitzend", "img": "Barbell_Seated_Calf_Raise", "s": "3", "r": "10"},{"g": "waden", "n": "Wadenheben an der Beinpresse", "img": "Calf_Press_On_The_Leg_Press_Machine", "s": "3", "r": "10"},{"g": "unterarme", "n": "Handgelenk-Curls", "img": "Palms-Up_Barbell_Wrist_Curl_Over_A_Bench", "s": "3", "r": "10"},{"g": "unterarme", "n": "Farmer's Walk", "img": "Farmers_Walk", "s": "3", "r": "40 m"},{"g": "unterarme", "n": "Reverse Curls", "img": "Reverse_Barbell_Curl", "s": "3", "r": "10"},{"g": "cardio", "n": "Laufband", "img": "Running_Treadmill", "s": "", "r": "20 min"},{"g": "cardio", "n": "Fahrrad", "img": "Bicycling_Stationary", "s": "", "r": "20 min"},{"g": "cardio", "n": "Crosstrainer", "img": "Elliptical_Trainer", "s": "", "r": "20 min"},{"g": "cardio", "n": "Rudergerät", "img": "Rowing_Stationary", "s": "", "r": "15 min"},{"g": "cardio", "n": "Treppensteiger", "img": "Stairmaster", "s": "", "r": "15 min"},{"g": "cardio", "n": "Seilspringen", "img": "Rope_Jumping", "s": "", "r": "10 min"}];
 GROUPS.forEach(g=>g.sug=CATALOG.filter(c=>c.g===g.id).map(c=>c.n));
 const catByName=n=>CATALOG.find(c=>c.n.toLowerCase()===String(n||"").trim().toLowerCase());
 const catByImg=i=>CATALOG.find(c=>c.img===i);
@@ -1144,8 +1174,8 @@ const mySessions=()=>Object.entries(sessions).map(([id,x])=>({id,...x})).filter(
 const activeSession=()=>mySessions().find(x=>x.start&&!x.end);
 const fmtDur=sec=>{ sec=Math.max(0,Math.round(sec)); const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), s2=sec%60; return h?`${h}:${String(m).padStart(2,"0")}:${String(s2).padStart(2,"0")}`:`${m}:${String(s2).padStart(2,"0")}`; };
 const num=v=>{ const n=parseFloat(String(v??"").replace(",",".")); return isFinite(n)&&n>=0?n:null; };
-const setsOf=(se,exId)=>{ const v=(se&&se.sets&&se.sets[exId])||{}; return (Array.isArray(v)?v:Object.keys(v).sort((a,b)=>a-b).map(k=>v[k])).map(x=>x||{}); };
-const doneSets=arr=>arr.filter(x=>num(x.r)>0);
+const setsOf=(se,exId)=>{ const v=(se&&se.sets&&se.sets[exId])||{}, v2=se&&se.v===2; const out=[]; (Array.isArray(v)?v.map((x,i)=>[i,x]):Object.entries(v)).forEach(([k,x])=>{ out[+k]={...(x||{}),v2}; }); for(let i=0;i<out.length;i++) if(!out[i]) out[i]={v2}; return out; };
+const doneSets=arr=>arr.filter(x=>num(x.r)>0&&(x.d===true||x.d===undefined&&!x.v2));
 // letztes beendetes Training mit dieser Übung (nur eigene Trainings)
 function lastFor(exId,beforeStart){ return mySessions().filter(x=>x.end&&(!beforeStart||x.start<beforeStart)&&doneSets(setsOf(x,exId)).length).sort((a,b)=>b.start-a.start)[0]||null; }
 const best=arr=>{ const d=doneSets(arr); if(!d.length) return null; const kg=Math.max(...d.map(x=>num(x.kg)||0)); const reps=Math.max(...d.filter(x=>(num(x.kg)||0)===kg).map(x=>num(x.r))); return {kg,reps,vol:d.reduce((a,x)=>a+(num(x.r)||0)*(num(x.kg)||0),0),tot:d.reduce((a,x)=>a+(num(x.r)||0),0)}; };
@@ -1301,7 +1331,7 @@ function renderWeek(){
       <button class="btn primary cal-btn" type="button" data-new-on="${iso(weekOff===0?new Date():dates[0])}">+ In den Plan</button></span></div>`;
   if(!count && !tplList().length) html+=`<div class="empty"><strong>So geht's</strong><span>1. Unter <b>„Übungen“</b> ein Workout erstellen, z.B. „Push“ mit deinen Übungen.</span><span>2. Hier auf einen Tag tippen und das Workout mit Uhrzeit und Wiederholung in den Plan legen.</span><span>3. Am Trainingstag unten auf <b>„Training starten“</b>: Timer läuft, du trägst Wiederholungen und Gewicht ein und siehst, was du letztes Mal geschafft hast.</span></div>`;
   html+=`<div class="plan">${dates.map((d,i)=>dayRow(d,i,todayIso,occ[i])).join("")}</div>`;
-  html+=trainingHtml(todayIso);
+  html+=trainingHtml(todayIso)+historyHtml();
   // was gerade eingetippt wird, bleibt beim Neuzeichnen erhalten
   const act=document.activeElement, keep=act&&act.id&&$("#list").contains(act)&&act.matches("input")?act:null;
   $("#list").innerHTML=html;
@@ -1318,12 +1348,13 @@ function dayRow(d,i,todayIso,list){
 function wBlock(wid,w,di,lg){
   const ex=wEx(w), ty=typeOf(w), t=timeOfW(w), key=`${di}|${wid}`, open=openKey===key;
   const done=mySessions().find(x=>x.end&&x.date===di&&(x.plan===wid||(w.tpl&&x.tpl===w.tpl)));
+  const missed=!done&&di<iso(new Date())&&di>=iso(new Date(w.at||0));
   const groups=[...new Set(ex.map(x=>x.group))].map(g=>grpOf(g));
-  return `<div class="pblock${open?" open":""}" style="--tc:${ty.col}">
+  return `<div class="pblock${open?" open":""}${done?" is-done":missed?" is-miss":""}" style="--tc:${ty.col}">
     <button type="button" class="pb-head" data-open-w="${esc(key)}" aria-expanded="${open}">
       <span class="pb-emo" aria-hidden="true">${ty.emo}</span>
       <span class="pb-txt"><b>${esc(wTitle(w))}</b><small>${t?`${t}–${endTime(t,durOfW(w))} Uhr`:"ohne Uhrzeit"} · ${esc(repText(w))}</small></span>
-      ${done?`<span class="pb-prog ok">✓ ${fmtDur(done.dur||0).replace(/:\d\d$/,"")} min</span>`:""}</button>
+      ${done?`<span class="mark ok" title="erledigt">✓</span>`:missed?`<span class="mark miss" title="nicht gemacht">✗</span>`:""}</button>
     <div class="pb-groups">${groups.map(g=>`<span style="--gc:${g.col}">${esc(g.name)}</span>`).join("")}</div>
     ${open?`<div class="pb-body">
       <button type="button" class="pb-title" data-showex="1" aria-expanded="${showEx}">${esc(wTitle(w))} · ${ex.length} ${ex.length===1?"Übung":"Übungen"} ${showEx?"ausblenden":"ansehen"} ${CHEV}</button>
@@ -1334,7 +1365,19 @@ function wBlock(wid,w,di,lg){
   </div>`;
 }
 /* ---------- Training: starten, Sätze eintragen, beenden ---------- */
+let editId=null;
+// das Training, an dem gerade gearbeitet wird: ein nachträglich geöffnetes aus der Historie oder das laufende
+const workSession=()=>editId&&sessions[editId]?{id:editId,...sessions[editId]}:activeSession();
 function trainingHtml(todayIso){
+  if(editId&&sessions[editId]){
+    const a={id:editId,...sessions[editId]}, t=templates[a.tpl]||{title:"Training",ex:[]}, ex=tEx(t);
+    return `<section class="train edit" id="train"><div class="train-head"><div><small>Training bearbeiten</small><b>${esc(t.title)}</b></div>
+        <span class="card-note">${new Date(a.start).toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"})}</span></div>
+      <div class="edit-dur"><label>Dauer <input id="editDur" inputmode="numeric" value="${Math.round((a.dur||0)/60)}"> Minuten</label></div>
+      ${ex.map(x=>exSetsHtml(a,x)).join("")||`<p class="card-note">Dieses Workout hat keine Übungen mehr.</p>`}
+      <button class="btn primary big" type="button" id="saveEdit">Änderungen speichern</button>
+      <button class="linkish danger-l" type="button" data-del-sess="${esc(a.id)}">Training löschen</button></section>`;
+  }
   const a=activeSession();
   if(a){
     const t=templates[a.tpl]||{title:"Training",ex:[]}, ex=tEx(t);
@@ -1345,26 +1388,51 @@ function trainingHtml(todayIso){
   }
   const today=onDate(todayIso), doneToday=mySessions().filter(x=>x.end&&x.date===todayIso);
   let h=`<section class="train"><div class="train-head"><div><small>Heute</small><b>${today.length?today.map(([,w])=>esc(wTitle(w))).join(" & "):"Kein Training geplant"}</b></div></div>`;
-  doneToday.forEach(x=>{ const t=templates[x.tpl]||{}; h+=`<button type="button" class="done-row" data-sum="${esc(x.id)}">✓ ${esc(t.title||"Training")} · ${fmtDur(x.dur||0)} · ${x.kcal?`ca. ${x.kcal} kcal`:""}<span>Zusammenfassung</span></button>`; });
+  doneToday.forEach(x=>{ const t=templates[x.tpl]||{}; h+=`<button type="button" class="done-row" data-sum="${esc(x.id)}">✓ ${esc(t.title||"Training")} · ${fmtDur(x.dur||0)}${x.kcal?` · ca. ${x.kcal} kcal`:""}<span>Zusammenfassung</span></button>`; });
   if(today.length) h+=today.map(([wid,w])=>{ const tid=w.tpl; return `<button class="btn primary big" type="button" data-start="${esc(tid||"")}" data-plan="${esc(wid)}">${doneToday.some(x=>x.plan===wid)?"Nochmal":"▶"} ${esc(wTitle(w))} starten</button>`; }).join("");
   const others=tplList().filter(t=>!today.some(([,w])=>w.tpl===t.id));
   if(others.length) h+=`<p class="card-note">${today.length?"Oder ein anderes Workout:":"Freies Training starten:"}</p><div class="chips">${others.map(t=>`<button type="button" class="chip" data-start="${esc(t.id)}">▶ ${esc(t.title)}</button>`).join("")}</div>`;
   if(!tplList().length) h+=`<p class="card-note">Erstell zuerst unter „Übungen“ ein Workout.</p>`;
   return h+`</section>`;
 }
+// angezeigter Wert eines Satzes: eingetragen > letztes Mal (gleicher Satz, sonst letzter Satz) > Standard (10 Wdh., Cardio 20 min)
+function setVal(a,x,k,f){
+  const cur=setsOf(a,x.id)[k]||{}; if(cur[f]!=null) return num(cur[f]);
+  const last=lastFor(x.id,a.start), ls=last?doneSets(setsOf(last,x.id)):[], l=ls[k]||ls[ls.length-1];
+  if(l&&num(l[f])!=null) return num(l[f]);
+  if(f==="r") return x.group==="cardio"?20:10;   // Standard: 10 Wiederholungen
+  return x.kg||0;
+}
+const stepOf=(x,f,v)=>f==="r"?(x.group==="cardio"?5:1):(v<20?1:2.5);
 function exSetsHtml(a,x){
-  const cardio=x.group==="cardio", cur=setsOf(a,x.id), last=lastFor(x.id,a.start), ls=last?setsOf(last,x.id):[];
-  const n=Math.max(cur.length,+((a.n||{})[x.id])||0,x.sets||0,doneSets(ls).length||0,1);
-  const lb=last?best(ls):null;
-  return `<div class="exset"><div class="exset-h"><button type="button" class="th-btn" data-info="${esc(x.id)}">${thumb(imgOf(x))}</button>
-      <span class="exn"><b>${esc(x.name)}</b><small>${last?`Letztes Mal (${new Date(last.start).toLocaleDateString("de-DE",{day:"numeric",month:"short"})}): ${doneSets(ls).map(z=>cardio?`${z.r} min`:`${z.r}×${num(z.kg)?fmtKg(num(z.kg))+" kg":"–"}`).join(", ")}`:"Zum ersten Mal – trag ein, was du schaffst."}</small></span></div>
-    <div class="sets"><div class="set-h"><span>Satz</span><span>${cardio?"Minuten":"Wdh."}</span>${cardio?"":"<span>kg</span>"}<span></span></div>
-      ${Array.from({length:n},(_,k)=>{ const c=cur[k]||{}, l=ls[k]||{}, up=cardio?num(c.r)>num(l.r):(num(c.kg)>(num(l.kg)||0)||(num(c.kg)===num(l.kg)&&num(c.r)>num(l.r)));
-        return `<div class="set${num(c.r)>0?" on":""}"><span class="sn">${k+1}</span>
-          <input id="si-${esc(x.id)}-${k}-r" data-set="${esc(x.id)}|${k}|r" inputmode="numeric" placeholder="${l.r??(cardio?"20":x.reps||"10")}" value="${esc(c.r??"")}" aria-label="Satz ${k+1} Wiederholungen">
-          ${cardio?"":`<input id="si-${esc(x.id)}-${k}-kg" data-set="${esc(x.id)}|${k}|kg" inputmode="decimal" placeholder="${l.kg!=null?fmtKg(num(l.kg)||0):(x.kg?fmtKg(x.kg):"kg")}" value="${esc(c.kg!=null?String(c.kg).replace(".",","):"")}" aria-label="Satz ${k+1} Gewicht">`}
-          <span class="up">${num(c.r)>0&&last&&up?"▲":""}</span></div>`; }).join("")}
-      <button type="button" class="add-set" data-addset="${esc(x.id)}" data-n="${n}">+ Satz</button></div></div>`;
+  const cardio=x.group==="cardio", cur=setsOf(a,x.id), last=lastFor(x.id,a.start), ls=last?doneSets(setsOf(last,x.id)):[];
+  const n=Math.max(cur.length,+((a.n||{})[x.id])||0,x.sets||0,ls.length||0,cardio?1:3);
+  const doneN=cur.filter(c=>c.d).length;
+  const field=(k,f,lv)=>{ const v=setVal(a,x,k,f), up=lv!=null&&v>lv;
+    return `<div class="stp"><button type="button" class="sb" data-step="${esc(x.id)}|${k}|${f}|-1" aria-label="weniger">−</button>
+      <input id="si-${esc(x.id)}-${k}-${f}" data-set="${esc(x.id)}|${k}|${f}" inputmode="${f==="r"?"numeric":"decimal"}" value="${f==="kg"?fmtKg(v):v}" aria-label="Satz ${k+1} ${f==="r"?(cardio?"Minuten":"Wiederholungen"):"Gewicht"}"${up?' class="up-in"':""}>
+      <button type="button" class="sb" data-step="${esc(x.id)}|${k}|${f}|1" aria-label="mehr">+</button></div>`; };
+  return `<div class="exset${doneN>=n?" all":""}"><div class="exset-h"><button type="button" class="th-btn" data-info="${esc(x.id)}">${thumb(imgOf(x))}</button>
+      <span class="exn"><b>${esc(x.name)}</b><small>${last?`Letztes Mal: ${ls.map(z=>cardio?`${z.r} min`:`${z.r}×${fmtKg(num(z.kg)||0)} kg`).join(", ")}`:"Zum ersten Mal – pass die Werte an und hak jeden Satz ab."}</small></span>
+      <span class="sdone">${doneN}/${n}</span></div>
+    <div class="sets"><div class="set-h"><span>Satz</span><span>${cardio?"Minuten":"Wdh."}</span>${cardio?"":"<span>kg</span>"}</div>
+      ${Array.from({length:n},(_,k)=>{ const c=cur[k]||{}, l=ls[k]||ls[ls.length-1];
+        return `<div class="set${c.d?" on":""}${cardio?" cardio":""}"><button type="button" class="sn" data-done="${esc(x.id)}|${k}" aria-pressed="${!!c.d}" aria-label="Satz ${k+1} ${c.d?"nicht mehr erledigt":"erledigt"}">${c.d?CHECK:k+1}</button>
+          ${field(k,"r",l?num(l.r):null)}${cardio?"":field(k,"kg",l?num(l.kg):null)}</div>`; }).join("")}
+      <div class="set-foot"><button type="button" class="add-set" data-addset="${esc(x.id)}" data-n="${n}">+ Satz</button><small>Tipp auf die Nummer, wenn der Satz geschafft ist.</small></div></div></div>`;
+}
+let histN=8;
+function historyHtml(){
+  const list=mySessions().filter(x=>x.end).sort((a,b)=>b.start-a.start);
+  if(!list.length) return `<section class="hist-sec"><div class="sec-h"><b>Historie</b></div><p class="card-note">Hier erscheinen deine Trainings, sobald du eins beendet hast.</p></section>`;
+  const week=list.filter(x=>Date.now()-x.start<7*864e5), mins=week.reduce((a,x)=>a+(x.dur||0),0)/60, kc=week.reduce((a,x)=>a+(x.kcal||0),0);
+  return `<section class="hist-sec"><div class="sec-h"><b>Historie</b><span class="card-note">letzte 7 Tage: ${week.length}× · ${Math.round(mins)} min · ${kc} kcal</span></div>
+    <ul class="hlist">${list.slice(0,histN).map(x=>{ const t=templates[x.tpl]||{title:"Training"}, ups=tEx(t).filter(e=>{ const b=best(setsOf(x,e.id)), l=lastFor(e.id,x.start), lb=l?best(setsOf(l,e.id)):null; return b&&lb&&(b.kg>lb.kg||(b.kg===lb.kg&&b.reps>lb.reps)); }).length;
+      const ty=TYPES.find(y=>y.re.test(t.title||""))||{col:"var(--band)",emo:"🏋️"};
+      return `<li><button type="button" data-sum="${esc(x.id)}" style="--tc:${ty.col}"><span class="hd"><b>${new Date(x.start).getDate()}</b><small>${new Date(x.start).toLocaleDateString("de-DE",{month:"short"})}</small></span>
+        <span class="pb-txt"><b>${esc(t.title)}</b><small>${new Date(x.start).toLocaleDateString("de-DE",{weekday:"long"})} · ${fmtDur(x.dur||0)} · ${x.kcal||0} kcal${x.vol?` · ${fmtKg(x.vol/1000)} t`:""}</small></span>
+        ${ups?`<span class="dif up">▲ ${ups}</span>`:""}</button></li>`; }).join("")}</ul>
+    ${list.length>histN?`<button class="linkish" type="button" id="histMore">Ältere anzeigen (${list.length-histN})</button>`:""}</section>`;
 }
 function runTimer(){
   clearInterval(tick); const a=activeSession(); if(!a) return;
@@ -1372,19 +1440,32 @@ function runTimer(){
 }
 function startTraining(tid,planId){
   if(!root||!tid||!templates[tid]) return; if(activeSession()) return;
-  const id=uid(), data={tpl:tid,plan:planId||null,date:iso(new Date()),start:Date.now(),by:myUid};
+  const id=uid(), data={tpl:tid,plan:planId||null,date:iso(new Date()),start:Date.now(),by:myUid,v:2};
   sessions[id]=data; root.child("sessions/"+id).set(data).catch(showErr); render();
   setTimeout(()=>{ const t=$("#train"); if(t) t.scrollIntoView({behavior:"smooth",block:"start"}); },50);
 }
 const setTimers={};
+function saveSet(a,exId,k,vals){
+  const se=sessions[a.id]; se.sets=se.sets||{}; se.sets[exId]=se.sets[exId]||{}; const cur=se.sets[exId];
+  cur[k]={...(cur[k]||{}),...vals};
+  const key=`${a.id}|${exId}|${k}`; clearTimeout(setTimers[key]);
+  setTimers[key]=setTimeout(()=>root.child(`sessions/${a.id}/sets/${exId}/${k}`).update(cur[k]).catch(showErr),300);
+}
 document.addEventListener("input",e=>{
-  const i=e.target.closest("[data-set]"); if(!i) return; const a=activeSession(); if(!a) return;
-  const [exId,k,f]=i.dataset.set.split("|"), v=num(i.value);
-  a.sets=a.sets||{}; a.sets[exId]=a.sets[exId]||{}; const arr=a.sets[exId]; const cur=Array.isArray(arr)?arr:arr;
-  cur[k]=cur[k]||{}; cur[k][f]=v; sessions[a.id].sets=a.sets;
-  const row=i.closest(".set"); if(row) row.classList.toggle("on",num(cur[k].r)>0);
-  clearTimeout(setTimers[i.id]); setTimers[i.id]=setTimeout(()=>root.child(`sessions/${a.id}/sets/${exId}/${k}/${f}`).set(v).catch(showErr),400);
+  const i=e.target.closest("[data-set]"); if(!i) return; const a=workSession(); if(!a) return;
+  const [exId,k,f]=i.dataset.set.split("|"), v=num(i.value); if(v==null) return;
+  saveSet(a,exId,k,{[f]:v});
 });
+document.addEventListener("click",e=>{
+  const st=e.target.closest("[data-step]"), dn=e.target.closest("[data-done]"); if(!st&&!dn) return;
+  const a=workSession(); if(!a) return; e.stopPropagation();
+  if(st){ const [exId,k,f,d]=st.dataset.step.split("|"), x={id:exId,...exercises[exId]}, v=setVal(a,x,+k,f), stp=stepOf(x,f,v);
+    const nv=Math.max(0,Math.round((v+(+d)*stp)*100)/100); saveSet(a,exId,k,{[f]:nv});
+    const inp=document.getElementById(`si-${exId}-${k}-${f}`); if(inp) inp.value=f==="kg"?fmtKg(nv):nv; return; }
+  const [exId,k]=dn.dataset.done.split("|"), x={id:exId,...exercises[exId]}, c=(setsOf(a,exId)[+k])||{};
+  const vals={d:!c.d, r:setVal(a,x,+k,"r")}; if(x.group!=="cardio") vals.kg=setVal(a,x,+k,"kg");
+  saveSet(a,exId,k,vals); render();
+},true);
 // grob geschätzte Kalorien: MET × Körpergewicht × Stunden (Krafttraining ≈ 5, Cardio ≈ 7)
 function kcalFor(se,ex){ const kg=num(bw[myUid])||75, h=(se.dur||0)/3600, cardio=ex.length&&ex.filter(x=>x.group==="cardio").length>=ex.length/2; return Math.round((cardio?7:5)*kg*h); }
 async function endTraining(){
@@ -1392,8 +1473,28 @@ async function endTraining(){
   const end=Date.now(), dur=Math.round((end-a.start)/1000), t=templates[a.tpl]||{}, ex=tEx(t);
   let vol=0; ex.forEach(x=>{ const b=best(setsOf(a,x.id)); if(b) vol+=b.vol; });
   const upd={end,dur,vol:Math.round(vol)}; upd.kcal=kcalFor({dur},ex);
+  const anyDone=ex.some(x=>doneSets(setsOf(a,x.id)).length);
+  if(!anyDone){ const b=$("#endTrain"); if(b&&b.dataset.sure!=="1"){ b.dataset.sure="1"; b.textContent="Noch kein Satz abgehakt – trotzdem beenden?"; return; } }
   Object.assign(sessions[a.id],upd); await root.child("sessions/"+a.id).update(upd).catch(showErr);
   clearInterval(tick); render(); showSummary(a.id);
+}
+function recalc(id){
+  const se={id,...sessions[id]}, ex=tEx(templates[se.tpl]||{}); let vol=0; ex.forEach(x=>{ const b=best(setsOf(se,x.id)); if(b) vol+=b.vol; });
+  return {vol:Math.round(vol),kcal:kcalFor({dur:se.dur||0},ex)};
+}
+async function saveEdit(){
+  const id=editId; if(!id||!sessions[id]) return;
+  const m=num($("#editDur")&&$("#editDur").value); if(m!=null) sessions[id].dur=Math.round(m*60);
+  Object.keys(setTimers).forEach(k=>clearTimeout(setTimers[k]));
+  const upd={dur:sessions[id].dur||0,sets:sessions[id].sets||null,n:sessions[id].n||null,...(()=>{ const r=recalc(id); return r; })()};
+  Object.assign(sessions[id],upd); await root.child("sessions/"+id).update(upd).catch(showErr);
+  editId=null; render(); showSummary(id);
+}
+function delSession(id,btn){
+  if(btn&&btn.dataset.sure!=="1"){ btn.dataset.sure="1"; btn.textContent="Wirklich löschen? Das lässt sich nicht rückgängig machen."; return; }
+  delete sessions[id]; root.child("sessions/"+id).remove().catch(showErr);
+  if(editId===id) editId=null; $("#sumModal").hidden=true; render();
+  $("#status").textContent="Training gelöscht."; setTimeout(()=>{ $("#status").textContent=""; },3000);
 }
 function showSummary(id){
   const se={id,...sessions[id]}, t=templates[se.tpl]||{title:"Training"}, ex=tEx(t);
@@ -1412,7 +1513,8 @@ function showSummary(id){
       <div><b>${fmtKg((se.vol||0)/1000)} t</b><small>bewegt${dv!=null?` · <span class="${dv>=0?"up":"down"}">${dv>0?"+":""}${dv} %</span>`:""}</small></div></div>
     ${rows.length?`<p class="sec-l">Im Vergleich zum letzten Mal${ups?` · ${ups}× gesteigert`:""}</p><ul class="sum-list">${rows.join("")}</ul>`:`<p class="card-note">Du hast keine Sätze eingetragen.</p>`}
     <div class="kcal-row"><label>Dein Körpergewicht <input id="bwIn" inputmode="decimal" value="${num(bw[myUid])?fmtKg(num(bw[myUid])):""}" placeholder="75"> kg</label><small>für die Kalorien-Schätzung</small></div>
-    <div class="sheet-actions"><div class="right"><button class="btn primary" type="button" id="sumClose">Fertig</button></div></div>`;
+    <div class="sheet-actions"><button class="btn" type="button" data-edit-sess="${esc(id)}">Bearbeiten</button><button class="del" type="button" data-del-sess="${esc(id)}">Löschen</button>
+      <div class="right"><button class="btn primary" type="button" id="sumClose">Fertig</button></div></div>`;
   $("#sumModal").hidden=false; $("#sumModal").dataset.id=id;
 }
 function kw(d){ const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())); const n=t.getUTCDay()||7; t.setUTCDate(t.getUTCDate()+4-n); const y=new Date(Date.UTC(t.getUTCFullYear(),0,1)); return Math.ceil(((t-y)/864e5+1)/7); }
@@ -1619,7 +1721,12 @@ $("#tplDel").addEventListener("click",()=>{
   Object.entries(workouts).forEach(([wid,w])=>{ if(w&&w.tpl===id){ delete workouts[wid]; root.child("workouts/"+wid).remove().catch(()=>{}); } });
   closeTpl(); render();
 });
-$("#sumModal").addEventListener("click",e=>{ if(e.target.id==="sumModal"||e.target.closest("#sumClose")) $("#sumModal").hidden=true; });
+$("#sumModal").addEventListener("click",e=>{
+  if(e.target.id==="sumModal"||e.target.closest("#sumClose")){ $("#sumModal").hidden=true; return; }
+  const ed=e.target.closest("[data-edit-sess]"); if(ed){ if(activeSession()){ $("#status").textContent="Beende zuerst dein laufendes Training."; return; }
+    editId=ed.dataset.editSess; $("#sumModal").hidden=true; view="week"; render(); setTimeout(()=>{ const t=$("#train"); if(t) t.scrollIntoView({behavior:"smooth",block:"start"}); },60); return; }
+  const dl=e.target.closest("[data-del-sess]"); if(dl) delSession(dl.dataset.delSess,dl);
+});
 $("#sumModal").addEventListener("change",e=>{
   if(e.target.id!=="bwIn") return; const v=num(e.target.value); if(!v||v<30||v>300) return;
   bw[myUid]=v; root.child("bw/"+myUid).set(v).catch(()=>{});
@@ -1672,9 +1779,12 @@ document.addEventListener("click",e=>{
   const tp=e.target.closest("[data-tpl]"); if(tp) return openTpl(tp.dataset.tpl);
   const st=e.target.closest("[data-start]"); if(st) return startTraining(st.dataset.start,st.dataset.plan);
   if(e.target.closest("#endTrain")) return endTraining();
+  if(e.target.closest("#histMore")){ histN+=10; render(); return; }
+  if(e.target.closest("#saveEdit")) return saveEdit();
+  const ds=e.target.closest("#train [data-del-sess]"); if(ds) return delSession(ds.dataset.delSess,ds);
   const ct=e.target.closest("#cancelTrain"); if(ct){ if(ct.dataset.sure!=="1"){ ct.dataset.sure="1"; ct.textContent="Wirklich abbrechen? Die Einträge gehen verloren."; return; }
     const a=activeSession(); if(a){ delete sessions[a.id]; root.child("sessions/"+a.id).remove().catch(showErr); clearInterval(tick); render(); } return; }
-  const as=e.target.closest("[data-addset]"); if(as){ const a=activeSession(); if(!a) return; const n=+as.dataset.n+1; a.n=a.n||{}; a.n[as.dataset.addset]=n; sessions[a.id].n=a.n; root.child(`sessions/${a.id}/n/${as.dataset.addset}`).set(n).catch(()=>{}); render(); return; }
+  const as=e.target.closest("[data-addset]"); if(as){ const a=workSession(); if(!a) return; const n=+as.dataset.n+1; a.n=a.n||{}; a.n[as.dataset.addset]=n; sessions[a.id].n=a.n; root.child(`sessions/${a.id}/n/${as.dataset.addset}`).set(n).catch(()=>{}); render(); return; }
   const sm=e.target.closest("[data-sum]"); if(sm) return showSummary(sm.dataset.sum);
   const g=e.target.closest("[data-grp]"); if(g){ const id=g.dataset.grp; if(openGrp.has(id)) openGrp.delete(id); else openGrp.add(id); render(); return; }
   const ai=e.target.closest("[data-add-in]"); if(ai) return openEx(null,ai.dataset.addIn);
