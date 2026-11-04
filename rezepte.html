@@ -337,6 +337,14 @@ a.fab{text-decoration:none}
 .fact.pv .serv-row{display:flex;align-items:center;gap:8px}
 .fact.pv button{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:var(--bg);font-weight:700;line-height:1;padding:0}
 .hint-line{margin:-4px 0 0;font-size:.8rem;color:var(--muted)}
+.scale-note{margin:-4px 0 0;font-size:.84rem;color:var(--ink);background:var(--accent-soft);border-radius:10px;padding:8px 10px}
+.fact.pv.on{border-color:var(--accent);background:var(--accent-soft)}
+.ing-ro{flex:1;min-width:0;padding:6px 0;font-size:1rem;overflow-wrap:anywhere}
+.items li.had .ing-ro{color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(0,0,0,.25)}
+.base-serv{display:flex;align-items:center;gap:10px;font-size:.92rem;flex-wrap:wrap}
+.base-serv .serv-row{display:flex;align-items:center;gap:8px}
+.base-serv button{width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-weight:700;line-height:1;padding:0}
+.base-serv b{min-width:1.4em;text-align:center}
 .star-row .source{margin-left:auto;font-size:.85rem}
 .fold{border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden}
 .fold-head{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:14px 16px;text-align:left;color:var(--ink)}
@@ -601,6 +609,7 @@ body{background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px)!impor
       <button class="pick" type="button" id="pickCover"><span id="pickLabel">Titelbild auswählen</span></button>
       <input id="newName" placeholder="Name, z.B. Linsen-Curry mit Kokos" maxlength="120" aria-label="Name des Rezepts">
       <div class="cat-row" id="newCats" role="group" aria-label="Kategorie"></div>
+      <div class="base-serv"><span>Für</span><span class="serv-row"><button type="button" id="newServMinus" aria-label="Eine Portion weniger">−</button><b class="tn" id="newServ">2</b><button type="button" id="newServPlus" aria-label="Eine Portion mehr">+</button></span><span>Portionen</span></div>
       <div class="row-end">
         <button class="ghost" type="button" id="cancelNew">Abbrechen</button>
         <button class="btn primary" type="submit" id="saveNew">Anlegen</button>
@@ -883,7 +892,7 @@ body{background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px)!impor
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-04-214933";
+  const APP_VERSION="2026-11-04-220105";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1640,6 +1649,7 @@ function renderDetail(r){
   const a=document.activeElement;
   if(a && $("#detail").contains(a) && a.matches("[data-ing],[data-step],[data-nut],#rtitle,#cropY")) return;
   const ing=arr(r.ingredients), steps=arr(r.steps), s=servOf(r), t=nutTotals(r), had=ing.filter(x=>hasIng(r,x)).length;
+  const vs=viewServ(r), fct=vs/s, scaled=vs!==s;
   const kcalTxt=ing.length&&!t.missing?fmtN(t.kcal/s):"…";
   const priceTxt=priceHas(r)?fmtEur(r.price.total/s):pricing.has(r.id)?"…":"–";
   $("#detail").innerHTML=`
@@ -1651,13 +1661,14 @@ function renderDetail(r){
     ${ing.length?`<div class="facts">
       ${showKcal?`<button type="button" class="fact" data-act="fold-open" data-f="nut"><b class="tn">${kcalTxt}</b><small>kcal pro Portion</small></button>`:""}
       <button type="button" class="fact" data-act="fold-open" data-f="price"><b class="tn">${priceTxt}</b><small>${priceHas(r)?"ca. pro Portion":"Preis pro Portion"}</small></button>
-      <div class="fact pv" role="group" aria-label="Portionen"><span class="serv-row"><button type="button" data-act="serv" data-d="-1" aria-label="Eine Portion weniger">−</button><b class="tn">${s}</b><button type="button" data-act="serv" data-d="1" aria-label="Eine Portion mehr">+</button></span><small>${s===1?"Portion":"Portionen"}</small></div>
+      <div class="fact pv${scaled?" on":""}" role="group" aria-label="Portionen"><span class="serv-row"><button type="button" data-act="serv" data-d="-1" aria-label="Eine Portion weniger">−</button><b class="tn">${vs}</b><button type="button" data-act="serv" data-d="1" aria-label="Eine Portion mehr">+</button></span><small>${vs===1?"Portion":"Portionen"}</small></div>
     </div>`:""}
     <section class="sec ing-sec">
       <h2>Zutaten <span>${had?`${had} von ${ing.length} da · <button type="button" class="linkish" data-act="have-reset">zurücksetzen</button>`:ing.length||""}</span></h2>
-      ${ing.length?`<p class="hint-line">Hak ab, was du schon zu Hause hast.</p>`:""}
-      <ul class="items">${ing.map((x,k)=>ingRow(r,x,k)).join("")}</ul>
-      <form class="adder" id="addIng" autocomplete="off"><input id="newIng" placeholder="z.B. 200 g rote Linsen" aria-label="Neue Zutat"><button class="btn" type="submit">+</button></form>
+      ${scaled?`<p class="scale-note">Mengen für <b>${vs} ${vs===1?"Portion":"Portionen"}</b> umgerechnet. Das Rezept ist für ${s}. <button type="button" class="linkish" data-act="serv-reset">Original zeigen</button></p>`
+        :ing.length?`<p class="hint-line">Hak ab, was du schon zu Hause hast. Mit − und + oben rechnest du die Mengen um.</p>`:""}
+      <ul class="items">${ing.map((x,k)=>scaled?ingRowScaled(r,x,k,fct):ingRow(r,x,k)).join("")}</ul>
+      ${scaled?"":`<form class="adder" id="addIng" autocomplete="off"><input id="newIng" placeholder="z.B. 200 g rote Linsen" aria-label="Neue Zutat"><button class="btn" type="submit">+</button></form>`}
       ${ing.length?`<button class="shop-btn" type="button" data-act="shops"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h2l2.2 10.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L20.5 8H6.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="20" r="1.3" fill="currentColor"/><circle cx="17" cy="20" r="1.3" fill="currentColor"/></svg>${had?"Wo bekomme ich den Rest?":"Wo gibt's das in der Nähe?"}</button>`:""}
     </section>
     ${foldSec("steps","Zubereitung",steps.length?`${steps.length} ${steps.length===1?"Schritt":"Schritte"}`:"noch leer",()=>`
@@ -1665,7 +1676,9 @@ function renderDetail(r){
       <form class="adder" id="addStep" autocomplete="off"><textarea id="newStep" rows="2" placeholder="Nächster Schritt, z.B. Zwiebeln glasig anbraten" aria-label="Neuer Schritt"></textarea><button class="btn" type="submit">+</button></form>`)}
     ${showKcal&&ing.length?foldSec("nut","Nährwerte",t.missing?"wird geschätzt …":`${fmtN(t.kcal/s)} kcal · ${fmtN(t.p/s)} g Eiweiß`,()=>nutBody(r)):""}
     ${ing.length?foldSec("price","Preis",priceHas(r)?`ca. ${fmtEur(r.price.total/s)} pro Portion`:pricing.has(r.id)?"wird gesucht …":"",()=>priceBody(r)):""}
-    ${foldSec("more","Mehr","Kategorie, Bildausschnitt, Löschen",()=>`
+    ${foldSec("more","Mehr","Portionen, Kategorie, Bild, Löschen",()=>`
+      <div class="base-serv"><span>Das Rezept ist für</span><span class="serv-row"><button type="button" data-act="base-serv" data-d="-1" aria-label="Eine Portion weniger">−</button><b class="tn">${s}</b><button type="button" data-act="base-serv" data-d="1" aria-label="Eine Portion mehr">+</button></span><span>${s===1?"Portion":"Portionen"}</span></div>
+      <p class="hint-line">So viele Portionen ergeben die eingetragenen Mengen. Danach richten sich Kalorien und Preis pro Portion.</p>
       <div class="cat-row" role="group" aria-label="Kategorie">${CATS.map(c=>`<button type="button" class="chip" data-act="cat" data-cat="${c.id}" aria-pressed="${r.category===c.id}">${c.emoji} ${c.one}</button>`).join("")}</div>
       ${okId(r.cover)&&photoUrl(r.cover)?`<div class="crop"><div class="crop-prev"><img id="cropPrev" src="${photoUrl(r.cover)}" alt="" style="object-position:50% ${coverY(r)}%"></div>
         <label for="cropY">Ausschnitt für die Kachel<input type="range" id="cropY" min="0" max="100" value="${coverY(r)}"></label></div>`:""}
@@ -1692,6 +1705,10 @@ function resetNew(){
 }
 $("#cancelNew").addEventListener("click",resetNew);
 $("#pickCover").addEventListener("click",()=>{ coverFor="new"; $("#coverInput").click(); });
+let newServ=2;
+const setNewServ=v=>{ newServ=Math.max(1,Math.min(50,v)); $("#newServ").textContent=newServ; };
+$("#newServMinus").addEventListener("click",()=>setNewServ(newServ-1));
+$("#newServPlus").addEventListener("click",()=>setNewServ(newServ+1));
 $("#newForm").addEventListener("submit",async e=>{
   e.preventDefault();
   const title=$("#newName").value.trim();
@@ -1701,9 +1718,9 @@ $("#newForm").addEventListener("submit",async e=>{
   try{
     const cover=newBlob?await uploadPhoto(newBlob):null;
     const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-    await root.child("recipes/"+id).set({title,cover,category:newCat,ingredients:[],steps:[],createdAt:Date.now()});
+    await root.child("recipes/"+id).set({title,cover,category:newCat,servings:newServ,ingredients:[],steps:[],createdAt:Date.now()});
     postRecipe(id,{title,cover,category:newCat});
-    $("#status").textContent=""; resetNew();
+    $("#status").textContent=""; resetNew(); setNewServ(2);
     // direkt ins neue Rezept, Cursor steht bei den Zutaten
     openRecipe(id);
     const ing=$("#newIng"); if(ing){ ing.focus(); ing.scrollIntoView({block:"center"}); }
@@ -1749,7 +1766,7 @@ $("#linkForm").addEventListener("submit",async e=>{
     const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
     const arrOf=v=>Array.isArray(v)?v.filter(x=>typeof x==="string"&&x.trim()).map(x=>x.slice(0,500)):[];
     await root.child("recipes/"+id).set({
-      title:String(data.title||"Neues Rezept").slice(0,120), cover, category:catFromLabel(data.category),
+      title:String(data.title||"Neues Rezept").slice(0,120), cover, category:catFromLabel(data.category), servings:Number.isInteger(data.servings)&&data.servings>0&&data.servings<=50?data.servings:2,
       ingredients:arrOf(data.ingredients), steps:arrOf(data.steps),
       source:/^https:\/\//.test(data.source||"")?data.source:url, createdAt:Date.now()
     });
@@ -1812,7 +1829,7 @@ $("#photoGo").addEventListener("click",async()=>{
     if(Number.isInteger(di) && di>=0 && photoFiles[di]){ try{ cover=await uploadPhoto(photoFiles[di].f); }catch(err){} }
     const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
     const title=String(data.title||"Neues Rezept").slice(0,120), category=catFromLabel(data.category);
-    await root.child("recipes/"+id).set({ title, cover, category, ingredients:arrOf(data.ingredients), steps:arrOf(data.steps), createdAt:Date.now() });
+    await root.child("recipes/"+id).set({ title, cover, category, servings:Number.isInteger(data.servings)&&data.servings>0&&data.servings<=50?data.servings:2, ingredients:arrOf(data.ingredients), steps:arrOf(data.steps), createdAt:Date.now() });
     postRecipe(id,{title,cover,category});
     photoBusy=false; btn.textContent="Erstellen"; closePhotos();
     $("#status").textContent="";
@@ -2264,6 +2281,33 @@ function nutEntry(r,k,lenient){
 }
 const kcalOf=e=>e?(+e.g||0)*(+e.kcal||0)/100:0;
 const servOf=r=>Number.isInteger(r.servings)&&r.servings>0?r.servings:2;
+/* ---------- Mengen auf andere Portionen umrechnen ---------- */
+const servView={};   // angezeigte Portionen pro Rezept (nur auf diesem Gerät, solange die Seite offen ist)
+const viewServ=r=>servView[r.id]||servOf(r);
+const FRAC={"½":.5,"¼":.25,"¾":.75,"⅓":1/3,"⅔":2/3,"⅛":.125};
+const NUM_RE=/^(\s*(?:ca\.?|etwa|circa)?\s*)((?:\d+\s+)?\d+\s*\/\s*\d+|\d*[½¼¾⅓⅔⅛]|\d+(?:[.,]\d+)?)(?:\s*(?:-|–|bis)\s*((?:\d+\s+)?\d+\s*\/\s*\d+|\d*[½¼¾⅓⅔⅛]|\d+(?:[.,]\d+)?))?/i;
+function parseNum(t){
+  t=t.trim(); let m;
+  if((m=t.match(/^(\d+)?([½¼¾⅓⅔⅛])$/))) return (+m[1]||0)+FRAC[m[2]];
+  if((m=t.match(/^(?:(\d+)\s+)?(\d+)\s*\/\s*(\d+)$/))) return (+m[1]||0)+(+m[3]?+m[2]/+m[3]:0);
+  return parseFloat(t.replace(",","."));
+}
+function fmtAmount(v,unit){
+  const u=(unit||"").toLowerCase();
+  if(/^(g|gramm|ml|milliliter)\b/.test(u)){ const r=v>=500?Math.round(v/10)*10:v>=20?Math.round(v/5)*5:Math.round(v); return String(Math.max(1,r)); }
+  if(/^(kg|kilo|l|liter)\b/.test(u)){ const r=Math.round(v*100)/100; return String(r).replace(".",","); }
+  // Stück, EL, TL, Dosen, Prisen …: auf Viertel runden und als Bruch zeigen
+  let q=Math.round(v*4)/4; if(q<=0) q=.25;
+  const whole=Math.floor(q), part=q-whole, fr={0.25:"¼",0.5:"½",0.75:"¾"}[part]||"";
+  return whole?(whole+fr):fr||"0";
+}
+function scaleIng(text,f){
+  if(f===1) return text;
+  const m=String(text).match(NUM_RE); if(!m) return text;
+  const a=parseNum(m[2]), b=m[3]?parseNum(m[3]):null; if(!isFinite(a)) return text;
+  const rest=text.slice(m[0].length), unit=rest.trim().split(/\s+/)[0]||"";
+  return m[1]+fmtAmount(a*f,unit)+(b!=null&&isFinite(b)?"–"+fmtAmount(b*f,unit):"")+rest;
+}
 function nutTotals(r,lenient){
   const t={kcal:0,p:0,c:0,f:0,zu:0,fs:0,bs:0,sa:0,est:false,missing:0}, gap={};
   arr(r.ingredients).forEach((_,k)=>{ const e=nutEntry(r,k,lenient); if(!e){ t.missing++; return; }
@@ -2365,6 +2409,9 @@ async function ensurePrice(id){
 const ingKey=t=>{ let h=5381; for(const c of String(t).trim().toLowerCase()) h=((h<<5)+h+c.charCodeAt(0))>>>0; return "i"+h.toString(36); };
 const hasIng=(r,t)=>!!(r.have && r.have[ingKey(t)]);
 const ickBtn=(r,t,k)=>{ const on=hasIng(r,t); return `<button type="button" class="ick${on?" on":""}" data-act="have" data-k="${k}" aria-pressed="${on}" aria-label="${esc(t)} ${on?"nicht mehr abgehakt":"abhaken"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`; };
+function ingRowScaled(r,t,k,f){
+  return `<li${hasIng(r,t)?' class="had"':""}>${ickBtn(r,t,k)}<span class="ing-ro">${esc(scaleIng(t,f))}</span></li>`;
+}
 function ingRow(r,t,k){
   return `<li${hasIng(r,t)?' class="had"':""}>${ickBtn(r,t,k)}<input id="ing-${k}" data-ing="${k}" value="${esc(t)}" aria-label="Zutat ${k+1}"><button class="x" type="button" data-act="del-ing" data-k="${k}" aria-label="Zutat löschen">×</button></li>`;
 }
@@ -2390,7 +2437,7 @@ function nutBody(r,ro){
   return `<table class="nut-table"><caption>pro Portion${t.est?" · teils geschätzt":""}</caption>
       ${row("Kalorien",t.kcal,"kcal")}${row("Eiweiß",t.p,"g")}${row("Kohlenhydrate",t.c,"g")}${row("davon Zucker",t.zu,"g",1)}
       ${row("Fett",t.f,"g")}${row("davon gesättigt",t.fs,"g",1)}${row("Ballaststoffe",t.bs,"g")}${row("Salz",t.sa,"g")}</table>
-    <p class="nutri-note">Zusammen ${fmtN(t.kcal)} kcal für ${s} ${s===1?"Portion":"Portionen"}.${t.missing?` ${t.missing} ${t.missing===1?"Zutat wird":"Zutaten werden"} noch geschätzt.`:""}</p>
+    <p class="nutri-note">Zusammen ${fmtN(t.kcal*viewServ(r)/s)} kcal für ${viewServ(r)} ${viewServ(r)===1?"Portion":"Portionen"}.${t.missing?` ${t.missing} ${t.missing===1?"Zutat wird":"Zutaten werden"} noch geschätzt.`:""}</p>
     ${ro?"":`<p class="fold-sub">Pro Zutat <small>· antippen zum Ändern oder Etikett fotografieren</small></p>
     <ul class="items nut-items">${ing.map((x,k)=>nutRow(r,x,k)).join("")}</ul>`}`;
 }
@@ -2400,9 +2447,10 @@ function priceBody(r,ro){
   if(!priceHas(r)) return `<p class="card-meta">${pricing.has(r.id)?"Claude sucht aktuelle Discounterpreise …":!WORKER_URL?"In der Vorschau kann der Preis nicht gesucht werden.":r.priceErr?esc(r.priceErr):"Der Preis wird gleich geschätzt …"}</p>
     ${!pricing.has(r.id)&&WORKER_URL?`<button type="button" class="linkish" data-act="price-redo">Jetzt suchen</button>`:""}`;
   const p=r.price;
-  return `<p class="card-meta">${fmtEur(p.total)} für ${s} ${s===1?"Portion":"Portionen"} · Discounterpreise, Stand ${new Date(p.at).toLocaleDateString("de-DE",{day:"numeric",month:"short",year:"numeric"})}</p>
+  const vs=viewServ(r);
+  return `<p class="card-meta">${fmtEur(p.total*vs/s)} für ${vs} ${vs===1?"Portion":"Portionen"} · Discounterpreise, Stand ${new Date(p.at).toLocaleDateString("de-DE",{day:"numeric",month:"short",year:"numeric"})}</p>
     ${!priceOk(r)?`<p class="card-meta">${pricing.has(r.id)?"Wird neu berechnet …":"Die Zutaten haben sich seitdem geändert."}</p>`:""}
-    <ul class="price-list">${ing.map((t,k)=>{ const x=(p.items||[])[k]||{}; return `<li><span>${esc(t)}${x.pack?`<small>${esc(x.pack)}</small>`:""}</span><b class="tn">${x.eur!=null?fmtEur(+x.eur||0):"–"}</b></li>`; }).join("")}</ul>
+    <ul class="price-list">${ing.map((t,k)=>{ const x=(p.items||[])[k]||{}; return `<li><span>${esc(scaleIng(t,vs/s))}${x.pack?`<small>${esc(x.pack)}</small>`:""}</span><b class="tn">${x.eur!=null?fmtEur((+x.eur||0)*vs/s):"–"}</b></li>`; }).join("")}</ul>
     ${(p.sources||[]).length?`<p class="card-meta">Quellen: ${p.sources.map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a>`).join(" · ")}</p>`:""}
     ${!pricing.has(r.id)&&!ro?`<button type="button" class="linkish" data-act="price-redo">Neu berechnen</button>`:""}`;
 }
@@ -2547,8 +2595,10 @@ function frxRefresh(){
     ${ing.length?`<div class="facts">
       ${showKcal?`<div class="fact"><b class="tn">${t.kcal&&!t.missing?fmtN(t.kcal/s):"–"}</b><small>kcal pro Portion</small></div>`:""}
       <div class="fact"><b class="tn">${priceHas(r)?fmtEur(r.price.total/s):"–"}</b><small>${priceHas(r)?"ca. pro Portion":"Preis pro Portion"}</small></div>
-      <div class="fact"><b class="tn">${s}</b><small>${s===1?"Portion":"Portionen"}</small></div></div>`:""}
-    <div class="sec"><h2>Zutaten <span>${ing.length}</span></h2>${ing.length?`<ul class="items ro">${ing.map(x=>`<li><span class="leaf"></span><span>${esc(x)}</span></li>`).join("")}</ul>`:`<p class="card-meta">Keine Zutaten eingetragen.</p>`}</div>
+      <div class="fact pv${viewServ(r)!==s?" on":""}" role="group" aria-label="Portionen"><span class="serv-row"><button type="button" data-frserv="-1" aria-label="Eine Portion weniger">−</button><b class="tn">${viewServ(r)}</b><button type="button" data-frserv="1" aria-label="Eine Portion mehr">+</button></span><small>${viewServ(r)===1?"Portion":"Portionen"}</small></div></div>`:""}
+    <div class="sec"><h2>Zutaten <span>${ing.length}</span></h2>
+      ${viewServ(r)!==s?`<p class="scale-note">Mengen für <b>${viewServ(r)} ${viewServ(r)===1?"Portion":"Portionen"}</b> umgerechnet. Das Rezept ist für ${s}.</p>`:""}
+      ${ing.length?`<ul class="items ro">${ing.map(x=>`<li><span class="leaf"></span><span>${esc(scaleIng(x,viewServ(r)/s))}</span></li>`).join("")}</ul>`:`<p class="card-meta">Keine Zutaten eingetragen.</p>`}</div>
     ${foldSec("steps","Zubereitung",steps.length?`${steps.length} ${steps.length===1?"Schritt":"Schritte"}`:"keine",()=>steps.length?`<ol class="items ro">${steps.map((x,k)=>`<li><span class="num">${k+1}</span><span>${esc(x)}</span></li>`).join("")}</ol>`:`<p class="card-meta">Keine Schritte eingetragen.</p>`,FA)}
     ${showKcal&&ing.length?foldSec("nut","Nährwerte",t.kcal&&!t.missing?`${fmtN(t.kcal/s)} kcal · ${fmtN(t.p/s)} g Eiweiß`:"noch nicht berechnet",()=>t.missing===ing.length?`<p class="card-meta">Für dieses Rezept gibt es noch keine Nährwerte. Übernimm es, dann werden sie geschätzt.</p>`:nutBody(r,true),FA):""}
     ${ing.length?foldSec("price","Preis",priceHas(r)?`ca. ${fmtEur(r.price.total/s)} pro Portion`:"",()=>priceBody(r,true),FA):""}
@@ -2556,6 +2606,9 @@ function frxRefresh(){
     <button class="btn primary frx-copy" type="button" id="frxCopy">In meine Sammlung übernehmen</button>`;
   $("#frxCopy").onclick=()=>copyFriendRecipe(f,r);
 }
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-frserv]"); if(!b||!frxCur) return;
+  const f=frxDirect?frxDirect.f:frData&&frData.find(x=>x.fid===frxCur.fid), r=frxDirect?frxDirect.r:f&&f.recipes.find(x=>x.id===frxCur.rid); if(!r) return;
+  servView[r.id]=Math.max(1,Math.min(50,viewServ(r)+(+b.dataset.frserv))); if(servView[r.id]===servOf(r)) delete servView[r.id]; frxRefresh(); });
 document.addEventListener("click",e=>{ const h=e.target.closest("[data-act-fr]"); if(!h) return; const id=h.dataset.f; if(folds.has(id)) folds.delete(id); else folds.add(id); frxRefresh(); });
 async function copyFriendRecipe(f,r){
   if(!root) return;
@@ -2744,7 +2797,9 @@ document.addEventListener("click",e=>{
   if(act==="nut"){ nutOpen=nutOpen===k?null:k; render(); }
   if(act==="nut-photo"){ labelFor=k; $("#labelInput").click(); }
   if(act==="nut-est"){ const nutri={...nutriOf(r)}; delete nutri[k]; r.nutri=nutri; patch(r.id,{nutri}); render(); ensureEstimates(r.id); }
-  if(act==="serv"){ r.servings=Math.max(1,Math.min(20,servOf(r)+(+b.dataset.d))); patch(r.id,{servings:r.servings}); render(); }
+  if(act==="serv"){ servView[r.id]=Math.max(1,Math.min(50,viewServ(r)+(+b.dataset.d))); if(servView[r.id]===servOf(r)) delete servView[r.id]; render(); }
+  if(act==="serv-reset"){ delete servView[r.id]; render(); }
+  if(act==="base-serv"){ r.servings=Math.max(1,Math.min(50,servOf(r)+(+b.dataset.d))); delete servView[r.id]; patch(r.id,{servings:r.servings}); render(); }
   if(act==="del-step"){ r.steps=arr(r.steps).filter((_,i)=>i!==k); patch(r.id,{steps:r.steps}); render(); }
   if(act==="del-recipe"){
     if(!confirmDel){ confirmDel=true; render(); return; }
