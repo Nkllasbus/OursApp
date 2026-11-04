@@ -317,6 +317,31 @@ header p{margin-top:4px;font-size:.88rem}
 #pickList .nm small{font-size:.75rem;color:var(--muted)}
 .pk-btn{border:0;background:var(--band);color:var(--on-band);border-radius:999px;padding:6px 14px;font:inherit;font-size:.85rem;font-weight:600}
 .pk-btn:disabled{opacity:.6}
+/* Supermärkte */
+.shop-btn{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:10px 12px;font-weight:600;font-size:.9rem}
+.shop-btn svg{width:20px;height:20px;color:var(--accent)}
+.shop-sheet{max-height:calc(100dvh - 40px);overflow-y:auto}
+.shop-loc{display:flex;flex-direction:column;gap:8px}
+.shop-loc form{display:flex;gap:8px}
+.shop-loc form input{flex:1}
+.shop-where{font-size:.82rem;color:var(--muted);display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.shops{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.shop{border:1px solid var(--line);border-radius:14px;background:var(--bg);overflow:hidden}
+.shop-head{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:10px 12px;text-align:left;color:var(--ink)}
+.shop-head .nm{flex:1;min-width:0;display:flex;flex-direction:column}
+.shop-head b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shop-head small{font-size:.78rem;color:var(--muted)}
+.shop-score{flex:none;font-weight:700;font-size:.85rem;border-radius:999px;padding:3px 9px;background:var(--accent-soft);color:var(--accent);font-variant-numeric:tabular-nums}
+.shop-score.low{background:#f3e3e1;color:#8a3b33}
+.shop-bar{height:4px;background:var(--line)}
+.shop-bar span{display:block;height:100%;background:var(--accent)}
+.shop-items{list-style:none;margin:0;padding:6px 12px 10px;display:flex;flex-direction:column;gap:4px;font-size:.86rem}
+.shop-items li{display:flex;gap:8px;align-items:baseline}
+.shop-items .st{flex:none;width:18px;text-align:center;font-weight:700}
+.shop-items .ja{color:var(--accent)} .shop-items .vielleicht{color:#a2742a} .shop-items .nein{color:#a8402a}
+.shop-items small{color:var(--muted)}
+.shop-route{display:inline-block;margin:0 12px 10px;font-size:.84rem;font-weight:600;color:var(--accent)}
+.shop-note{font-size:.76rem;color:var(--muted);margin:0}
 
 /* Seitenmenü hinter dem Titel */
 .switch{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;text-align:left}
@@ -460,6 +485,22 @@ header p{margin-top:4px;font-size:.88rem}
 
 /* Profilmenü darf aus dem Kopf herausragen */
 #head,header.brand{overflow:visible!important;z-index:30}
+
+/* Karte füllt die ganze Höhe: oben und unten kein Hintergrund mehr sichtbar */
+:root{padding-top:0!important;padding-bottom:0!important}
+body{padding-top:0!important;padding-bottom:0!important}
+html,body{height:100%}
+.wrap{height:100vh!important;height:100dvh!important;border-radius:0!important;border-top:0!important;border-bottom:0!important;padding-bottom:max(12px,env(safe-area-inset-bottom,0px))!important}
+#head,header.brand{padding-top:calc(12px + env(safe-area-inset-top,0px))!important}
+#head .pf-btn,header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
+@media (max-width:660px){body{padding-left:0!important;padding-right:0!important}.wrap{border:0!important;box-shadow:none!important;max-width:none!important}}
+
+/* Matteres Weinrot: ruhiger, weniger leuchtend */
+:root{--page:#231417;--dots:rgba(255,255,255,.035);--frame-line:#1b0f12;--shadow:rgba(15,6,8,.45);
+  --band:#5a2a31;--on-band:#f4ebe9;--on-band-muted:#c9adad;--bg:#f5f0ee;--surface:#fcf9f8;--ink:#2b1e21;--muted:#76676a;--line:#e6dcda;
+  --accent:#5f6e54;--accent-soft:#e5e9df;--btn:#ece2e0}
+body{background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px)!important;background-size:18px 18px!important}
+.fab,.fab-opt i{box-shadow:0 6px 16px -8px var(--shadow)!important}
 </style>
 </head>
 <body>
@@ -544,6 +585,13 @@ header p{margin-top:4px;font-size:.88rem}
   </div>
   <div class="frx" id="frx" hidden><div class="frx-card" role="dialog" aria-modal="true" aria-label="Rezept von Freund">
     <button class="frx-close" type="button" id="frxClose" aria-label="Schließen">×</button><div class="detail" id="frxBody"></div></div></div>
+  <div class="modal" id="shopModal" hidden>
+    <div class="sheet vsheet shop-sheet" role="dialog" aria-modal="true" aria-labelledby="shopTitle">
+      <h3 id="shopTitle">Supermärkte in der Nähe</h3>
+      <div id="shopBody"></div>
+      <div class="vrow"><button class="ghost" type="button" id="shopClose">Schließen</button></div>
+    </div>
+  </div>
   <div class="modal" id="pickModal" hidden>
     <div class="sheet vsheet" role="dialog" aria-modal="true" aria-labelledby="pickTitle">
       <h3 id="pickTitle">Mit wem swipen?</h3>
@@ -1401,6 +1449,7 @@ function renderDetail(r){
       <h2>Zutaten <span>${ing.length}</span></h2>
       <ul class="items">${ing.map((t,k)=>ingRow(r,t,k)).join("")}</ul>
       <form class="adder" id="addIng" autocomplete="off"><input id="newIng" placeholder="z.B. 200 g rote Linsen" aria-label="Neue Zutat"><button class="btn" type="submit">+</button></form>
+      ${ing.length?`<button class="shop-btn" type="button" data-act="shops"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h2l2.2 10.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L20.5 8H6.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="20" r="1.3" fill="currentColor"/><circle cx="17" cy="20" r="1.3" fill="currentColor"/></svg>Wo gibt's das in der Nähe?</button>`:""}
     </div>
     <div class="sec">
       <h2>Zubereitung <span>${steps.length} Schritte</span></h2>
@@ -1871,6 +1920,115 @@ $("#matchClose").addEventListener("click",closeMatch);
 $("#matchOpen").addEventListener("click",()=>{ const id=matchShowing; closeMatch(); if(id) openSwipeCard(id); });
 $("#matchModal").addEventListener("click",e=>{ if(e.target.id==="matchModal") closeMatch(); });
 
+/* ---------- Supermärkte in der Nähe: OpenStreetMap + Einschätzung von Claude ---------- */
+let shopLoc=null, shopState=null, shopOpen=null, shopCache={};
+try{ shopLoc=JSON.parse(localStorage.getItem("rezepte.shopLoc")||"null"); }catch(e){}
+const SHOP_TYPES={supermarket:"Supermarkt",convenience:"Kiosk / Späti",organic:"Bioladen",greengrocer:"Obst & Gemüse",health_food:"Reformhaus",chemist:"Drogerie"};
+const distKm=(a,b)=>{ const R=6371, t=x=>x*Math.PI/180, dl=t(b.lat-a.lat), dn=t(b.lon-a.lon);
+  const h=Math.sin(dl/2)**2+Math.cos(t(a.lat))*Math.cos(t(b.lat))*Math.sin(dn/2)**2; return 2*R*Math.asin(Math.sqrt(h)); };
+const fmtDist=k=>k<1?`${Math.round(k*100)*10} m`:`${k.toFixed(1).replace(".",",")} km`;
+function openShops(){
+  const r=cur(); if(!r) return;
+  shopOpen=r.id; $("#shopModal").hidden=false;
+  if(shopLoc) findShops(); else { shopState={step:"loc"}; renderShops(); }
+}
+function closeShops(){ $("#shopModal").hidden=true; shopOpen=null; }
+$("#shopClose").addEventListener("click",closeShops);
+$("#shopModal").addEventListener("click",e=>{ if(e.target.id==="shopModal") closeShops(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !$("#shopModal").hidden) closeShops(); });
+function renderShops(){
+  const b=$("#shopBody"), st=shopState||{};
+  if(st.step==="loc"){
+    b.innerHTML=`<div class="shop-loc"><p>Ich suche Supermärkte in deiner Nähe und schätze, welche Zutaten es dort gibt.</p>
+      <button class="btn primary" type="button" id="shopGeo">Meinen Standort verwenden</button>
+      <form id="shopPlace" autocomplete="off"><input id="shopPlaceIn" type="text" placeholder="oder Ort / PLZ eingeben" aria-label="Ort oder Postleitzahl"><button class="btn" type="submit">Suchen</button></form>
+      ${st.err?`<p class="vmsg">${esc(st.err)}</p>`:""}</div>`;
+    return;
+  }
+  const where=shopLoc?`<div class="shop-where"><span>In der Nähe von ${esc(shopLoc.label||"deinem Standort")}</span><button class="linkish" type="button" id="shopChange">ändern</button></div>`:"";
+  if(st.step==="busy"){ b.innerHTML=where+`<p class="card-meta">${esc(st.msg||"Einen Moment …")}</p>`; return; }
+  if(st.step==="err"){ b.innerHTML=where+`<p class="vmsg">${esc(st.err)}</p>`; return; }
+  const r=recipes.find(x=>x.id===shopOpen), ing=r?arr(r.ingredients):[];
+  const list=st.shops||[];
+  b.innerHTML=where+(list.length?`<ul class="shops">${list.map((sh,i)=>{ const res=sh.res, n=ing.length;
+      const yes=res?res.items.filter(x=>x.s==="ja").length:0, maybe=res?res.items.filter(x=>x.s==="vielleicht").length:0, open=st.open===i;
+      return `<li class="shop"><button type="button" class="shop-head" data-shop="${i}" aria-expanded="${open}">
+          <span class="nm"><b>${esc(sh.name)}</b><small>${esc(SHOP_TYPES[sh.type]||"Laden")} · ${fmtDist(sh.d)}${sh.street?` · ${esc(sh.street)}`:""}</small></span>
+          ${res?`<span class="shop-score${yes<n*.6?" low":""}">${yes}/${n}${maybe?` <small>+${maybe}?</small>`:""}</span>`:`<span class="shop-score">…</span>`}</button>
+        ${res?`<div class="shop-bar"><span style="width:${n?Math.round(yes/n*100):0}%"></span></div>`:""}
+        ${open&&res?`<ul class="shop-items">${ing.map((t,k)=>{ const x=res.items[k]||{s:"vielleicht",hint:""}; return `<li><span class="st ${x.s}">${x.s==="ja"?"✓":x.s==="nein"?"✗":"?"}</span><span>${esc(t)}${x.hint?` <small>· ${esc(x.hint)}</small>`:""}</span></li>`; }).join("")}</ul>
+          <a class="shop-route" href="https://www.google.com/maps/dir/?api=1&destination=${sh.lat},${sh.lon}" target="_blank" rel="noopener">Route anzeigen ↗</a>`:""}</li>`; }).join("")}</ul>`
+    :`<p class="card-meta">In der Nähe habe ich keine Supermärkte gefunden.</p>`)
+    +(st.warn?`<p class="vmsg">${esc(st.warn)}</p>`:"")
+    +`<p class="shop-note">Ladenliste aus OpenStreetMap. Ob es eine Zutat gibt, ist eine Einschätzung anhand des üblichen Sortiments, kein Live-Bestand der Filiale.</p>`;
+}
+document.addEventListener("click",e=>{
+  if(e.target.closest("#shopGeo")){
+    if(!navigator.geolocation){ shopState={step:"loc",err:"Dein Gerät gibt keinen Standort heraus. Gib einen Ort ein."}; return renderShops(); }
+    shopState={step:"busy",msg:"Standort wird bestimmt …"}; renderShops();
+    navigator.geolocation.getCurrentPosition(p=>{ setShopLoc({lat:p.coords.latitude,lon:p.coords.longitude,label:"deinem Standort"}); findShops(); },
+      ()=>{ shopState={step:"loc",err:"Den Standort durfte ich nicht abfragen. Gib stattdessen einen Ort oder eine PLZ ein."}; renderShops(); },{enableHighAccuracy:false,timeout:12000,maximumAge:600000});
+    return;
+  }
+  if(e.target.closest("#shopChange")){ shopState={step:"loc"}; return renderShops(); }
+  const h=e.target.closest("[data-shop]"); if(h && shopState){ const i=+h.dataset.shop; shopState.open=shopState.open===i?null:i; renderShops(); }
+});
+document.addEventListener("submit",async e=>{
+  if(e.target.id!=="shopPlace") return; e.preventDefault();
+  const q=$("#shopPlaceIn").value.trim(); if(!q) return;
+  shopState={step:"busy",msg:"Ort wird gesucht …"}; renderShops();
+  try{
+    const res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=de,at,ch&q=${encodeURIComponent(q)}`);
+    const d=(await res.json())[0]; if(!d) throw new Error("Diesen Ort habe ich nicht gefunden.");
+    setShopLoc({lat:+d.lat,lon:+d.lon,label:q}); findShops();
+  }catch(err){ shopState={step:"loc",err:err.message&&!/fetch/i.test(err.message)?err.message:"Die Ortssuche hat nicht geklappt. Prüf die Internetverbindung."}; renderShops(); }
+});
+function setShopLoc(l){ shopLoc=l; try{ localStorage.setItem("rezepte.shopLoc",JSON.stringify(l)); }catch(e){} }
+async function overpass(lat,lon,rad){
+  const q=`[out:json][timeout:20];nwr(around:${rad},${lat},${lon})["shop"~"^(supermarket|convenience|organic|greengrocer|health_food|chemist)$"];out center tags 80;`;
+  for(const url of ["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"]){
+    try{ const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"data="+encodeURIComponent(q)});
+      if(r.ok) return (await r.json()).elements||[]; }catch(e){}
+  }
+  throw new Error("Die Ladenliste von OpenStreetMap ist gerade nicht erreichbar. Versuch es gleich nochmal.");
+}
+async function findShops(){
+  const r=recipes.find(x=>x.id===shopOpen); if(!r||!shopLoc) return;
+  const ing=arr(r.ingredients);
+  shopState={step:"busy",msg:"Supermärkte in der Nähe werden gesucht …"}; renderShops();
+  try{
+    let els=await overpass(shopLoc.lat,shopLoc.lon,2000);
+    if(els.filter(x=>x.tags&&(x.tags.name||x.tags.brand)).length<3) els=await overpass(shopLoc.lat,shopLoc.lon,6000);
+    const shops=els.map(x=>{ const t=x.tags||{}, lat=x.lat??(x.center&&x.center.lat), lon=x.lon??(x.center&&x.center.lon);
+        return {name:(t.brand||t.name||"").trim(), full:t.name||t.brand||"", type:t.shop, lat, lon, street:[t["addr:street"],t["addr:housenumber"]].filter(Boolean).join(" ")}; })
+      .filter(x=>x.name && x.lat!=null).map(x=>({...x,d:distKm(shopLoc,x)})).sort((a,b)=>a.d-b.d).slice(0,14);
+    shops.forEach(x=>{ if(x.full && x.full!==x.name && x.full.length<40) x.name=x.full.toLowerCase().includes(x.name.toLowerCase())?x.full:x.name; });
+    if(shopOpen!==r.id) return;
+    shopState={step:"list",shops,open:null}; renderShops();
+    if(!shops.length) return;
+    // Ketten nur einmal fragen
+    const brand=x=>x.name.toLowerCase().replace(/\s+(markt|center|city|to go|express)\b.*$/,"").trim();
+    const brands=[...new Set(shops.map(brand))].slice(0,10);
+    const label=b=>{ const x=shops.find(s=>brand(s)===b); return `${x.name} (${SHOP_TYPES[x.type]||"Laden"})`; };
+    if(!WORKER_URL){ shopState.warn="In dieser Vorschau kann Claude das Sortiment nicht prüfen. Auf deiner echten Seite schon."; return renderShops(); }
+    const key=JSON.stringify([brands,ing]);
+    let res=shopCache[key];
+    if(!res){
+      const resp=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mode:"stores",stores:brands.map(label),items:ing})});
+      const d=await resp.json().catch(()=>({}));
+      if(!resp.ok || !Array.isArray(d.stores)) throw new Error(resp.ok||resp.status===400&&!d.error?"Der Rezept-Helfer kennt die Supermarkt-Suche noch nicht. Aktualisier den Code in Cloudflare.":(d.error||"Der Rezept-Helfer hat nicht geantwortet."));
+      res=shopCache[key]=d.stores;
+    }
+    if(shopOpen!==r.id) return;
+    shops.forEach(x=>{ x.res=res[brands.indexOf(brand(x))]||null; });
+    shops.sort((a,b)=>{ const sc=x=>x.res?x.res.items.filter(i=>i.s==="ja").length:-1; return (sc(b)-sc(a))||(a.d-b.d); });
+    renderShops();
+  }catch(err){
+    if(shopState && shopState.step==="list"){ shopState.warn=err instanceof TypeError?"Keine Verbindung zum Rezept-Helfer.":err.message; renderShops(); }
+    else { shopState={step:"err",err:err instanceof TypeError?"Keine Verbindung.":err.message}; renderShops(); }
+  }
+}
+
 /* ---------- Kalorien und Nährwerte ---------- */
 // pro Zutat: g = Menge in Gramm, kcal/p/c/f = Werte pro 100 g, src = "man" (selbst), "label" (Etikett), "est" (geschätzt)
 const NUT_FIELDS=[["g","Menge","g"],["kcal","Kalorien","kcal / 100 g"],["p","Eiweiß","g / 100 g"],["c","Kohlenhydrate","g / 100 g"],["f","Fett","g / 100 g"]];
@@ -2245,6 +2403,7 @@ document.addEventListener("click",e=>{
   if(b.dataset.act==="cat"){ r.category=r.category===b.dataset.cat?null:b.dataset.cat; patch(r.id,{category:r.category}); render(); return; }
   const act=b.dataset.act, k=+b.dataset.k;
   if(act==="cover"){ coverFor=r.id; $("#coverInput").click(); }
+  if(act==="shops") openShops();
   if(act==="del-ing"){
     const old=nutriOf(r), nutri={};
     arr(r.ingredients).forEach((_,i)=>{ if(i<k && old[i]) nutri[i]=old[i]; if(i>k && old[i]) nutri[i-1]=old[i]; });

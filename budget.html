@@ -167,6 +167,15 @@ header.brand .wordmark{opacity:1;font-size:clamp(2.1rem,9.5vw,2.7rem);letter-spa
 
 /* Profilmenü darf aus dem Kopf herausragen */
 #head,header.brand{overflow:visible!important;z-index:30}
+
+/* Karte füllt die ganze Höhe: oben und unten kein Hintergrund mehr sichtbar */
+:root{padding-top:0!important;padding-bottom:0!important}
+body{padding-top:0!important;padding-bottom:0!important}
+html,body{height:100%}
+.wrap{height:100vh!important;height:100dvh!important;border-radius:0!important;border-top:0!important;border-bottom:0!important;padding-bottom:max(12px,env(safe-area-inset-bottom,0px))!important}
+#head,header.brand{padding-top:calc(12px + env(safe-area-inset-top,0px))!important}
+#head .pf-btn,header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
+@media (max-width:660px){body{padding-left:0!important;padding-right:0!important}.wrap{border:0!important;box-shadow:none!important;max-width:none!important}}
 </style>
 </head>
 <body>
