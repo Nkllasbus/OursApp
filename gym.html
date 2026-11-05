@@ -105,6 +105,36 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
 .wsum{flex-wrap:wrap}
 .cal-btn svg{width:17px;height:17px}
 .plan{display:flex;flex-direction:column;gap:8px}
+/* Muskel-Ansicht */
+.mus-card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.mus-figs{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:380px;margin:0 auto;width:100%}
+.mus-figs figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:4px}
+.mus-figs figcaption{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.mus-figs svg{width:100%;max-width:170px;height:auto;display:block}
+.mus-figs .base{fill:color-mix(in srgb,var(--ink) 9%,var(--surface))}
+.mus-figs .m{stroke:var(--surface);stroke-width:1.2}
+.mus-figs .m.l0{fill:color-mix(in srgb,var(--ink) 16%,var(--surface))}
+.mus-figs .m.l1{fill:rgba(214,69,65,.38)}
+.mus-figs .m.l2{fill:#d64541}
+.mus-figs .m.l3{fill:#7a1212}
+.mus-leg{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;font-size:.76rem;color:var(--muted)}
+.mus-leg span{display:inline-flex;align-items:center;gap:5px}
+.mus-leg i{width:12px;height:12px;border-radius:4px;display:inline-block}
+.mus-list{display:flex;flex-wrap:wrap;gap:6px}
+.mus-list span{font-size:.78rem;border-radius:999px;padding:4px 10px;background:var(--bg);border:1px solid var(--line);color:var(--ink)}
+.mus-list span.l1{background:rgba(214,69,65,.14);border-color:rgba(214,69,65,.35)}
+.mus-list span.l2{background:#d64541;border-color:#d64541;color:#fff}
+.mus-list span.l3{background:#7a1212;border-color:#7a1212;color:#fff}
+.mus-list b{font-weight:700}
+/* Farbe eines Workouts */
+.cols{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.csw{width:30px;height:30px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--line);background:var(--c);padding:0}
+.csw[aria-pressed="true"]{box-shadow:0 0 0 2.5px var(--ink)}
+.csw.auto{background:conic-gradient(#c8574a,#d08a2c,#4f8a5b,#2f6f9f,#8a6bbf,#c8574a);position:relative}
+.csw.auto::after{content:"A";position:absolute;inset:0;display:grid;place-items:center;font-size:.7rem;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.pb-cols{display:flex;flex-direction:column;gap:6px}
+.pb-cols small{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.pb-cols .csw{width:26px;height:26px}
 /* Wochenplan waagerecht: 7 Tage nebeneinander */
 .wgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
 .wcol{display:flex;flex-direction:column;gap:4px;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px 3px 5px;min-height:150px}
@@ -549,6 +579,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
     <h3 id="tplTitle">Neues Workout</h3>
     <div class="field"><label class="flabel" for="tplName">Name</label><input type="text" id="tplName" maxlength="30" placeholder="z.B. Push, Pull, Beine">
       <div class="chips" id="tplSug"></div></div>
+    <div class="field"><span class="flabel">Farbe im Plan</span><div id="tplCols"></div></div>
     <div class="field"><span class="flabel">Übungen im Workout</span><div class="picks" id="tplPicks"></div></div>
     <p class="err" id="tplErr" hidden></p>
     <div class="sheet-actions"><button class="del" type="button" id="tplDel" hidden>Workout löschen</button>
@@ -778,7 +809,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-05-130225";
+  const APP_VERSION="2026-11-05-130952";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1770,8 +1801,8 @@ function renderFriends(){
       return `<button type="button" class="fr-row-g" data-fr="${esc(f.fid)}"${f.sid?"":" disabled"}>${av(f.fid,f.name,44)}<span class="pb-txt"><b>${esc(f.name)}</b><small>${f.sid?`${ts.length} ${ts.length===1?"Workout":"Workouts"} · ${pl.length} im Plan`:"teilt keinen Gymplan"}</small></span>${f.sid&&f.streak>=3?`<span class="fr-streak">🔥 ${f.streak}</span>`:""}${f.sid?NEXT:""}</button>`; }).join("")}</div>`;
   $("#list").innerHTML=share+body;
 }
-function typeOfT(f,t){ const ex=fTplEx(f,t), tt=TYPES.find(x=>x.re.test(t.title||"")); if(tt) return tt; if(!ex.length) return {col:"#888",emo:"🏋️"};
-  const cnt={}; ex.forEach(x=>cnt[x.group]=(cnt[x.group]||0)+1); const g=grpOf(Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0]); return {col:g.col,emo:g.emo}; }
+function typeOfT(f,t){ const ex=fTplEx(f,t), tt=TYPES.find(x=>x.re.test(t.title||"")); if(tt) return t.col?{...tt,col:t.col}:tt; if(!ex.length) return {col:t.col||"#888",emo:"🏋️"};
+  const cnt={}; ex.forEach(x=>cnt[x.group]=(cnt[x.group]||0)+1); const g=grpOf(Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0]); return {col:t.col||g.col,emo:g.emo}; }
 // Übungen übernehmen: gleiche Übung bei dir wiederverwenden, sonst neu anlegen
 function copyExercises(f,ids,upd){
   const map={}, mine=exList();
@@ -1812,13 +1843,17 @@ const TYPES=[
   {re:/ganzkörper|full/i, name:"Ganzkörper", col:"#4f8a5b", emo:"⚡"},
   {re:/cardio|lauf|run|rad|ausdauer/i, name:"Cardio", col:"#4a7f7a", emo:"🏃"},
 ];
+// eigene Farbe pro Workout (templates/{id}/col), sonst automatisch nach Name bzw. Muskelgruppe
+const WCOLS=["#c8574a","#d08a2c","#c0607d","#8a6bbf","#3c4270","#2f6f9f","#3f7a8c","#4a7f7a","#4f8a5b","#6f7d3a","#8a7350","#555b66"];
 function typeOf(w){
-  const ex=wEx(w); if(!ex.length) return null;
-  const t=TYPES.find(t=>t.re.test(wTitle(w)||"")); if(t) return t;
+  const ex=wEx(w); if(!ex.length) return null; const tp=tplOf(w), own=tp&&tp.col;
+  const t=TYPES.find(t=>t.re.test(wTitle(w)||"")); if(t) return own?{...t,col:own}:t;
   const cnt={}; ex.forEach(x=>cnt[x.group]=(cnt[x.group]||0)+1);
   const g=grpOf(Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0]);
-  return {name:g.name, col:g.col, emo:g.emo};
+  return {name:g.name, col:own||g.col, emo:g.emo};
 }
+const colPicker=(cur,attr)=>`<div class="cols"><button type="button" class="csw auto" ${attr}="" aria-pressed="${!cur}" aria-label="Automatisch" title="Automatisch"></button>${WCOLS.map(c=>`<button type="button" class="csw" style="--c:${c}" ${attr}="${c}" aria-pressed="${cur===c}" aria-label="Farbe ${c}"></button>`).join("")}</div>`;
+function setTplCol(tid,col){ const t=templates[tid]; if(!t||!root) return; if(col) t.col=col; else delete t.col; root.child(`templates/${tid}/col`).set(col||null).catch(showErr); render(); }
 const timeOfW=w=>w&&/^\d{2}:\d{2}$/.test(w.time||"")?w.time:null;
 const durOfW=w=>w&&+w.dur>0?+w.dur:60;
 const endTime=(t,m)=>{ const [h,mi]=t.split(":").map(Number), x=h*60+mi+m; return `${String(Math.floor(x/60)%24).padStart(2,"0")}:${String(x%60).padStart(2,"0")}`; };
@@ -1837,7 +1872,7 @@ function renderWeek(){
   const sn=streakOf(workouts,sessions,myUid), st=tierOf(sn);
   if(sn>0) html=`<div class="streak-card${st?" "+st.cls:""}"><span class="sc-emo">${st?"🔥".repeat(Math.min(3,st.flames)):"💪"}</span><span class="pb-txt"><b>${sn} ${sn===1?"Workout":"Workouts"} in Folge</b><small>${st?st.txt:`Noch ${3-sn} bis zur Streak. Schaff deine geplanten Workouts!`}</small></span></div>`+html;
   html+=weekGrid(dates,todayIso,occ);
-  html+=trainingHtml(todayIso)+historyHtml();
+  html+=trainingHtml(todayIso)+muscleHtml(occ)+historyHtml();
   // was gerade eingetippt wird, bleibt beim Neuzeichnen erhalten
   const act=document.activeElement, keep=act&&act.id&&$("#list").contains(act)&&act.matches("input")?act:null;
   $("#list").innerHTML=html;
@@ -1879,6 +1914,7 @@ function wBlock(wid,w,di,lg){
     ${open?`<div class="pb-body">
       <button type="button" class="pb-title" data-showex="1" aria-expanded="${showEx}">${esc(wTitle(w))} · ${ex.length} ${ex.length===1?"Übung":"Übungen"} ${showEx?"ausblenden":"ansehen"} ${CHEV}</button>
       ${showEx?`<ul class="exl">${ex.map(x=>`<li><button type="button" class="th-btn" data-info="${esc(x.id)}" aria-label="${esc(x.name)} ansehen">${thumb(imgOf(x))}</button><span class="exn"><b>${esc(x.name)}</b><small>${esc(fmtEx(x))}</small></span></li>`).join("")}</ul>`:""}
+      ${w.tpl&&templates[w.tpl]?`<div class="pb-cols"><small>Farbe von „${esc(wTitle(w))}“</small>${colPicker(templates[w.tpl].col||"",`data-wcol-t="${esc(w.tpl)}" data-wcol`)}</div>`:""}
       <div class="day-actions"><button class="btn" type="button" data-edit-w="${esc(wid)}">Plan ändern</button>
         <button class="linkish" type="button" data-cal-w="${esc(key)}">Nur diesen Termin in den Kalender</button></div>
     </div>`:""}
@@ -1942,6 +1978,46 @@ function exSetsHtml(a,x){
       <div class="set-foot"><button type="button" class="add-set" data-addset="${esc(x.id)}" data-n="${n}">+ Satz</button><small>Tipp auf die Nummer, wenn der Satz geschafft ist.</small></div></div></div>`;
 }
 let histN=8;
+/* ---------- Muskeln der Woche: Sätze pro Muskelgruppe aus den geplanten Workouts ---------- */
+// Richtwert: unter 10 Sätze pro Woche eher wenig, 10–20 gut, über 20 viel
+const musLevel=n=>!n?0:n<10?1:n<=20?2:3;
+function muscleSets(occ){
+  const n={}; occ.forEach(list=>list.forEach(([,w])=>wEx(w).forEach(x=>{ if(x.group==="cardio") return; n[x.group]=(n[x.group]||0)+(+x.sets||3); }))); return n;
+}
+function muscleHtml(occ){
+  const n=muscleSets(occ), L=g=>musLevel(n[g]||0), any=Object.keys(n).length;
+  const m=(g,p)=>{ const tag=p.match(/^<(\w+)/)[1]; return p.replace(/^<(\w+)/,`<${tag} class="m l${L(g)}" data-g="${g}"`).replace(/\/>$/,`><title>${grpOf(g).name}: ${n[g]||0} Sätze</title></${tag}>`); };
+  const sh=(g,...parts)=>parts.map(p=>m(g,p)).join("");
+  const base=`<circle class="base" cx="50" cy="15" r="10"/><rect class="base" x="45" y="24" width="10" height="9" rx="3"/>
+    <circle class="base" cx="19" cy="102" r="4.2"/><circle class="base" cx="81" cy="102" r="4.2"/>
+    <ellipse class="base" cx="42" cy="196" rx="6.5" ry="3.5"/><ellipse class="base" cx="58" cy="196" rx="6.5" ry="3.5"/>
+    <circle class="base" cx="42" cy="150" r="4.5"/><circle class="base" cx="58" cy="150" r="4.5"/>`;
+  const front=`<svg viewBox="0 0 100 204" role="img" aria-label="Körper von vorne">${base}
+    <path class="base" d="M37 90h26l-2 14H39z"/>
+    ${sh("schulter",'<ellipse cx="30" cy="41" rx="8" ry="7"/>','<ellipse cx="70" cy="41" rx="8" ry="7"/>')}
+    ${sh("brust",'<rect x="34" y="35" width="15.5" height="17" rx="6"/>','<rect x="50.5" y="35" width="15.5" height="17" rx="6"/>')}
+    ${sh("bauch",'<rect x="40" y="54" width="20" height="35" rx="6"/>')}
+    ${sh("bizeps",'<ellipse cx="25" cy="62" rx="5.2" ry="12"/>','<ellipse cx="75" cy="62" rx="5.2" ry="12"/>')}
+    ${sh("unterarme",'<ellipse cx="21.5" cy="86" rx="4.4" ry="11"/>','<ellipse cx="78.5" cy="86" rx="4.4" ry="11"/>')}
+    ${sh("quads",'<ellipse cx="42.5" cy="125" rx="8" ry="21"/>','<ellipse cx="57.5" cy="125" rx="8" ry="21"/>')}
+    ${sh("waden",'<ellipse cx="42" cy="172" rx="5.2" ry="16"/>','<ellipse cx="58" cy="172" rx="5.2" ry="16"/>')}</svg>`;
+  const back=`<svg viewBox="0 0 100 204" role="img" aria-label="Körper von hinten">${base}
+    ${sh("schulter",'<ellipse cx="30" cy="41" rx="8" ry="7"/>','<ellipse cx="70" cy="41" rx="8" ry="7"/>')}
+    ${sh("ruecken",'<path d="M38 33h24l5 15-6 39H39l-6-39z"/>')}
+    ${sh("trizeps",'<ellipse cx="25" cy="62" rx="5.2" ry="12"/>','<ellipse cx="75" cy="62" rx="5.2" ry="12"/>')}
+    ${sh("unterarme",'<ellipse cx="21.5" cy="86" rx="4.4" ry="11"/>','<ellipse cx="78.5" cy="86" rx="4.4" ry="11"/>')}
+    ${sh("po",'<ellipse cx="43" cy="99" rx="8" ry="9"/>','<ellipse cx="57" cy="99" rx="8" ry="9"/>')}
+    ${sh("hams",'<ellipse cx="42.5" cy="129" rx="7.5" ry="18"/>','<ellipse cx="57.5" cy="129" rx="7.5" ry="18"/>')}
+    ${sh("waden",'<ellipse cx="42" cy="170" rx="6" ry="15"/>','<ellipse cx="58" cy="170" rx="6" ry="15"/>')}</svg>`;
+  const list=GROUPS.filter(g=>g.id!=="cardio").map(g=>`<span class="l${L(g.id)}">${esc(g.name)} <b>${n[g.id]||0}</b></span>`).join("");
+  return `<div class="sec-h"><b>Muskeln ${weekOff===0?"diese Woche":"in dieser Woche"}</b></div>
+    <section class="mus-card">
+      <div class="mus-figs"><figure>${front}<figcaption>Vorne</figcaption></figure><figure>${back}<figcaption>Hinten</figcaption></figure></div>
+      <div class="mus-leg"><span><i style="background:rgba(214,69,65,.38)"></i>wenig (unter 10 Sätze)</span><span><i style="background:#d64541"></i>gut (10–20)</span><span><i style="background:#7a1212"></i>viel (über 20)</span></div>
+      ${any?`<div class="mus-list">${list}</div>`:`<p class="card-note">Sobald Workouts in dieser Woche geplant sind, siehst du hier, welche Muskeln du trainierst.</p>`}
+      <p class="card-note">Sätze pro Woche aus deinem Plan. Grau = gar nicht trainiert.</p>
+    </section>`;
+}
 function historyHtml(){
   const list=mySessions().filter(x=>x.end).sort((a,b)=>b.start-a.start);
   if(!list.length) return `<section class="hist-sec"><div class="sec-h"><b>Historie</b></div><p class="card-note">Hier erscheinen deine Trainings, sobald du eins beendet hast.</p></section>`;
@@ -2154,7 +2230,7 @@ const thumb=i=>i?`<span class="th"><img src="${pic(i,1)}" alt="" loading="lazy">
 function tplCards(){
   const ts=tplList();
   return `<div class="sec-h"><b>Meine Workouts</b><button class="btn primary cal-btn" type="button" id="newTpl">+ Workout</button></div>
-    ${ts.length?`<div class="tpls">${ts.map(t=>{ const ex=tEx(t), ty=typeOf({ex:t.ex,title:t.title})||{col:"#888",emo:"🏋️",name:""}, groups=[...new Set(ex.map(x=>x.group))].map(g=>grpOf(g).name);
+    ${ts.length?`<div class="tpls">${ts.map(t=>{ const ex=tEx(t), ty=typeOf({ex:t.ex,title:t.title,col:t.col})||{col:"#888",emo:"🏋️",name:""}, groups=[...new Set(ex.map(x=>x.group))].map(g=>grpOf(g).name);
         return `<button type="button" class="tpl" data-tpl="${esc(t.id)}" style="--tc:${ty.col}"><span class="pb-emo">${ty.emo}</span><span class="pb-txt"><b>${esc(t.title)}</b><small>${ex.length} ${ex.length===1?"Übung":"Übungen"}${groups.length?" · "+esc(groups.join(", ")):""}</small></span>${NEXT}</button>`; }).join("")}</div>`
       :`<p class="card-note">Noch keine Workouts. Ein Workout ist eine Zusammenstellung deiner Übungen, z.B. „Push“ mit Bankdrücken, Schulterdrücken und Trizeps. Danach legst du es im Wochenplan auf deine Tage.</p>`}
     <div class="sec-h"><b>Übungen</b><span class="card-note">nach Muskelgruppen</span></div>`;
@@ -2321,7 +2397,8 @@ document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if(!$("#tplModal"
 /* ---------- Workouts erstellen (Name + Übungen) ---------- */
 let tplEdit=null;
 function openTpl(id){
-  const t=id?templates[id]:null; tplEdit={id:id||null,sel:new Set(t&&Array.isArray(t.ex)?t.ex:[])};
+  const t=id?templates[id]:null; tplEdit={id:id||null,sel:new Set(t&&Array.isArray(t.ex)?t.ex:[]),col:(t&&t.col)||""};
+  $("#tplCols").innerHTML=colPicker(tplEdit.col,"data-tcol");
   $("#tplTitle").textContent=t?"Workout bearbeiten":"Neues Workout"; $("#tplName").value=t?t.title:""; $("#tplErr").hidden=true;
   $("#tplDel").hidden=!t; $("#tplDel").textContent="Workout löschen"; delete $("#tplDel").dataset.sure;
   $("#tplSug").innerHTML=DAY_SUG.map(s=>`<button type="button" class="chip sug" data-ts="${esc(s)}">${esc(s)}</button>`).join("");
@@ -2333,7 +2410,8 @@ function openTpl(id){
 }
 const closeTpl=()=>{ $("#tplModal").hidden=true; tplEdit=null; };
 $("#tplCancel").addEventListener("click",closeTpl);
-$("#tplModal").addEventListener("click",e=>{ if(e.target.id==="tplModal") return closeTpl(); const s=e.target.closest("[data-ts]"); if(s) $("#tplName").value=s.dataset.ts; });
+$("#tplModal").addEventListener("click",e=>{ if(e.target.id==="tplModal") return closeTpl();
+  const tc=e.target.closest("[data-tcol]"); if(tc&&tplEdit){ tplEdit.col=tc.dataset.tcol; $("#tplCols").innerHTML=colPicker(tplEdit.col,"data-tcol"); return; } const s=e.target.closest("[data-ts]"); if(s) $("#tplName").value=s.dataset.ts; });
 $("#tplModal").addEventListener("change",e=>{ const c=e.target.closest("[data-tpick]"); if(!c||!tplEdit) return; if(c.checked) tplEdit.sel.add(c.dataset.tpick); else tplEdit.sel.delete(c.dataset.tpick); });
 $("#tplForm").addEventListener("submit",e=>{
   e.preventDefault(); if(!tplEdit||!root) return;
@@ -2341,7 +2419,7 @@ $("#tplForm").addEventListener("submit",e=>{
   if(!title) return err("Gib dem Workout einen Namen, z.B. Push.");
   const ex=exList().filter(x=>tplEdit.sel.has(x.id)).sort((a,b)=>GROUPS.findIndex(g=>g.id===a.group)-GROUPS.findIndex(g=>g.id===b.group)||a.name.localeCompare(b.name,"de")).map(x=>x.id);
   if(!ex.length) return err("Wähl mindestens eine Übung aus.");
-  const id=tplEdit.id||uid(), data={title,ex,at:(tplEdit.id&&templates[id].at)||Date.now()};
+  const id=tplEdit.id||uid(), data={title,ex,at:(tplEdit.id&&templates[id].at)||Date.now()}; if(tplEdit.col) data.col=tplEdit.col;
   templates[id]=data; root.child("templates/"+id).set(data).catch(showErr); closeTpl(); render();
   if(!tplEdit){ $("#status").textContent=`Workout „${title}“ gespeichert. Leg es jetzt im Wochenplan auf deine Tage.`; setTimeout(()=>{ $("#status").textContent=""; },5000); }
 });
@@ -2424,6 +2502,7 @@ document.addEventListener("click",e=>{
   const v=e.target.closest("[data-view]"); if(v){ if(v.dataset.view==="me"&&view!=="me"){ meDraft=null; meMsg=""; } view=v.dataset.view; try{ localStorage.setItem("gym.view",view); }catch(err){} if(view==="fr"){ frOpen=null; loadFriends(); } render(); return; }
   const wk=e.target.closest("[data-wk]"); if(wk){ weekOff=wk.dataset.wk==="0"?0:weekOff+(+wk.dataset.wk); openKey=null; render(); return; }
 
+  const wc=e.target.closest("[data-wcol-t]"); if(wc){ setTplCol(wc.dataset.wcolT,wc.dataset.wcol); return; }
   const ow=e.target.closest("[data-open-w]"); if(ow){ const k=ow.dataset.openW; openKey=openKey===k?null:k; showEx=false; render(); return; }
   const nw=e.target.closest("[data-new-on]"); if(nw) return openWEdit(null,nw.dataset.newOn);
   const ew=e.target.closest("[data-edit-w]"); if(ew) return openWEdit(ew.dataset.editW,openKey?openKey.split("|")[0]:null);
