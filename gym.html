@@ -174,6 +174,21 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
 .bl-tab td:nth-child(n+2){text-align:right;font-variant-numeric:tabular-nums}
 .chart{width:100%;height:110px;display:block}
 .pr-badge{display:inline-block;background:#f6e3a8;color:#6b4e00;border-radius:999px;padding:1px 8px;font-size:.72rem;font-weight:700;margin-left:6px}
+/* Planung: Deload, fertige Pläne, Muskel-Auswahl */
+.deload{background:#fbefe0;border:1px solid #ecc99a;border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;font-size:.88rem}
+.deload b{font-size:.98rem}
+.deload .row{display:flex;gap:8px;flex-wrap:wrap}
+.presets{display:flex;flex-direction:column;gap:8px}
+.preset{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.preset-h{display:flex;align-items:center;gap:10px}
+.preset-h b{flex:1;font-weight:700}
+.preset-h small{color:var(--muted);font-size:.78rem}
+.preset p{margin:0;font-size:.84rem;color:var(--muted)}
+.preset ul{margin:0;padding-left:18px;font-size:.82rem;display:flex;flex-direction:column;gap:2px}
+.mus-figs .m{cursor:pointer}
+.mus-figs .m.sel{stroke:var(--ink);stroke-width:2}
+.mus-pick{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:6px}
+.mus-pick b{font-weight:700}
 /* Feedback nach dem Training */
 .fb-card{border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;background:var(--bg);border:1px solid var(--line)}
 .fb-card.great{background:#e2f2e4;border-color:#9fd0a8}
@@ -873,7 +888,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-05-132735";
+  const APP_VERSION="2026-11-05-133004";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -2013,7 +2028,7 @@ function renderWeek(){
   const sn=streakOf(workouts,sessions,myUid), st=tierOf(sn);
   if(sn>0) html=`<div class="streak-card${st?" "+st.cls:""}"><span class="sc-emo">${st?"🔥".repeat(Math.min(3,st.flames)):"💪"}</span><span class="pb-txt"><b>${sn} ${sn===1?"Workout":"Workouts"} in Folge</b><small>${st?st.txt:`Noch ${3-sn} bis zur Streak. Schaff deine geplanten Workouts!`}</small></span></div>`+html;
   html+=weekGrid(dates,todayIso,occ);
-  html+=muscleHtml(occ)+trainingHtml(todayIso)+historyHtml();
+  html+=deloadHtml()+muscleHtml(occ)+trainingHtml(todayIso)+historyHtml();
   // was gerade eingetippt wird, bleibt beim Neuzeichnen erhalten
   const act=document.activeElement, keep=act&&act.id&&$("#list").contains(act)&&act.matches("input")?act:null;
   $("#list").innerHTML=html;
@@ -2135,15 +2150,43 @@ let histN=8;
 /* ---------- Muskeln der Woche: Sätze pro Muskelgruppe aus den geplanten Workouts ---------- */
 // Richtwert: unter 10 Sätze pro Woche eher wenig, 10–20 gut, über 20 viel
 let musOpen=true; try{ musOpen=localStorage.getItem("gym.musOpen")!=="0"; }catch(e){}
+document.addEventListener("click",e=>{
+  const g=e.target.closest(".mus-card [data-g]"); if(g){ musSel=musSel===g.dataset.g?null:g.dataset.g; render(); return; }
+  const ci=e.target.closest("[data-catinfo]"); if(ci){ const c=catByImg(ci.dataset.catinfo); if(c) openInfo({cat:c}); return; }
+});
 document.addEventListener("click",e=>{ if(!e.target.closest("#musToggle")) return; musOpen=!musOpen; try{ localStorage.setItem("gym.musOpen",musOpen?"1":"0"); }catch(err){}
   const c=$("#musCard"); if(c) c.hidden=!musOpen; e.target.closest("#musToggle").setAttribute("aria-expanded",musOpen); });
 const musLevel=n=>!n?0:n<10?1:n<=20?2:3;
+// Grundübungen trainieren Hilfsmuskeln mit: zählen dort halb (nach Bild der Übung)
+const SECOND=[[/Bench_Press|Pushups|Dips_-_Chest/,["trizeps","schulter"]],[/Close-Grip/,["brust","schulter"]],[/Dips_-_Triceps/,["brust"]],[/Shoulder_Press|Arnold/,["trizeps"]],
+  [/Pullups|Lat_Pulldown|Row/,["bizeps"]],[/Upright_Barbell_Row/,["schulter"]],[/Barbell_Deadlift/,["hams","po","unterarme"]],[/Romanian_Deadlift/,["po","ruecken"]],
+  [/Squat|Leg_Press|Lunges/,["po"]],[/Hip_Thrust|Glute_Bridge/,["hams"]],[/Farmers_Walk/,["schulter"]],[/Face_Pull|Reverse_Flyes/,["ruecken"]]];
+const secOf=x=>{ const i=x.img||""; if(!i) return []; for(const [re,g] of SECOND) if(re.test(i)) return g.filter(z=>z!==x.group); return []; };
+let musSel=null;
+// Deload: nach vielen harten Wochen eine leichtere Woche vorschlagen
+function deloadInfo(){
+  const ses=mySessions().filter(x=>x.end).sort((a,b)=>b.start-a.start), now=Date.now();
+  const recent=ses.slice(0,6), hard=recent.filter(x=>x.feel==="hard").length;
+  let weeks=0; for(let w=0;w<10;w++){ const a=now-(w+1)*7*864e5, b=now-w*7*864e5, c=ses.filter(x=>x.start>=a&&x.start<b).length; if(c>=3) weeks++; else break; }
+  const over=[0,1,2].every(off=>{ const mon=monday(-off), ds=DAYS.map((_,i)=>{ const d=new Date(mon); d.setDate(mon.getDate()+i); return onDate(iso(d)); }); return Object.values(muscleSets(ds)).some(v=>v>20); });
+  const why=[]; if(hard>=3) why.push(`${hard} deiner letzten ${recent.length} Trainings waren „hart“`); if(weeks>=6) why.push(`du trainierst seit ${weeks} Wochen am Stück mindestens 3× pro Woche`); if(over&&ses.length>=6) why.push("einige Muskeln bekommen seit 3 Wochen sehr viele Sätze");
+  return why;
+}
+function deloadHtml(){
+  if(weekOff!==0) return ""; const why=deloadInfo(); if(!why.length) return ""; let off=""; try{ off=localStorage.getItem("gym.deloadOff")||""; }catch(e){}
+  if(off===iso(monday(0))) return "";
+  return `<section class="deload"><b>🧘 Zeit für eine leichtere Woche?</b><span>${esc(why.join(" und "))}. Eine Deload-Woche hilft Muskeln und Gelenken, sich zu erholen – danach bist du oft stärker.</span>
+    <span class="card-note">So geht's: gleiche Übungen und Gewichte, aber nur etwa die Hälfte der Sätze, oder alle Gewichte um ca. 40 % runter.</span>
+    <div class="row"><button class="btn" type="button" id="deloadOff">Diese Woche ausblenden</button></div></section>`;
+}
+document.addEventListener("click",e=>{ if(!e.target.closest("#deloadOff")) return; try{ localStorage.setItem("gym.deloadOff",iso(monday(0))); }catch(err){} render(); });
 function muscleSets(occ){
-  const n={}; occ.forEach(list=>list.forEach(([,w])=>wEx(w).forEach(x=>{ if(x.group==="cardio") return; n[x.group]=(n[x.group]||0)+(+x.sets||3); }))); return n;
+  const n={}; occ.forEach(list=>list.forEach(([,w])=>wEx(w).forEach(x=>{ if(x.group==="cardio") return; const k=+x.sets||3; n[x.group]=(n[x.group]||0)+k; secOf(x).forEach(g=>n[g]=(n[g]||0)+k/2); })));
+  Object.keys(n).forEach(g=>n[g]=Math.round(n[g]*2)/2); return n;
 }
 function muscleHtml(occ){
   const n=muscleSets(occ), L=g=>musLevel(n[g]||0), any=Object.keys(n).length;
-  const m=(g,p)=>{ const tag=p.match(/^<(\w+)/)[1]; return p.replace(/^<(\w+)/,`<${tag} class="m l${L(g)}" data-g="${g}"`).replace(/\/>$/,`><title>${grpOf(g).name}: ${n[g]||0} Sätze</title></${tag}>`); };
+  const m=(g,p)=>{ const tag=p.match(/^<(\w+)/)[1]; return p.replace(/^<(\w+)/,`<${tag} class="m l${L(g)}${musSel===g?" sel":""}" data-g="${g}"`).replace(/\/>$/,`><title>${grpOf(g).name}: ${n[g]||0} Sätze</title></${tag}>`); };
   const sh=(g,...parts)=>parts.map(p=>m(g,p)).join("");
   const base=`<circle class="base" cx="50" cy="15" r="10"/><rect class="base" x="45" y="24" width="10" height="9" rx="3"/>
     <circle class="base" cx="19" cy="102" r="4.2"/><circle class="base" cx="81" cy="102" r="4.2"/>
@@ -2166,14 +2209,18 @@ function muscleHtml(occ){
     ${sh("po",'<ellipse cx="43" cy="99" rx="8" ry="9"/>','<ellipse cx="57" cy="99" rx="8" ry="9"/>')}
     ${sh("hams",'<ellipse cx="42.5" cy="129" rx="7.5" ry="18"/>','<ellipse cx="57.5" cy="129" rx="7.5" ry="18"/>')}
     ${sh("waden",'<ellipse cx="42" cy="170" rx="6" ry="15"/>','<ellipse cx="58" cy="170" rx="6" ry="15"/>')}</svg>`;
-  const list=GROUPS.filter(g=>g.id!=="cardio").map(g=>`<span class="l${L(g.id)}">${esc(g.name)} <b>${n[g.id]||0}</b></span>`).join("");
+  const list=GROUPS.filter(g=>g.id!=="cardio").map(g=>`<span class="l${L(g.id)}" data-g="${g.id}" role="button" tabindex="0" style="cursor:pointer">${esc(g.name)} <b>${fmtKg(n[g.id]||0)}</b></span>`).join("");
+  const sg=musSel&&grpOf(musSel), sc=musSel?CATALOG.filter(c=>c.g===musSel):[], lv=musSel?L(musSel):0;
+  const pick=sg?`<div class="mus-pick"><p class="card-note"><b>${esc(sg.name)}</b>: ${fmtKg(n[musSel]||0)} Sätze diese Woche – ${lv===0?"gar nicht trainiert":lv===1?"eher wenig":lv===2?"gut so":"recht viel, achte auf Erholung"}.${lv<=1?" Passende Übungen:":""}</p>
+      ${lv<=1?`<div class="chips">${sc.slice(0,6).map(c=>`<button type="button" class="chip" data-catinfo="${esc(c.img)}">${esc(c.n)}</button>`).join("")}</div><p class="card-note">Antippen zum Ansehen und Hinzufügen, dann im Workout aufnehmen.</p>`:""}</div>`:"";
   const nTr=Object.keys(n).length;
   return `<button type="button" class="mus-h" id="musToggle" aria-expanded="${musOpen}" aria-controls="musCard"><b>Muskeln ${weekOff===0?"diese Woche":"in dieser Woche"}</b><small>${nTr?`${nTr} ${nTr===1?"Muskelgruppe":"Muskelgruppen"}`:"noch nichts geplant"}</small>${CHEV}</button>
     <section class="mus-card" id="musCard"${musOpen?"":" hidden"}>
       <div class="mus-figs"><figure>${front}<figcaption>Vorne</figcaption></figure><figure>${back}<figcaption>Hinten</figcaption></figure></div>
       <div class="mus-leg"><span><i style="background:rgba(214,69,65,.38)"></i>wenig (unter 10 Sätze)</span><span><i style="background:#d64541"></i>gut (10–20)</span><span><i style="background:#7a1212"></i>viel (über 20)</span></div>
       ${any?`<div class="mus-list">${list}</div>`:`<p class="card-note">Sobald Workouts in dieser Woche geplant sind, siehst du hier, welche Muskeln du trainierst.</p>`}
-      <p class="card-note">Sätze pro Woche aus deinem Plan. Grau = gar nicht trainiert.</p>
+      ${pick}
+      <p class="card-note">Sätze pro Woche aus deinem Plan. Grundübungen zählen für Hilfsmuskeln halb (z.B. Bankdrücken für Trizeps). Tipp auf einen Muskel für Details.</p>
     </section>`;
 }
 function historyHtml(){
@@ -2485,10 +2532,40 @@ function tplCards(){
       :`<p class="card-note">Noch keine Workouts. Ein Workout ist eine Zusammenstellung deiner Übungen, z.B. „Push“ mit Bankdrücken, Schulterdrücken und Trizeps. Danach legst du es im Wochenplan auf deine Tage.</p>`}
     <div class="sec-h"><b>Übungen</b><span class="card-note">nach Muskelgruppen</span></div>`;
 }
+// fertige Trainingspläne zum Übernehmen (Übungen aus dem Katalog, Tage: 0 = Montag)
+const PRESETS=[
+  {id:"beg",name:"Einsteiger · 2× pro Woche",emo:"🌱",txt:"Ganzer Körper an Geräten, ideal zum Start.",w:[{t:"Ganzkörper Basis",days:[1,4],ex:["Leg_Press","Dumbbell_Bench_Press","Wide-Grip_Lat_Pulldown","Seated_Cable_Rows","Side_Lateral_Raise","Plank"]}]},
+  {id:"fb3",name:"Ganzkörper · 3× pro Woche",emo:"⚡",txt:"Die wichtigsten Grundübungen, Mo/Mi/Fr.",w:[{t:"Ganzkörper",days:[0,2,4],ex:["Barbell_Squat","Barbell_Bench_Press_-_Medium_Grip","Wide-Grip_Lat_Pulldown","Dumbbell_Shoulder_Press","Romanian_Deadlift","Plank"]}]},
+  {id:"ul4",name:"Oberkörper / Unterkörper · 4×",emo:"💪",txt:"Jede Muskelgruppe zweimal pro Woche.",w:[{t:"Oberkörper",days:[0,3],ex:["Barbell_Bench_Press_-_Medium_Grip","Bent_Over_Barbell_Row","Dumbbell_Shoulder_Press","Wide-Grip_Lat_Pulldown","Dumbbell_Bicep_Curl","Triceps_Pushdown"]},
+    {t:"Unterkörper",days:[1,4],ex:["Barbell_Squat","Romanian_Deadlift","Leg_Press","Lying_Leg_Curls","Standing_Calf_Raises","Crunches"]}]},
+  {id:"ppl",name:"Push / Pull / Beine · 6×",emo:"🔥",txt:"Für Fortgeschrittene, jede Einheit zweimal pro Woche.",w:[{t:"Push",days:[0,3],ex:["Barbell_Bench_Press_-_Medium_Grip","Barbell_Incline_Bench_Press_-_Medium_Grip","Dumbbell_Shoulder_Press","Side_Lateral_Raise","Triceps_Pushdown_-_Rope_Attachment"]},
+    {t:"Pull",days:[1,4],ex:["Pullups","Bent_Over_Barbell_Row","Wide-Grip_Lat_Pulldown","Face_Pull","Hammer_Curls","Barbell_Curl"]},{t:"Beine",days:[2,5],ex:["Barbell_Squat","Leg_Press","Romanian_Deadlift","Leg_Extensions","Seated_Leg_Curl","Standing_Calf_Raises"]}]},
+];
+let presetOpen=false;
+function presetsHtml(){
+  return `<section class="pg-card"><button type="button" class="mus-h" id="presetToggle" aria-expanded="${presetOpen}"><b>Fertige Pläne</b><small>${PRESETS.length} Vorlagen</small>${CHEV}</button>
+    ${presetOpen?`<div class="presets">${PRESETS.map(p=>`<div class="preset"><div class="preset-h"><span>${p.emo}</span><b>${esc(p.name)}</b></div><p>${esc(p.txt)}</p>
+      <ul>${p.w.map(w=>`<li><b>${esc(w.t)}</b> (${w.days.map(d=>DSHORT[d]).join(", ")}): ${w.ex.map(i=>(catByImg(i)||{}).n).filter(Boolean).join(", ")}</li>`).join("")}</ul>
+      <button class="btn primary" type="button" data-preset="${p.id}">Übernehmen</button></div>`).join("")}</div>
+      <p class="card-note">Workouts und Übungen werden zu deinem Plan hinzugefügt (18:00 Uhr, jede Woche). Zeiten und Tage kannst du danach ändern.</p>`:""}</section>`;
+}
+function applyPreset(id){
+  const p=PRESETS.find(x=>x.id===id); if(!p||!root) return; const upd={}, byImg={}; exList().forEach(x=>{ if(x.img) byImg[x.img]=x.id; });
+  p.w.forEach((w,wi)=>{ const ex=w.ex.map(img=>{ if(byImg[img]) return byImg[img]; const c=catByImg(img); if(!c) return null; const nid=uid()+wi; byImg[img]=nid;
+      const d={name:c.n,img:c.img,group:c.g,sets:c.s?+c.s:null,reps:c.r||null,kg:null,at:Date.now()}; exercises[nid]=d; upd["exercises/"+nid]=d; return nid; }).filter(Boolean);
+    const tid=uid()+"t"+wi, t={title:w.t,ex,at:Date.now()+wi}; templates[tid]=t; upd["templates/"+tid]=t;
+    const wid=uid()+"w"+wi, pw={tpl:tid,time:"18:00",dur:60,rep:{type:"weekly",days:w.days},at:Date.now()}; workouts[wid]=pw; upd["workouts/"+wid]=pw; });
+  root.update(upd).catch(showErr); presetOpen=false; view="week"; try{ localStorage.setItem("gym.view","week"); }catch(e){} render();
+  $("#status").textContent=`„${p.name}“ ist jetzt in deinem Plan.`; setTimeout(()=>{ $("#status").textContent=""; },5000);
+}
+document.addEventListener("click",e=>{
+  if(e.target.closest("#presetToggle")){ presetOpen=!presetOpen; render(); return; }
+  const pr=e.target.closest("[data-preset]"); if(pr) applyPreset(pr.dataset.preset);
+});
 function renderEx(){
   const list=exList();
-  if(!list.length){ $("#list").innerHTML=tplCards()+`<div class="empty"><strong>Noch keine Übungen</strong><span>Klapp eine Muskelgruppe auf: Dort stehen die gängigsten Übungen mit Bildern. Mit „+“ kommen sie in deinen Plan.</span></div>`+GROUPS.map(g=>grpHtml(g,[])).join(""); return; }
-  $("#list").innerHTML=tplCards()+GROUPS.map(g=>grpHtml(g,list.filter(x=>x.group===g.id).sort((a,b)=>a.name.localeCompare(b.name,"de")))).join("");
+  if(!list.length){ $("#list").innerHTML=tplCards()+presetsHtml()+`<div class="empty"><strong>Noch keine Übungen</strong><span>Klapp eine Muskelgruppe auf: Dort stehen die gängigsten Übungen mit Bildern. Mit „+“ kommen sie in deinen Plan.</span></div>`+GROUPS.map(g=>grpHtml(g,[])).join(""); return; }
+  $("#list").innerHTML=tplCards()+presetsHtml()+GROUPS.map(g=>grpHtml(g,list.filter(x=>x.group===g.id).sort((a,b)=>a.name.localeCompare(b.name,"de")))).join("");
 }
 function grpHtml(g,items){
   const open=openGrp.has(g.id);
