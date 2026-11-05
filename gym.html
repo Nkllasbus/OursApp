@@ -126,6 +126,23 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
 .mus-list span.l2{background:#d64541;border-color:#d64541;color:#fff}
 .mus-list span.l3{background:#7a1212;border-color:#7a1212;color:#fff}
 .mus-list b{font-weight:700}
+.mus-h{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:0;color:var(--ink);text-align:left;font:inherit}
+.mus-h b{font-family:var(--display);font-weight:400;font-size:1.3rem}
+.mus-h small{flex:1;font-size:.8rem;color:var(--muted);text-align:right}
+.mus-h svg{flex:none;width:20px;height:20px;color:var(--muted);transition:transform .2s}
+.mus-h[aria-expanded="true"] svg{transform:rotate(180deg)}
+/* Feedback nach dem Training */
+.fb-card{border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;background:var(--bg);border:1px solid var(--line)}
+.fb-card.great{background:#e2f2e4;border-color:#9fd0a8}
+.fb-card.ok{background:var(--accent-soft);border-color:var(--line)}
+.fb-card.low{background:#fbefe0;border-color:#ecc99a}
+.fb-card b.fb-t{font-size:1rem}
+.fb-card ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px;font-size:.86rem}
+.fb-card .fb-tip{margin:0;font-size:.84rem;color:var(--muted)}
+.feel{display:flex;gap:6px}
+.feel button{flex:1;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:8px 4px;font:inherit;font-size:.82rem;display:flex;flex-direction:column;align-items:center;gap:2px}
+.feel button span{font-size:1.25rem}
+.feel button[aria-pressed="true"]{border-color:var(--band);box-shadow:0 0 0 1.5px var(--band) inset;font-weight:700}
 /* Farbe eines Workouts */
 .cols{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .csw{width:30px;height:30px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--line);background:var(--c);padding:0}
@@ -508,6 +525,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
 .modal{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(15,16,32,.5);padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px))}
 .sheet{width:100%;max-width:420px;max-height:100%;overflow-y:auto;background:var(--surface);border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 60px -20px rgba(15,16,32,.6)}
 .sheet h3{margin:0;font-family:var(--display);font-weight:400;font-size:1.5rem}
+.sheet>*{flex-shrink:0}
 .field{display:flex;flex-direction:column;gap:6px}
 .flabel{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:700}
 .sheet input[type=text],.sheet input[inputmode]{font:inherit;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);min-width:0;width:100%}
@@ -809,7 +827,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-05-130952";
+  const APP_VERSION="2026-11-05-131651";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1872,7 +1890,7 @@ function renderWeek(){
   const sn=streakOf(workouts,sessions,myUid), st=tierOf(sn);
   if(sn>0) html=`<div class="streak-card${st?" "+st.cls:""}"><span class="sc-emo">${st?"🔥".repeat(Math.min(3,st.flames)):"💪"}</span><span class="pb-txt"><b>${sn} ${sn===1?"Workout":"Workouts"} in Folge</b><small>${st?st.txt:`Noch ${3-sn} bis zur Streak. Schaff deine geplanten Workouts!`}</small></span></div>`+html;
   html+=weekGrid(dates,todayIso,occ);
-  html+=trainingHtml(todayIso)+muscleHtml(occ)+historyHtml();
+  html+=muscleHtml(occ)+trainingHtml(todayIso)+historyHtml();
   // was gerade eingetippt wird, bleibt beim Neuzeichnen erhalten
   const act=document.activeElement, keep=act&&act.id&&$("#list").contains(act)&&act.matches("input")?act:null;
   $("#list").innerHTML=html;
@@ -1980,6 +1998,9 @@ function exSetsHtml(a,x){
 let histN=8;
 /* ---------- Muskeln der Woche: Sätze pro Muskelgruppe aus den geplanten Workouts ---------- */
 // Richtwert: unter 10 Sätze pro Woche eher wenig, 10–20 gut, über 20 viel
+let musOpen=true; try{ musOpen=localStorage.getItem("gym.musOpen")!=="0"; }catch(e){}
+document.addEventListener("click",e=>{ if(!e.target.closest("#musToggle")) return; musOpen=!musOpen; try{ localStorage.setItem("gym.musOpen",musOpen?"1":"0"); }catch(err){}
+  const c=$("#musCard"); if(c) c.hidden=!musOpen; e.target.closest("#musToggle").setAttribute("aria-expanded",musOpen); });
 const musLevel=n=>!n?0:n<10?1:n<=20?2:3;
 function muscleSets(occ){
   const n={}; occ.forEach(list=>list.forEach(([,w])=>wEx(w).forEach(x=>{ if(x.group==="cardio") return; n[x.group]=(n[x.group]||0)+(+x.sets||3); }))); return n;
@@ -2010,8 +2031,9 @@ function muscleHtml(occ){
     ${sh("hams",'<ellipse cx="42.5" cy="129" rx="7.5" ry="18"/>','<ellipse cx="57.5" cy="129" rx="7.5" ry="18"/>')}
     ${sh("waden",'<ellipse cx="42" cy="170" rx="6" ry="15"/>','<ellipse cx="58" cy="170" rx="6" ry="15"/>')}</svg>`;
   const list=GROUPS.filter(g=>g.id!=="cardio").map(g=>`<span class="l${L(g.id)}">${esc(g.name)} <b>${n[g.id]||0}</b></span>`).join("");
-  return `<div class="sec-h"><b>Muskeln ${weekOff===0?"diese Woche":"in dieser Woche"}</b></div>
-    <section class="mus-card">
+  const nTr=Object.keys(n).length;
+  return `<button type="button" class="mus-h" id="musToggle" aria-expanded="${musOpen}" aria-controls="musCard"><b>Muskeln ${weekOff===0?"diese Woche":"in dieser Woche"}</b><small>${nTr?`${nTr} ${nTr===1?"Muskelgruppe":"Muskelgruppen"}`:"noch nichts geplant"}</small>${CHEV}</button>
+    <section class="mus-card" id="musCard"${musOpen?"":" hidden"}>
       <div class="mus-figs"><figure>${front}<figcaption>Vorne</figcaption></figure><figure>${back}<figcaption>Hinten</figcaption></figure></div>
       <div class="mus-leg"><span><i style="background:rgba(214,69,65,.38)"></i>wenig (unter 10 Sätze)</span><span><i style="background:#d64541"></i>gut (10–20)</span><span><i style="background:#7a1212"></i>viel (über 20)</span></div>
       ${any?`<div class="mus-list">${list}</div>`:`<p class="card-note">Sobald Workouts in dieser Woche geplant sind, siehst du hier, welche Muskeln du trainierst.</p>`}
@@ -2202,6 +2224,33 @@ function delSession(id,btn){
   if(editId===id) editId=null; $("#sumModal").hidden=true; render();
   $("#status").textContent="Training gelöscht."; setTimeout(()=>{ $("#status").textContent=""; },3000);
 }
+// Feedback nach dem Training: geschafft vs. geplant, Steigerungen, Volumen, Dauer, eigenes Gefühl
+function trainingFeedback(se,ex,prev,dv){
+  const done=ex.filter(x=>doneSets(setsOf(se,x.id)).length), miss=ex.filter(x=>!done.includes(x));
+  const ups=[], downs=[], heavy=[];
+  done.forEach(x=>{ const b=best(setsOf(se,x.id)), l=lastFor(x.id,se.start), lb=l?best(setsOf(l,x.id)):null; if(!b||x.group==="cardio") return;
+    if(b.reps>=12) heavy.push(x.name);
+    if(!lb) return; if(b.kg>lb.kg||(b.kg===lb.kg&&b.reps>lb.reps)) ups.push(b.kg>lb.kg?`${x.name} (+${fmtKg(Math.round((b.kg-lb.kg)*10)/10)} kg)`:`${x.name} (+${b.reps-lb.reps} Wdh.)`);
+    else if(b.kg<lb.kg||(b.kg===lb.kg&&b.reps<lb.reps)) downs.push(x.name); });
+  const share=ex.length?done.length/ex.length:0, pw=se.plan&&workouts[se.plan], planMin=pw?durOfW(pw):null, min=Math.round((se.dur||0)/60);
+  const sn=streakOf(workouts,sessions,myUid), list=[];
+  list.push(!ex.length?"Dieses Workout hat keine Übungen.":share===1?`Alle ${ex.length} Übungen geschafft.`:`${done.length} von ${ex.length} Übungen gemacht${miss.length?` – gefehlt: ${miss.slice(0,3).map(x=>x.name).join(", ")}${miss.length>3?" …":""}`:""}.`);
+  if(ups.length) list.push(`Gesteigert: ${ups.slice(0,3).join(", ")}${ups.length>3?` und ${ups.length-3} mehr`:""}.`);
+  if(downs.length) list.push(`Etwas weniger als letztes Mal: ${downs.slice(0,3).join(", ")}.`);
+  if(dv!=null&&Math.abs(dv)>=3) list.push(`Insgesamt ${dv>0?`${dv} % mehr`:`${-dv} % weniger`} Gewicht bewegt als beim letzten „${(templates[se.tpl]||{}).title||"Training"}“.`);
+  if(planMin&&min) list.push(min<planMin*.7?`${min} Minuten – kürzer als geplant (${planMin}).`:min>planMin*1.3?`${min} Minuten – länger als geplant (${planMin}).`:`${min} Minuten – passt zu deinem Plan.`);
+  if(sn>=3) list.push(`${sn} Workouts in Folge 🔥`);
+  const lvl=share>=1&&(ups.length||!prev)?"great":share>=.75?"ok":"low";
+  const title=lvl==="great"?(ups.length?"Starkes Training! 💥":"Gutes erstes Training! 💪"):lvl==="ok"?(ups.length?"Gutes Training 👍":"Solides Training 👍"):done.length?"Kürzer als geplant":"Kaum etwas eingetragen";
+  let tip="";
+  if(se.feel==="easy") tip="Fühlte sich leicht an – nächstes Mal darf es etwas mehr Gewicht sein.";
+  else if(se.feel==="hard") tip="War hart – gönn dir genug Schlaf und Essen und mindestens einen Tag Pause für dieselben Muskeln.";
+  else if(heavy.length) tip=`Bei ${heavy.slice(0,2).join(" und ")} schaffst du 12+ Wiederholungen – Zeit für etwas mehr Gewicht.`;
+  else if(prev&&!ups.length&&done.length) tip="Tipp: Versuch nächstes Mal bei einer Übung 1–2 Wiederholungen oder 2,5 kg mehr.";
+  else if(miss.length&&done.length) tip="Plan die fehlenden Übungen beim nächsten Mal zuerst ein, solange du noch frisch bist.";
+  return `<div class="fb-card ${lvl}"><b class="fb-t">${title}</b><ul>${list.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>${tip?`<p class="fb-tip">${esc(tip)}</p>`:""}</div>
+    <div class="field"><span class="flabel">Wie hat es sich angefühlt?</span><div class="feel">${[["easy","😌","Leicht"],["good","🙂","Genau richtig"],["hard","🥵","Hart"]].map(([k,e,l])=>`<button type="button" data-feel="${k}" aria-pressed="${se.feel===k}"><span>${e}</span>${l}</button>`).join("")}</div></div>`;
+}
 function showSummary(id){
   const se={id,...sessions[id]}, t=templates[se.tpl]||{title:"Training"}, ex=tEx(t);
   const prev=mySessions().filter(x=>x.end&&x.tpl===se.tpl&&x.start<se.start).sort((a,b)=>b.start-a.start)[0];
@@ -2213,10 +2262,12 @@ function showSummary(id){
     return `<li><span class="exn"><b>${esc(x.name)}</b><small>${cardio?`${b.tot} min`:`bester Satz ${b.reps}×${fmtKg(b.kg)} kg · ${(n=>`${n} ${n===1?"Satz":"Sätze"}`)(doneSets(setsOf(se,x.id)).length)}`}</small></span><span class="dif ${cls}">${cls==="up"?"▲ ":cls==="down"?"▼ ":""}${diff}</span></li>`; }).filter(Boolean);
   const dv=prev&&prev.vol?Math.round((se.vol-prev.vol)/prev.vol*100):null;
   const ups=rows.filter(r=>r.includes('dif up')).length;
+  const fb=trainingFeedback(se,ex,prev,dv);
   $("#sumBody").innerHTML=`<div class="sum-top"><span class="sum-emo">${ups?"🎉":"💪"}</span><h3>${esc(t.title)} geschafft!</h3>
       <p class="card-note">${new Date(se.start).toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"})}</p></div>
     <div class="sum-stats"><div><b>${fmtDur(se.dur||0)}</b><small>Dauer</small></div><div><b>ca. ${kcalOf(se)}</b><small>kcal</small></div>
       <div><b>${fmtKg((se.vol||0)/1000)} t</b><small>bewegt${dv!=null?` · <span class="${dv>=0?"up":"down"}">${dv>0?"+":""}${dv} %</span>`:""}</small></div></div>
+    ${fb}
     ${rows.length?`<p class="sec-l">Im Vergleich zum letzten Mal${ups?` · ${ups}× gesteigert`:""}</p><ul class="sum-list">${rows.join("")}</ul>`:`<p class="card-note">Du hast keine Sätze eingetragen.</p>`}
     <div class="hr-row"><span class="flabel">Herzfrequenz in diesem Training <small>optional</small></span>
       <div class="me-grid"><label>Ø Puls<input data-hr="hrAvg" inputmode="numeric" placeholder="–" value="${esc(se.hrAvg||"")}"></label><label>Max.<input data-hr="hrMax" inputmode="numeric" placeholder="–" value="${esc(se.hrMax||"")}"></label><label>Min.<input data-hr="hrMin" inputmode="numeric" placeholder="–" value="${esc(se.hrMin||"")}"></label></div>
@@ -2462,6 +2513,8 @@ $("#sumModal").addEventListener("click",e=>{
   const ed=e.target.closest("[data-edit-sess]"); if(ed){ if(activeSession()){ $("#status").textContent="Beende zuerst dein laufendes Training."; return; }
     editId=ed.dataset.editSess; $("#sumModal").hidden=true; view="week"; render(); setTimeout(()=>{ const t=$("#train"); if(t) t.scrollIntoView({behavior:"smooth",block:"start"}); },60); return; }
   const dl=e.target.closest("[data-del-sess]"); if(dl) delSession(dl.dataset.delSess,dl);
+  const fe=e.target.closest("[data-feel]"); if(fe){ const id=$("#sumModal").dataset.id, se=sessions[id]; if(!se) return; se.feel=se.feel===fe.dataset.feel?null:fe.dataset.feel;
+    root.child("sessions/"+id+"/feel").set(se.feel).catch(showErr); const sc=$("#sumBody").scrollTop; showSummary(id); $("#sumBody").scrollTop=sc; }
 });
 $("#sumModal").addEventListener("change",e=>{
   const h=e.target.closest("[data-hr]"); if(!h) return; const v=num(h.value); if(v!=null&&(v<30||v>230)) return;
