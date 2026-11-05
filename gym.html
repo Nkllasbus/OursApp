@@ -212,6 +212,9 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
 .cmp li{display:grid;grid-template-columns:1fr auto auto;gap:10px}
 .cmp li b{font-weight:600}
 .cmp .h{color:var(--muted);font-size:.74rem}
+.prot-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.prot-card .nbar{font-size:.84rem}
+.prot-card .pickrow{padding:8px 2px}
 /* Feedback nach dem Training */
 .fb-card{border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;background:var(--bg);border:1px solid var(--line)}
 .fb-card.great{background:#e2f2e4;border-color:#9fd0a8}
@@ -912,7 +915,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-05-133540";
+  const APP_VERSION="2026-11-05-133742";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -2590,6 +2593,25 @@ function delSession(id,btn){
   if(editId===id) editId=null; $("#sumModal").hidden=true; render();
   $("#status").textContent="Training gelöscht."; setTimeout(()=>{ $("#status").textContent=""; },3000);
 }
+// Nach dem Training: wie viel Eiweiß fehlt heute noch (nur mit Essen-Tagebuch), passende Rezepte
+const slotNow=()=>{ const h=new Date().getHours(); return h<11?"breakfast":h<15?"lunch":h<21?"dinner":"snack"; };
+function proteinHtml(se){
+  if(!Auth.kcalFor("gym")) return ""; const tg=dayTargets(); if(!tg) return "";
+  const di=se.date||iso(new Date()); if(di!==iso(new Date())) return "";
+  const eaten=sumOf(SLOTS.flatMap(([sl])=>slotList(di,sl))).p, left=Math.round(tg.p-eaten);
+  if(left<=5) return `<div class="prot-card"><b>🥩 Eiweiß heute: ${Math.round(eaten)} von ${tg.p} g</b><span class="card-note">Super, dein Eiweiß für heute ist gedeckt – gut für die Regeneration.</span></div>`;
+  const recs=Object.entries(recipes).map(([id,r])=>({id,r,n:recipeNut(r)})).filter(o=>o.r&&o.r.title&&o.n&&o.n.p>=15).sort((a,b)=>b.n.p/Math.max(1,b.n.kcal)-a.n.p/Math.max(1,a.n.kcal)).slice(0,3);
+  const pc=Math.min(100,eaten/tg.p*100);
+  return `<div class="prot-card"><b>🥩 Eiweiß für die Regeneration</b>
+    <div class="nbar"><span>Heute gegessen</span><span class="nv">${Math.round(eaten)} / ${tg.p} g</span><i><b style="width:${pc}%"></b></i></div>
+    <span class="card-note">Dir fehlen noch etwa <b>${left} g Eiweiß</b>. ${recs.length?"Passend aus deinen Rezepten:":"Schnelle Ideen: Skyr oder Magerquark (ca. 12 g pro 100 g), Eier (ca. 7 g pro Ei), Thunfisch, Hähnchen, Linsen oder ein Proteinshake."}</span>
+    ${recs.map(o=>`<button type="button" class="pickrow" data-protadd="${esc(o.id)}"><span class="pk-emo">${CAT_EMO[o.r.category]||"🍽️"}</span><span class="exn"><b>${esc(o.r.title)}</b><small>${fmtKg(Math.round(o.n.p))} g Eiweiß · ${o.n.kcal} kcal pro Portion</small></span><span class="plus">+</span></button>`).join("")}
+    ${recs.length?`<span class="card-note">Antippen trägt eine Portion ins Essen-Tagebuch ein.</span>`:""}</div>`;
+}
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-protadd]"); if(!b) return; const r=recipes[b.dataset.protadd]; if(!r) return;
+  const n=recipeNut(r)||{kcal:0}, di=iso(new Date()), sl=slotNow(), id=uid(), m={rid:b.dataset.protadd,title:r.title,por:1,at:Date.now(),...n};
+  meals[di]=meals[di]||{}; meals[di][sl]=meals[di][sl]||{}; meals[di][sl][id]=m; fdb().ref(`users/${myUid}/meals/${di}/${sl}/${id}`).set(m).catch(showErr);
+  b.disabled=true; b.querySelector(".plus").textContent="✓"; $("#status").textContent=`„${r.title}“ eingetragen.`; setTimeout(()=>{ $("#status").textContent=""; },3000); });
 // Feedback nach dem Training: geschafft vs. geplant, Steigerungen, Volumen, Dauer, eigenes Gefühl
 function trainingFeedback(se,ex,prev,dv){
   const done=ex.filter(x=>doneSets(setsOf(se,x.id)).length), miss=ex.filter(x=>!done.includes(x));
@@ -2637,6 +2659,7 @@ function showSummary(id){
     <div class="sum-stats"><div><b>${fmtDur(se.dur||0)}</b><small>Dauer</small></div><div><b>ca. ${kcalOf(se)}</b><small>kcal</small></div>
       <div><b>${fmtKg((se.vol||0)/1000)} t</b><small>bewegt${dv!=null?` · <span class="${dv>=0?"up":"down"}">${dv>0?"+":""}${dv} %</span>`:""}</small></div></div>
     ${fb}
+    ${proteinHtml(se)}
     ${partnerCompare(se)}
     ${rows.length?`<p class="sec-l">Im Vergleich zum letzten Mal${ups?` · ${ups}× gesteigert`:""}</p><ul class="sum-list">${rows.join("")}</ul>`:`<p class="card-note">Du hast keine Sätze eingetragen.</p>`}
     <div class="hr-row"><span class="flabel">Herzfrequenz in diesem Training <small>optional</small></span>
@@ -2654,6 +2677,7 @@ function tplCards(){
     ${ts.length?`<div class="tpls">${ts.map(t=>{ const ex=tEx(t), ty=typeOf({ex:t.ex,title:t.title,col:t.col})||{col:"#888",emo:"🏋️",name:""}, groups=[...new Set(ex.map(x=>x.group))].map(g=>grpOf(g).name);
         return `<button type="button" class="tpl" data-tpl="${esc(t.id)}" style="--tc:${ty.col}"><span class="pb-emo">${ty.emo}</span><span class="pb-txt"><b>${esc(t.title)}</b><small>${ex.length} ${ex.length===1?"Übung":"Übungen"}${groups.length?" · "+esc(groups.join(", ")):""}</small></span>${NEXT}</button>`; }).join("")}</div>`
       :`<p class="card-note">Noch keine Workouts. Ein Workout ist eine Zusammenstellung deiner Übungen, z.B. „Push“ mit Bankdrücken, Schulterdrücken und Trizeps. Danach legst du es im Wochenplan auf deine Tage.</p>`}
+    ${presetsHtml()}
     <div class="sec-h"><b>Übungen</b><span class="card-note">nach Muskelgruppen</span></div>`;
 }
 // fertige Trainingspläne zum Übernehmen (Übungen aus dem Katalog, Tage: 0 = Montag)
@@ -2688,8 +2712,8 @@ document.addEventListener("click",e=>{
 });
 function renderEx(){
   const list=exList();
-  if(!list.length){ $("#list").innerHTML=tplCards()+presetsHtml()+`<div class="empty"><strong>Noch keine Übungen</strong><span>Klapp eine Muskelgruppe auf: Dort stehen die gängigsten Übungen mit Bildern. Mit „+“ kommen sie in deinen Plan.</span></div>`+GROUPS.map(g=>grpHtml(g,[])).join(""); return; }
-  $("#list").innerHTML=tplCards()+presetsHtml()+GROUPS.map(g=>grpHtml(g,list.filter(x=>x.group===g.id).sort((a,b)=>a.name.localeCompare(b.name,"de")))).join("");
+  if(!list.length){ $("#list").innerHTML=tplCards()+`<div class="empty"><strong>Noch keine Übungen</strong><span>Klapp eine Muskelgruppe auf: Dort stehen die gängigsten Übungen mit Bildern. Mit „+“ kommen sie in deinen Plan.</span></div>`+GROUPS.map(g=>grpHtml(g,[])).join(""); return; }
+  $("#list").innerHTML=tplCards()+GROUPS.map(g=>grpHtml(g,list.filter(x=>x.group===g.id).sort((a,b)=>a.name.localeCompare(b.name,"de")))).join("");
 }
 function grpHtml(g,items){
   const open=openGrp.has(g.id);
