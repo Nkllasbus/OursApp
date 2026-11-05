@@ -275,6 +275,23 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
 .fr-tpl-t>svg{flex:none;width:18px;height:18px;color:var(--muted);transition:transform .2s}
 .fr-tpl.open .fr-tpl-t>svg{transform:rotate(180deg)}
 .seg button{padding:7px 4px;font-size:.84rem}
+/* Einzelne Lebensmittel im Essen-Tagebuch */
+.pick-seg{margin:0}
+.fd-row{display:flex;gap:8px}
+.fd-row input{flex:1;min-width:0;font:inherit;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.fd-row input:focus,#mealQ:focus{outline:none;border-color:var(--accent)}
+.fd-acts{display:flex;flex-wrap:wrap;gap:8px}
+.fd-acts .btn{display:inline-flex;align-items:center;gap:6px}
+.fd-acts svg{width:18px;height:18px}
+.fd-msg{margin:0;font-size:.84rem;color:var(--muted)}
+.fd-msg.err{color:#8a2318}
+.fd-form{display:flex;flex-direction:column;gap:10px;border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--surface)}
+.fd-form .me-grid.four{grid-template-columns:repeat(4,1fr)}
+.fd-form .me-grid label{font-size:.72rem}
+.fd-form .nm{text-align:left}
+.fd-sum{margin:0;font-weight:600;font-size:.92rem}
+.fd-sum small{display:block;font-weight:400;color:var(--muted);font-size:.78rem}
+.mrow2 .exn.tap{border:0;background:none;padding:0;text-align:left;color:var(--ink);cursor:pointer}
 /* Knopf unten rechts mit zwei Optionen (wie bei Rezepte) */
 .fab{position:absolute;z-index:6;width:56px;height:56px;border-radius:50%;border:0;background:var(--band);color:var(--on-band);display:grid;place-items:center;
   box-shadow:0 6px 16px -8px var(--shadow),0 0 0 1px color-mix(in srgb,var(--on-band) 14%,transparent)}
@@ -478,7 +495,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
   </form>
 </div>
 
-<div class="modal" id="mealModal" hidden><div class="sheet" role="dialog" aria-modal="true" aria-label="Rezept einplanen" id="mealBody"></div></div>
+<div class="modal" id="mealModal" hidden><div class="sheet" role="dialog" aria-modal="true" aria-label="Essen eintragen" id="mealBody"></div></div>
 
 <div class="modal" id="sumModal" hidden><div class="sheet sum-sheet" role="dialog" aria-modal="true" aria-label="Zusammenfassung" id="sumBody"></div></div>
 
@@ -685,7 +702,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-05-121444";
+  const APP_VERSION="2026-11-05-122047";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1331,6 +1348,8 @@ const fmtEx=x=>{ const p=[]; if(x.sets||x.reps) p.push(`${x.sets||"?"} × ${x.re
 
 /* ---------- Anzeige ---------- */
 /* ---------- Essplan: Rezepte als Mahlzeiten, Kalorien und Nährstoffe pro Tag ---------- */
+// Adresse des Cloudflare-Helfers (schätzt Nährwerte, liest Etiketten)
+const WORKER_URL = "https://oursapp.niklasbergnerbus.workers.dev";
 let recipes={}, recLoaded=false, meals={}, foodOff=0, mealPick=null;
 const SLOTS=[["breakfast","Frühstück","🥣"],["lunch","Mittagessen","🍝"],["dinner","Abendessen","🍲"],["snack","Snacks","🍎"]];
 const NUTS=[["kcal","kcal"],["p","Eiweiß"],["c","Kohlenhydrate"],["f","Fett"],["zu","Zucker"],["bs","Ballaststoffe"],["sa","Salz"],["fs","Ges. Fett"]];
@@ -1371,7 +1390,7 @@ function renderFood(){
   let html=`<div class="weeknav"><button class="arr" type="button" data-fd="-1" aria-label="Tag zurück">${PREV}</button>
       <span style="text-align:center"><b>${dLabel}</b><small>${new Date(di+"T12:00").toLocaleDateString("de-DE",{day:"numeric",month:"long"})}${foodOff?` · <button class="linkish" type="button" data-fd="0">heute</button>`:""}</small></span>
       <button class="arr" type="button" data-fd="1" aria-label="Tag vor">${NEXT}</button></div>`;
-  if(!tg) html+=`<div class="empty"><strong>Erst deine Angaben</strong><span>Trag unter <b>„Ich“</b> Geschlecht, Geburtsjahr, Größe, Gewicht, Aktivität und Ziel ein. Dann rechnet der Essplan deinen Tagesbedarf aus.</span><button class="btn primary" type="button" data-view="me">Zu „Ich“</button></div>`;
+  if(!tg) html+=`<div class="empty"><strong>Erst deine Angaben</strong><span>Trag unter <b>„Meine Angaben“</b> (runder Knopf unten rechts) Geschlecht, Geburtsjahr, Größe, Gewicht, Aktivität und Ziel ein. Dann rechnet der Essplan deinen Tagesbedarf aus.</span><button class="btn primary" type="button" data-view="me">Zu meinen Angaben</button></div>`;
   else {
     const pc=Math.min(100,tot.kcal/goal*100), R=46, C=2*Math.PI*R;
     html+=`<section class="kcal-card"><svg viewBox="0 0 110 110" class="ring" aria-hidden="true"><circle cx="55" cy="55" r="${R}" class="rbg"/><circle cx="55" cy="55" r="${R}" class="rfg${left<0?" over":""}" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-pc/100)}"/></svg>
@@ -1380,8 +1399,8 @@ function renderFood(){
       <section class="nut-card">${bar("p","Eiweiß","g")}${bar("c","Kohlenhydrate","g")}${bar("f","Fett","g")}${bar("bs","Ballaststoffe","g")}${bar("zu","Zucker","g",1)}${bar("sa","Salz","g",1)}</section>`;
   }
   html+=SLOTS.map(([sl,l,emo])=>{ const list=slotList(di,sl), t=sumOf(list);
-    return `<section class="meal"><div class="meal-h"><span class="me-emo">${emo}</span><b>${l}</b><span class="mk">${list.length?`${Math.round(t.kcal).toLocaleString("de-DE")} kcal`:""}</span><button class="btn cal-btn" type="button" data-addmeal="${sl}">+ Rezept</button></div>
-      ${list.map(m=>`<div class="mrow2"><span class="th food" aria-hidden="true">🍽️</span><span class="exn"><b>${esc(m.title)}</b><small>${Math.round((m.kcal||0)*(m.por||1)).toLocaleString("de-DE")} kcal · ${fmtKg(Math.round((m.p||0)*(m.por||1)))} g Eiweiß${m.part?" · Nährwerte unvollständig":""}</small></span>
+    return `<section class="meal"><div class="meal-h"><span class="me-emo">${emo}</span><b>${l}</b><span class="mk">${list.length?`${Math.round(t.kcal).toLocaleString("de-DE")} kcal`:""}</span><button class="btn cal-btn" type="button" data-addmeal="${sl}">+ Eintragen</button></div>
+      ${list.map(m=>`<div class="mrow2"><span class="th food" aria-hidden="true">${m.food?"🍎":"🍽️"}</span>${m.food?`<button type="button" class="exn tap" data-editfood="${di}|${sl}|${esc(m.id)}">`:`<span class="exn">`}<b>${esc(m.title)}</b><small>${m.food&&m.g?`${fmtKg(Math.round(m.g*(m.por||1)))} g · `:""}${Math.round((m.kcal||0)*(m.por||1)).toLocaleString("de-DE")} kcal · ${fmtKg(Math.round((m.p||0)*(m.por||1)))} g Eiweiß${m.part?" · Nährwerte unvollständig":""}${m.src==="est"?" · geschätzt":""}</small>${m.food?"</button>":"</span>"}
         <span class="stp sm"><button type="button" class="sb" data-por="${di}|${sl}|${esc(m.id)}|-0.5" aria-label="weniger">−</button><input readonly value="${fmtKg(m.por||1)}" aria-label="Portionen"><button type="button" class="sb" data-por="${di}|${sl}|${esc(m.id)}|0.5" aria-label="mehr">+</button></span>
         <button type="button" class="x-del" data-delmeal="${di}|${sl}|${esc(m.id)}" aria-label="Entfernen">×</button></div>`).join("")}
       ${mealFeedback(t,tg)}</section>`; }).join("");
@@ -1401,24 +1420,115 @@ function dayReview(t,tg,goal){
     <p class="card-note">${left>150?`Du hast noch ${Math.round(left)} kcal Platz.`:left<-150?`Du liegst ${Math.round(-left)} kcal über deinem Ziel.`:"Kalorien passen genau zu deinem Ziel."} Richtwerte, keine Ernährungsberatung.</p></section>`;
 }
 function openMealPick(sl){
-  mealPick={sl,q:""}; renderPick(); $("#mealModal").hidden=false; setTimeout(()=>{ const i=$("#mealQ"); if(i) i.focus(); },30);
+  let tab="rec"; try{ tab=localStorage.getItem("gym.pickTab")==="food"?"food":"rec"; }catch(e){}
+  mealPick={sl,q:"",tab,fq:"",f:null,msg:"",err:false,busy:false}; renderPick(); $("#mealModal").hidden=false; setTimeout(()=>{ const i=$(mealPick&&mealPick.tab==="food"?"#fdQ":"#mealQ"); if(i) i.focus(); },30);
 }
 // passende Rezepte zuerst: Frühstück → Frühstück, Mittag/Abend → Vorspeise/Hauptspeise/Nachspeise, Snacks → Snacks/Backen
 const SLOT_CATS={breakfast:["frueh"],lunch:["vor","haupt","suess"],dinner:["vor","haupt","suess"],snack:["snack","backen","suess"]};
 const CAT_EMO={frueh:"🥣",vor:"🥗",haupt:"🍝",suess:"🍰",snack:"🥨",backen:"🥐"};
 function renderPick(){
+  if(mealPick.tab==="food") return renderFoodPick();
   const all=Object.entries(recipes).map(([id,r])=>({id,...r})).filter(r=>r&&r.title&&(!mealPick.q||r.title.toLowerCase().includes(mealPick.q.toLowerCase()))).sort((a,b)=>a.title.localeCompare(b.title,"de"));
   const sl=SLOTS.find(x=>x[0]===mealPick.sl), fit=SLOT_CATS[mealPick.sl]||[];
   const top=all.filter(r=>fit.includes(r.category)).sort((a,b)=>fit.indexOf(a.category)-fit.indexOf(b.category)||a.title.localeCompare(b.title,"de")), rest=all.filter(r=>!fit.includes(r.category));
   const row=r=>{ const n=recipeNut(r);
     return `<button type="button" class="pickrow" data-pickrec="${esc(r.id)}"><span class="pk-emo">${CAT_EMO[r.category]||"🍽️"}</span><span class="exn"><b>${esc(r.title)}</b><small>${n?`${n.kcal} kcal · ${fmtKg(Math.round(n.p))} g Eiweiß pro Portion${n.part?" · teils ohne Nährwerte":""}`:"Noch keine Nährwerte – öffne das Rezept einmal unter Rezepte."}</small></span><span class="plus">+</span></button>`; };
-  $("#mealBody").innerHTML=`<h3>${sl[2]} ${sl[1]}</h3><input type="search" id="mealQ" placeholder="Rezept suchen" value="${esc(mealPick.q)}" autocomplete="off">
+  $("#mealBody").innerHTML=`<h3>${sl[2]} ${sl[1]}</h3>${pickTabs()}<input type="search" id="mealQ" placeholder="Rezept suchen" value="${esc(mealPick.q)}" autocomplete="off">
     ${!recLoaded?`<p class="card-note">Rezepte werden geladen …</p>`:all.length?`<div class="picks">
       ${top.length?`<p class="sec-l">Passt zu ${sl[1]==="Snacks"?"Snacks":sl[1]}</p>${top.map(row).join("")}`:""}
       ${rest.length?`<p class="sec-l">${top.length?"Weitere Rezepte":"Deine Rezepte"}</p>${rest.map(row).join("")}`:""}
       ${!top.length&&mealPick.sl==="breakfast"?`<p class="card-note">Tipp: Gib deinen Frühstücksrezepten unter Rezepte die Kategorie „Frühstück“, dann stehen sie hier oben.</p>`:""}</div>`
       :`<p class="card-note">${Object.keys(recipes).length?"Kein Rezept gefunden.":"Du hast noch keine Rezepte. Leg sie unter „Rezepte“ an, dann kannst du sie hier einplanen."}</p>`}
     <div class="sheet-actions"><div class="right"><button class="ghost" type="button" id="mealClose">Schließen</button></div></div>`;
+}
+const pickTabs=()=>mealPick.edit?"":`<div class="seg pick-seg" role="group" aria-label="Art"><button type="button" data-ptab="rec" aria-pressed="${mealPick.tab==="rec"}">Rezept</button><button type="button" data-ptab="food" aria-pressed="${mealPick.tab==="food"}">Lebensmittel</button></div>`;
+const FNUTS=[["kcal","kcal"],["p","Eiweiß g"],["c","Kohlenh. g"],["f","Fett g"],["zu","Zucker g"],["bs","Ballastst. g"],["sa","Salz g"],["fs","ges. Fett g"]];
+const CAM='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.4" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>';
+const PEN='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>';
+// zuletzt gegessene Einzel-Lebensmittel (zum schnellen Wieder-Eintragen)
+function recentFoods(){
+  const seen=new Map();
+  Object.keys(meals).sort().reverse().forEach(di=>Object.values(meals[di]||{}).forEach(sl=>Object.values(sl||{}).forEach(m=>{
+    if(!m||!m.food||!m.title||!m.per) return; const k=m.title.trim().toLowerCase(); const o=seen.get(k); if(!o||(m.at||0)>(o.at||0)) seen.set(k,m); })));
+  return [...seen.values()].sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,8);
+}
+const foodTot=(per,g)=>{ const o={}; NUTS.forEach(([n])=>o[n]=Math.round((+per[n]||0)*g/100*10)/10); o.kcal=Math.round(o.kcal); return o; };
+function renderFoodPick(){
+  const sl=SLOTS.find(x=>x[0]===mealPick.sl), f=mealPick.f, rec=mealPick.edit?[]:recentFoods();
+  const num=v=>v==null||v===""?"":fmtKg(v);
+  $("#mealBody").innerHTML=`<h3>${mealPick.edit?"Eintrag ändern":`${sl[2]} ${sl[1]}`}</h3>${pickTabs()}
+    ${mealPick.edit?"":`<div class="field"><label class="flabel" for="fdQ">Was hast du gegessen?</label>
+      <div class="fd-row"><input type="text" id="fdQ" maxlength="80" placeholder="z.B. 1 Eis, 100 g Gummibärchen" value="${esc(mealPick.fq)}" autocomplete="off" enterkeyhint="done"><button class="btn primary" type="button" id="fdEst"${mealPick.busy?" disabled":""}>Eintragen</button></div>
+      <p class="fd-msg">Kalorien und Nährwerte werden geschätzt. Du kannst sie danach antippen und anpassen.</p></div>
+      <div class="fd-acts"><button class="btn" type="button" id="fdPhoto"${mealPick.busy?" disabled":""}>${CAM} Nährwerte fotografieren</button><button class="btn" type="button" id="fdManual">${PEN} Selbst eintragen</button></div>
+      <input type="file" id="fdFile" accept="image/*" hidden>`}
+    ${mealPick.msg?`<p class="fd-msg${mealPick.err?" err":""}" role="status">${esc(mealPick.msg)}</p>`:""}
+    ${f?`<div class="fd-form">
+      <div class="me-grid two"><label>Name<input class="nm" type="text" id="fdName" maxlength="60" value="${esc(f.name)}" placeholder="z.B. Cashewkerne"></label><label>Gegessen (g oder ml)<input type="text" inputmode="decimal" id="fdG" value="${num(f.g)}" placeholder="z.B. 30"></label></div>
+      <p class="sec-l">Pro 100 g${f.src==="label"?" · vom Etikett":f.src==="est"?" · geschätzt":""}</p>
+      <div class="me-grid four">${FNUTS.map(([n,l])=>`<label>${l}<input type="text" inputmode="decimal" data-fn="${n}" value="${num(f.per[n])}" placeholder="0"></label>`).join("")}</div>
+      <p class="fd-sum" id="fdSum"></p>
+      <div class="sheet-actions">${mealPick.edit?`<button class="del" type="button" id="fdDel">Löschen</button>`:""}<div class="right"><button class="btn primary" type="button" id="fdSave">${mealPick.edit?"Speichern":"Hinzufügen"}</button></div></div></div>`:""}
+    ${rec.length&&!f?`<div class="picks"><p class="sec-l">Zuletzt gegessen</p>${rec.map((m,i)=>`<button type="button" class="pickrow" data-pickfood="${i}"><span class="pk-emo">🍎</span><span class="exn"><b>${esc(m.title)}</b><small>${fmtKg(Math.round(m.g||0))} g · ${Math.round(foodTot(m.per,m.g||0).kcal)} kcal</small></span><span class="plus">+</span></button>`).join("")}</div>`:""}
+    <div class="sheet-actions"><div class="right"><button class="ghost" type="button" id="mealClose">${f&&!mealPick.edit?"Abbrechen":"Schließen"}</button></div></div>`;
+  if(f) updFoodSum();
+}
+const pnum=v=>{ const x=parseFloat(String(v||"").replace(",",".")); return isFinite(x)&&x>=0?x:null; };
+function readFoodForm(){
+  const name=($("#fdName").value||"").trim(), g=pnum($("#fdG").value), per={};
+  document.querySelectorAll("[data-fn]").forEach(i=>{ const v=pnum(i.value); per[i.dataset.fn]=v==null?0:v; });
+  return {name,g,per};
+}
+function updFoodSum(){
+  const el=$("#fdSum"); if(!el) return; const {g,per}=readFoodForm();
+  if(!g){ el.innerHTML=`<small>Trag ein, wie viel du gegessen hast.</small>`; return; }
+  const t=foodTot(per,g); el.innerHTML=`= ${t.kcal.toLocaleString("de-DE")} kcal<small>${fmtKg(Math.round(t.p))} g Eiweiß · ${fmtKg(Math.round(t.c))} g Kohlenhydrate · ${fmtKg(Math.round(t.f))} g Fett</small>`;
+}
+function saveFood(x,src,closeAfter=true){
+  const di=mealPick.edit?mealPick.edit.di:dayIso(), sl=mealPick.edit?mealPick.edit.sl:mealPick.sl, id=mealPick.edit?mealPick.edit.id:uid();
+  const old=mealPick.edit&&meals[di]&&meals[di][sl]&&meals[di][sl][id]||{};
+  const m={food:1,title:x.name,g:x.g,per:x.per,src:src||"man",por:old.por||1,at:old.at||Date.now(),...foodTot(x.per,x.g)};
+  meals[di]=meals[di]||{}; meals[di][sl]=meals[di][sl]||{}; meals[di][sl][id]=m;
+  fdb().ref(`users/${myUid}/meals/${di}/${sl}/${id}`).set(m).catch(showErr);
+  if(closeAfter){ $("#mealModal").hidden=true; mealPick=null; } render();
+}
+const workerPost=async body=>{
+  const resp=await fetch(WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const d=await resp.json().catch(()=>({})); if(!resp.ok) throw new Error(d.error||"Der Helfer hat nicht geantwortet."); return d;
+};
+const fromApi=x=>({kcal:+x.kcal||0,p:+x.protein||0,c:+x.carbs||0,f:+x.fat||0,zu:+x.sugar||0,bs:+x.fiber||0,sa:+x.salt||0,fs:+x.satfat||0});
+// Text wie „1 Eis“ oder „100 g Gummibärchen“: Menge und Nährwerte schätzen und gleich eintragen
+async function estimateFood(){
+  const q=(mealPick.fq||"").trim(); if(!q){ const i=$("#fdQ"); if(i) i.focus(); return; }
+  if(!WORKER_URL){ mealPick.f={name:q,g:null,per:{},src:"man"}; mealPick.msg="In dieser Vorschau kann nichts geschätzt werden – auf deiner echten Seite schon. Trag die Werte hier selbst ein."; mealPick.err=true; renderPick(); return; }
+  const pick=mealPick; pick.busy=true; pick.msg=`Claude schätzt „${q}“ …`; pick.err=false; renderPick();
+  try{
+    const d=await workerPost({mode:"nutrition",items:[q]}), x=(d.items||[])[0];
+    if(!x||!x.grams) throw new Error("Dazu konnte nichts geschätzt werden. Schreib es etwas genauer, z.B. „30 g Cashewkerne“.");
+    if(mealPick!==pick) return;
+    pick.busy=false; saveFood({name:q.charAt(0).toUpperCase()+q.slice(1),g:x.grams,per:fromApi(x)},"est");
+    $("#status").textContent=`„${q}“ eingetragen. Antippen, um die Werte anzupassen.`;
+  }catch(e){ if(mealPick!==pick) return; pick.busy=false; pick.msg=e.message||"Das hat nicht geklappt."; pick.err=true; renderPick(); }
+}
+// Foto der Nährwerttabelle: Werte pro 100 g ablesen, Menge selbst eintragen
+async function readFoodLabel(file){
+  const pick=mealPick, name=(pick.f&&pick.f.name)||(pick.fq||"").trim();
+  if(!WORKER_URL){ pick.f={name,g:null,per:{},src:"man"}; pick.msg="In dieser Vorschau kann das Etikett nicht gelesen werden – auf deiner echten Seite schon. Trag die Werte hier selbst ein."; pick.err=true; renderPick(); return; }
+  pick.busy=true; pick.msg="Claude liest die Nährwerttabelle …"; pick.err=false; renderPick();
+  try{
+    const bmp=await createImageBitmap(file), k=Math.min(1,1400/Math.max(bmp.width,bmp.height)), c=document.createElement("canvas");
+    c.width=Math.round(bmp.width*k); c.height=Math.round(bmp.height*k); c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+    const d=await workerPost({mode:"label",image:c.toDataURL("image/jpeg",.85),name});
+    if(mealPick!==pick) return; pick.busy=false;
+    if(!d.found){ pick.msg="Auf dem Foto war keine Nährwerttabelle zu erkennen. Fotografier sie möglichst gerade und scharf."; pick.err=true; renderPick(); return; }
+    pick.f={name,g:pick.f&&pick.f.g||null,per:fromApi(d),src:"label"}; pick.msg="Abgelesen. Trag noch ein, wie viel du gegessen hast."; pick.err=false; renderPick();
+    const i=$(name?"#fdG":"#fdName"); if(i) i.focus();
+  }catch(e){ if(mealPick!==pick) return; pick.busy=false; pick.msg=e.message||"Das Foto konnte nicht gelesen werden."; pick.err=true; renderPick(); }
+}
+function openFoodEdit(di,sl,id){
+  const m=meals[di]&&meals[di][sl]&&meals[di][sl][id]; if(!m) return;
+  mealPick={sl,tab:"food",edit:{di,sl,id},f:{name:m.title,g:m.g,per:{...(m.per||{})},src:m.src},msg:"",err:false};
+  renderPick(); $("#mealModal").hidden=false;
 }
 function addMeal(rid){
   const r=recipes[rid]; if(!r||!mealPick) return; const n=recipeNut(r)||{kcal:0}, di=dayIso(), id=uid();
@@ -2113,10 +2223,30 @@ $("#tplDel").addEventListener("click",()=>{
   closeTpl(); render();
 });
 $("#mealModal").addEventListener("click",e=>{
-  if(e.target.id==="mealModal"||e.target.closest("#mealClose")){ $("#mealModal").hidden=true; mealPick=null; return; }
-  const p=e.target.closest("[data-pickrec]"); if(p) addMeal(p.dataset.pickrec);
+  if(e.target.id==="mealModal"||e.target.closest("#mealClose")){
+    if(mealPick&&mealPick.f&&!mealPick.edit&&e.target.closest("#mealClose")){ mealPick.f=null; mealPick.msg=""; renderPick(); return; }
+    $("#mealModal").hidden=true; mealPick=null; return; }
+  if(!mealPick) return;
+  const t=e.target.closest("[data-ptab]"); if(t){ mealPick.tab=t.dataset.ptab; try{ localStorage.setItem("gym.pickTab",mealPick.tab); }catch(err){} renderPick(); const i=$(mealPick.tab==="food"?"#fdQ":"#mealQ"); if(i) i.focus(); return; }
+  const p=e.target.closest("[data-pickrec]"); if(p) return addMeal(p.dataset.pickrec);
+  if(e.target.closest("#fdEst")) return estimateFood();
+  if(e.target.closest("#fdPhoto")) return $("#fdFile").click();
+  if(e.target.closest("#fdManual")){ mealPick.f={name:(mealPick.fq||"").trim(),g:null,per:{},src:"man"}; mealPick.msg=""; renderPick(); const i=$(mealPick.f.name?"#fdG":"#fdName"); if(i) i.focus(); return; }
+  const rf=e.target.closest("[data-pickfood]"); if(rf){ const m=recentFoods()[+rf.dataset.pickfood]; if(m) saveFood({name:m.title,g:m.g,per:m.per},m.src); return; }
+  if(e.target.closest("#fdDel")){ const {di,sl,id}=mealPick.edit; if(meals[di]&&meals[di][sl]) delete meals[di][sl][id]; fdb().ref(`users/${myUid}/meals/${di}/${sl}/${id}`).remove().catch(showErr); $("#mealModal").hidden=true; mealPick=null; render(); return; }
+  if(e.target.closest("#fdSave")){ const x=readFoodForm();
+    if(!x.name){ mealPick.msg="Gib dem Eintrag noch einen Namen."; mealPick.err=true; }
+    else if(!x.g){ mealPick.msg="Trag ein, wie viel du gegessen hast (in g oder ml)."; mealPick.err=true; }
+    else { const changed=mealPick.f.src!=="man"&&FNUTS.some(([n])=>Math.abs((+mealPick.f.per[n]||0)-x.per[n])>0.05); return saveFood(x,changed?"man":mealPick.f.src); }
+    const keep=readFoodForm(); mealPick.f={...mealPick.f,...keep}; renderPick(); return; }
 });
-$("#mealModal").addEventListener("input",e=>{ if(e.target.id!=="mealQ"||!mealPick) return; mealPick.q=e.target.value; const pos=e.target.selectionStart; renderPick(); const i=$("#mealQ"); i.focus(); i.setSelectionRange(pos,pos); });
+$("#mealModal").addEventListener("input",e=>{
+  if(!mealPick) return;
+  if(e.target.id==="fdQ"){ mealPick.fq=e.target.value; return; }
+  if(e.target.closest(".fd-form")){ updFoodSum(); return; }
+  if(e.target.id!=="mealQ") return; mealPick.q=e.target.value; const pos=e.target.selectionStart; renderPick(); const i=$("#mealQ"); i.focus(); i.setSelectionRange(pos,pos); });
+$("#mealModal").addEventListener("keydown",e=>{ if(e.key==="Enter"&&e.target.id==="fdQ"){ e.preventDefault(); estimateFood(); } });
+$("#mealModal").addEventListener("change",e=>{ if(e.target.id!=="fdFile"||!mealPick) return; const file=e.target.files[0]; e.target.value=""; if(file) readFoodLabel(file); });
 $("#sumModal").addEventListener("click",e=>{
   if(e.target.id==="sumModal"||e.target.closest("#sumClose")){ $("#sumModal").hidden=true; return; }
   const ed=e.target.closest("[data-edit-sess]"); if(ed){ if(activeSession()){ $("#status").textContent="Beende zuerst dein laufendes Training."; return; }
@@ -2171,6 +2301,7 @@ document.addEventListener("click",e=>{
   if(e.target.closest("#newTpl")) return openTpl(null);
   const fd=e.target.closest("[data-fd]"); if(fd){ foodOff=fd.dataset.fd==="0"?0:foodOff+(+fd.dataset.fd); render(); return; }
   const am=e.target.closest("[data-addmeal]"); if(am) return openMealPick(am.dataset.addmeal);
+  const ef=e.target.closest("[data-editfood]"); if(ef){ const [di,sl,id]=ef.dataset.editfood.split("|"); return openFoodEdit(di,sl,id); }
   const dm=e.target.closest("[data-delmeal]"); if(dm){ const [di,sl,id]=dm.dataset.delmeal.split("|"); if(meals[di]&&meals[di][sl]) delete meals[di][sl][id]; fdb().ref(`users/${myUid}/meals/${di}/${sl}/${id}`).remove().catch(showErr); render(); return; }
   const po=e.target.closest("[data-por]"); if(po){ const [di,sl,id,d]=po.dataset.por.split("|"), m=meals[di]&&meals[di][sl]&&meals[di][sl][id]; if(!m) return;
     m.por=Math.max(0.5,Math.min(10,(+m.por||1)+(+d))); fdb().ref(`users/${myUid}/meals/${di}/${sl}/${id}/por`).set(m.por).catch(showErr); render(); return; }
