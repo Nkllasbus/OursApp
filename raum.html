@@ -6,6 +6,10 @@
 <title>Ours · Raumdesign</title>
 <link rel="icon" href="ours-logo.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ours">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Figtree:wght@400;500;600;700&family=Playfair+Display:wght@800;900&display=swap">
 <style>
@@ -160,6 +164,84 @@ html,body{height:100%}
    - Jede Seite hat ihren eigenen Bereich unter spaces/<id> mit eigenen Personen (access/<uid>)
    - users/<uid>/spaces/<typ> merkt sich, welcher Bereich zu welcher Seite gehört
    Seiten rufen Auth.start(firebaseConfig, "dates" | "recipes" | "chores" | "budget" | "gym", (ref, info) => { ... }) auf. */
+/* ---------- Offline: Seiten über den Service Worker, Daten über einen Zwischenspeicher ----------
+   Gelesene Daten (on/once "value") werden im localStorage gemerkt und ohne Netz von dort geliefert.
+   Schreibvorgänge kommen in eine Warteschlange und werden nachgereicht, sobald wieder Netz da ist. */
+(function(){
+  try{ if("serviceWorker" in navigator && !/claude|anthropic|usercontent/.test(location.hostname) && /^https?:$/.test(location.protocol)) addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{})); }catch(e){}
+  const F=window.firebase; if(!F||!F.database||!F.database.Query||!F.database.Reference) return;
+  const Q=F.database.Query.prototype, R=F.database.Reference.prototype;
+  const oOn=Q.on, oOff=Q.off, oOnce=Q.once, oSet=R.set, oUpdate=R.update, oRemove=R.remove;
+  const PRE="ofl:c:", OUT="ofl:outbox", t0=Date.now(), PAGE=t0.toString(36)+Math.random().toString(36).slice(2,6);
+  let conn=null, watching=false;
+  const pathOf=ref=>{ try{ return decodeURIComponent(String(ref.toString()).replace(/^[a-z]+:\/\/[^/]+\/?/i,"")).replace(/\/+$/,""); }catch(e){ return null; } };
+  const plain=q=>{ try{ return !q.ref||q.isEqual(q.ref); }catch(e){ return false; } };   // keine sortierten/gefilterten Abfragen
+  const okPath=p=>p!=null&&p!==""&&!p.startsWith(".info");
+  const lsGet=k=>{ try{ const v=localStorage.getItem(k); return v==null?undefined:JSON.parse(v); }catch(e){ return undefined; } };
+  const lsSet=(k,v)=>{ try{ const s=JSON.stringify(v===undefined?null:v); if(s.length>1500000) return; localStorage.setItem(k,s); }catch(e){} };
+  const watch=()=>{ if(watching) return; try{ if(!F.apps||!F.apps.length) return; watching=true;
+    oOn.call(F.database().ref(".info/connected"),"value",s=>{ conn=s.val()===true; if(conn) setTimeout(replay,500); }); }catch(e){ watching=false; } };
+  const offline=()=>conn!==true&&(navigator.onLine===false||Date.now()-t0>3500);
+  const wait=()=>conn===true?null:navigator.onLine===false?0:Math.max(0,3500-(Date.now()-t0));
+  function snap(v,ref){ const val=v===undefined?null:v;
+    return {key:ref&&ref.key,ref,val:()=>val==null?null:JSON.parse(JSON.stringify(val)),exportVal(){ return this.val(); },toJSON:()=>val,exists:()=>val!=null,
+      child:k=>snap(val&&typeof val==="object"?val[k]:null,ref&&ref.child(k)),hasChild:k=>!!(val&&typeof val==="object"&&val[k]!=null),
+      hasChildren:()=>!!(val&&typeof val==="object"&&Object.keys(val).length),numChildren:()=>val&&typeof val==="object"?Object.keys(val).length:0,
+      forEach(fn){ if(!val||typeof val!=="object") return false; for(const k of Object.keys(val)) if(fn(snap(val[k],ref&&ref.child(k)))===true) return true; return false; }};
+  }
+  const cbMap=new WeakMap();
+  Q.on=function(ev,cb,...rest){
+    watch(); const p=pathOf(this);
+    if(ev!=="value"||typeof cb!=="function"||!okPath(p)||!plain(this)) return oOn.call(this,ev,cb,...rest);
+    let real=false; const ref=this.ref||this;
+    const w=function(s){ real=true; if(conn===true) lsSet(PRE+p,s.val()); return cb.apply(this,arguments); };
+    cbMap.set(cb,w); oOn.call(this,ev,w,...rest);
+    const c=lsGet(PRE+p), ms=wait();
+    if(c!==undefined&&ms!=null) setTimeout(()=>{ if(!real) try{ cb(snap(c,ref)); }catch(e){ console.error(e); } },ms);
+    return cb;
+  };
+  Q.off=function(ev,cb,...rest){ return oOff.call(this,ev,cb&&cbMap.get(cb)||cb,...rest); };
+  Q.once=function(ev,...rest){
+    watch(); const p=pathOf(this);
+    if(ev!=="value"||rest.some(x=>typeof x==="function")||!okPath(p)||!plain(this)) return oOnce.call(this,ev,...rest);
+    const pr=oOnce.call(this,ev,...rest).then(s=>{ if(conn===true) lsSet(PRE+p,s.val()); return s; }), ref=this.ref||this;
+    const c=lsGet(PRE+p), ms=wait();
+    if(c===undefined||ms==null) return pr;
+    return Promise.race([pr,new Promise(res=>setTimeout(()=>res(snap(c,ref)),ms))]);
+  };
+  // Schreiben: Warteschlange + gemerkte Daten sofort anpassen
+  const getIn=(o,ks)=>{ for(const k of ks){ if(o==null||typeof o!=="object") return undefined; o=o[k]; } return o; };
+  function setIn(o,ks,v){ if(!ks.length) return v; o=o&&typeof o==="object"?o:{}; const k=ks[0], r=setIn(o[k],ks.slice(1),v); if(r==null) delete o[k]; else o[k]=r; return o; }
+  function patchCache(path,val){
+    try{ for(let i=0;i<localStorage.length;i++){ const key=localStorage.key(i); if(!key||!key.startsWith(PRE)) continue; const cp=key.slice(PRE.length);
+      if(path===cp) lsSet(key,val);
+      else if(path.startsWith(cp+"/")) lsSet(key,setIn(lsGet(key),path.slice(cp.length+1).split("/"),val));
+      else if(cp.startsWith(path+"/")) lsSet(key,getIn(val,cp.slice(path.length+1).split("/"))??null); } }catch(e){}
+  }
+  const outbox=()=>lsGet(OUT)||[];
+  function track(type,path,data,promise){
+    if(!okPath(path)) return promise;
+    const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6); let ok=true;
+    try{ const ob=outbox(); ob.push({id,type,path,data:data===undefined?null:data,page:PAGE}); if(JSON.stringify(ob).length<1500000) lsSet(OUT,ob); else ok=false; }catch(e){ ok=false; }
+    if(type==="update"&&data&&typeof data==="object") Object.keys(data).forEach(k=>patchCache(path+"/"+k,data[k])); else patchCache(path,type==="remove"?null:data);
+    if(ok) Promise.resolve(promise).then(()=>{ lsSet(OUT,outbox().filter(o=>o.id!==id)); },()=>{});
+    return promise;
+  }
+  R.set=function(v,...rest){ watch(); return track("set",pathOf(this),v,oSet.call(this,v,...rest)); };
+  R.update=function(v,...rest){ watch(); return track("update",pathOf(this),v,oUpdate.call(this,v,...rest)); };
+  R.remove=function(...rest){ watch(); return track("remove",pathOf(this),null,oRemove.call(this,...rest)); };
+  let replaying=false;
+  function replay(){
+    if(replaying) return; const ob=outbox().filter(o=>o.page!==PAGE); if(!ob.length) return;
+    try{ if(!F.auth||!F.auth().currentUser){ setTimeout(replay,2000); return; } }catch(e){ return; }
+    replaying=true; const db=F.database();
+    (async()=>{ for(const o of ob){ const r=db.ref(o.path);
+      try{ await (o.type==="set"?oSet.call(r,o.data):o.type==="update"?oUpdate.call(r,o.data):oRemove.call(r)); }catch(e){ if(!/permission/i.test(String(e&&(e.code||e.message)))) continue; }
+      lsSet(OUT,outbox().filter(x=>x.id!==o.id)); } replaying=false; })();
+  }
+  addEventListener("online",()=>setTimeout(replay,1500));
+  window.OursOffline={get connected(){ return conn; },pending:()=>outbox().length,replay};
+})();
 (function(){
   const PAGES = [
     {type:"dates",   file:"index.html",    label:"Dateideen", color:"#8c7559", noun:"Dateideen-Liste",
@@ -352,7 +434,7 @@ html,body{height:100%}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-05-133742";
+  const APP_VERSION="2026-11-05-174840";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;

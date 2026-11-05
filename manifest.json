@@ -1,0 +1,21 @@
+{
+ "name": "Ours",
+ "short_name": "Ours",
+ "description": "Dateideen, Rezepte, Haushalt, Budget und Gym",
+ "display": "standalone",
+ "background_color": "#f3efe9",
+ "theme_color": "#3c4270",
+ "icons": [
+  {
+   "src": "apple-touch-icon.png",
+   "sizes": "180x180",
+   "type": "image/png"
+  },
+  {
+   "src": "ours-logo.png",
+   "sizes": "128x128",
+   "type": "image/png",
+   "purpose": "any"
+  }
+ ]
+}
