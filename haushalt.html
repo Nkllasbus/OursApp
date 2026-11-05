@@ -407,6 +407,11 @@ html,body{height:100%}
   .auth-sw input:checked+i{background:var(--band)}
   .auth-sw input:checked+i::after{transform:translateX(17px)}
   .auth-sw input:focus-visible+i{outline:2px solid var(--accent);outline-offset:2px}
+  .auth-sw.row{cursor:default}
+  .auth-mini{flex:none;border:0;border-radius:999px;padding:8px 14px;font:inherit;font-size:.85rem;font-weight:700;cursor:pointer;background:var(--band);color:var(--on-band)}
+  .auth-mini.alt{background:none;border:1px solid var(--line);color:var(--ink)}
+  .auth-mini:disabled{opacity:.5;cursor:default}
+  .auth-sw .sel{user-select:all;word-break:break-all;font-family:ui-monospace,monospace;font-size:.72rem;color:var(--ink)}
   .auth-sec{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 -4px}
 
   /* Profilbilder */
@@ -524,7 +529,7 @@ html,body{height:100%}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-05-123331";
+  const APP_VERSION="2026-11-05-124234";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -737,6 +742,7 @@ html,body{height:100%}
         ${KC_KEY[type]?`<p class="auth-sec">Funktionen</p>
         <label class="auth-sw" for="stKcal"><span>${type==="gym"?"Essen-Tagebuch":"Kalorien & Nährwerte"}<small>${type==="gym"?"Zeigt den Reiter „Essen“: Mahlzeiten eintragen, Kalorien und Nährwerte zählen.":"Zeigt kcal und Nährwerte pro Portion bei deinen Rezepten."}</small></span><input type="checkbox" id="stKcal" role="switch"${kcalOn[type]?" checked":""}><i aria-hidden="true"></i></label>`:""}
         ${(()=>{ let last=""; return (window.Auth.pageSettings||[]).map((x,i)=>{ const h=x.sec&&x.sec!==last?`<p class="auth-sec">${esc(x.sec)}</p>`:""; last=x.sec||last;
+          if(x.button) return h+`<div class="auth-sw row"><span>${esc(x.label)}<small id="stX${i}n">${x.noteHtml?x.noteHtml():esc(x.note())}</small></span><button type="button" class="auth-mini${x.alt&&x.alt()?" alt":""}" id="stX${i}"${x.disabled&&x.disabled()?" disabled":""}>${esc(x.button())}</button></div>`;
           return h+`<label class="auth-sw" for="stX${i}"><span>${esc(x.label)}<small id="stX${i}n">${esc(x.note(x.get()))}</small></span><input type="checkbox" id="stX${i}" role="switch"${x.get()?" checked":""}${x.disabled&&x.disabled()?" disabled":""}><i aria-hidden="true"></i></label>`; }).join(""); })()}
         <p class="auth-sec">Diese Seite</p>
         <p class="auth-note">${sid?(type==="gym"?`Das ist dein eigener Trainingsplan. Freunde können ihn ansehen, aber nicht ändern.`:`Du bist in ${type==="chores"||type==="budget"?"einem":"einer"} ${esc(PAGE.noun)}. Wer ${type==="chores"?"ihn":type==="budget"?"es":"sie"} sieht, steht unter „Personen bei ${esc(PAGE.label)}“.`):`Für ${esc(PAGE.label)} gibt es noch keine Liste.`}</p>
@@ -744,7 +750,9 @@ html,body{height:100%}
         <button class="auth-link" type="button" id="stClose">Schließen</button>`,true);
       $a("#stClose").onclick=hide;
       const kc=$a("#stKcal"); if(kc) kc.onchange=()=>{ applyKcal(type,kc.checked); db.ref(`users/${user.uid}/settings/${KC_KEY[type]}`).set(kc.checked).catch(()=>{ msg("Speichern hat nicht geklappt. Prüf die Internetverbindung.",true); }); };
-      (window.Auth.pageSettings||[]).forEach((x,i)=>{ const el=$a("#stX"+i); if(!el) return; el.onchange=async()=>{ const n=$a("#stX"+i+"n");
+      (window.Auth.pageSettings||[]).forEach((x,i)=>{ const el=$a("#stX"+i); if(!el) return;
+        if(x.button){ el.onclick=async()=>{ try{ await x.action(); }catch(err){ msg(err&&err.message||"Das hat nicht geklappt.",true); } if($a("#stX"+i)) settingsView(); }; return; }
+        el.onchange=async()=>{ const n=$a("#stX"+i+"n");
         try{ await x.set(el.checked); }catch(err){ msg("Speichern hat nicht geklappt. Prüf die Internetverbindung.",true); } if(n) n.textContent=x.note(x.get()); }; });
       $a("#stOut").onclick=()=>auth.signOut();
       $a("#stPw").onclick=async()=>{

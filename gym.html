@@ -301,6 +301,32 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
 .sug-row .pickrow{flex:1;min-width:0;border-bottom:0}
 .sug-row{border-bottom:1px solid var(--line)}
 .mrow2 .exn.tap{border:0;background:none;padding:0;text-align:left;color:var(--ink);cursor:pointer}
+/* Spotify: Knopf unten in der Mitte und kleiner Player */
+.fab.sp-fab{left:50%;transform:translateX(-50%);bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 22px);background:#1db954;color:#fff}
+.fab.sp-fab:active{transform:translateX(-50%) scale(.94)}
+.fab.sp-fab svg{width:30px;height:30px}
+.fab.sp-fab.playing::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid #1db954;opacity:.5;animation:spPulse 1.6s ease-out infinite}
+@keyframes spPulse{from{transform:scale(1);opacity:.55}to{transform:scale(1.25);opacity:0}}
+.sp-card{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 90px);z-index:8;width:min(360px,calc(100% - 32px));
+  background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:14px;box-shadow:0 18px 40px -16px var(--shadow);display:flex;flex-direction:column;gap:12px}
+.sp-card[hidden]{display:none}
+.sp-top{display:flex;align-items:center;gap:12px}
+.sp-top img,.sp-top .sp-ph{flex:none;width:58px;height:58px;border-radius:10px;object-fit:cover;background:var(--accent-soft);display:grid;place-items:center;color:var(--muted)}
+.sp-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.sp-t b{font-weight:700;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-t small{font-size:.84rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-x{flex:none;align-self:flex-start;border:0;background:none;color:var(--muted);font-size:1.3rem;padding:0 4px;line-height:1}
+.sp-bar{position:relative;height:18px;display:flex;align-items:center;cursor:pointer;touch-action:none}
+.sp-bar i{position:absolute;left:0;right:0;height:5px;border-radius:999px;background:var(--line);overflow:hidden}
+.sp-bar i b{display:block;height:100%;width:0;background:#1db954;border-radius:999px}
+.sp-time{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:-6px}
+.sp-ctl{display:flex;justify-content:center;align-items:center;gap:22px}
+.sp-ctl button{border:0;background:none;color:var(--ink);display:grid;place-items:center;width:44px;height:44px;border-radius:50%}
+.sp-ctl button svg{width:26px;height:26px}
+.sp-ctl .sp-pp{width:56px;height:56px;background:var(--ink);color:var(--surface)}
+.sp-ctl button:disabled{opacity:.4}
+.sp-msg{margin:0;font-size:.82rem;color:var(--muted);text-align:center}
+.sp-msg.err{color:#8a2318}
 /* Knopf unten rechts mit zwei Optionen (wie bei Rezepte) */
 .fab{position:absolute;z-index:6;width:56px;height:56px;border-radius:50%;border:0;background:var(--band);color:var(--on-band);display:grid;place-items:center;
   box-shadow:0 6px 16px -8px var(--shadow),0 0 0 1px color-mix(in srgb,var(--on-band) 14%,transparent)}
@@ -467,6 +493,8 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
     <div class="scroll" id="list"></div>
   </section>
   <div class="status" id="status" aria-live="polite"></div>
+  <button class="fab sp-fab" id="spFab" type="button" hidden aria-expanded="false" aria-controls="spCard" aria-label="Spotify-Player"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 9.3c3.8-1.1 8-.8 11.2 1M7.2 12.6c3.1-.9 6.4-.6 9 .9M7.9 15.7c2.4-.6 4.8-.4 6.8.7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></button>
+  <div class="sp-card" id="spCard" hidden role="dialog" aria-label="Spotify"></div>
   <div class="fab-menu" id="gFabMenu" aria-hidden="true">
     <button class="fab-opt" type="button" data-fabview="me" tabindex="-1"><span>Meine Angaben</span><i><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></i></button>
     <button class="fab-opt" type="button" data-fabview="fr" tabindex="-1"><span>Freunde & ihre Pläne</span><i><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M16.5 6.2a2.8 2.8 0 0 1 0 5.4M17 14.3c2 .5 3.2 2.1 3.6 4.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></i></button>
@@ -604,6 +632,11 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
   .auth-sw input:checked+i{background:var(--band)}
   .auth-sw input:checked+i::after{transform:translateX(17px)}
   .auth-sw input:focus-visible+i{outline:2px solid var(--accent);outline-offset:2px}
+  .auth-sw.row{cursor:default}
+  .auth-mini{flex:none;border:0;border-radius:999px;padding:8px 14px;font:inherit;font-size:.85rem;font-weight:700;cursor:pointer;background:var(--band);color:var(--on-band)}
+  .auth-mini.alt{background:none;border:1px solid var(--line);color:var(--ink)}
+  .auth-mini:disabled{opacity:.5;cursor:default}
+  .auth-sw .sel{user-select:all;word-break:break-all;font-family:ui-monospace,monospace;font-size:.72rem;color:var(--ink)}
   .auth-sec{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 -4px}
 
   /* Profilbilder */
@@ -721,7 +754,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-05-123331";
+  const APP_VERSION="2026-11-05-124234";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -934,6 +967,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
         ${KC_KEY[type]?`<p class="auth-sec">Funktionen</p>
         <label class="auth-sw" for="stKcal"><span>${type==="gym"?"Essen-Tagebuch":"Kalorien & Nährwerte"}<small>${type==="gym"?"Zeigt den Reiter „Essen“: Mahlzeiten eintragen, Kalorien und Nährwerte zählen.":"Zeigt kcal und Nährwerte pro Portion bei deinen Rezepten."}</small></span><input type="checkbox" id="stKcal" role="switch"${kcalOn[type]?" checked":""}><i aria-hidden="true"></i></label>`:""}
         ${(()=>{ let last=""; return (window.Auth.pageSettings||[]).map((x,i)=>{ const h=x.sec&&x.sec!==last?`<p class="auth-sec">${esc(x.sec)}</p>`:""; last=x.sec||last;
+          if(x.button) return h+`<div class="auth-sw row"><span>${esc(x.label)}<small id="stX${i}n">${x.noteHtml?x.noteHtml():esc(x.note())}</small></span><button type="button" class="auth-mini${x.alt&&x.alt()?" alt":""}" id="stX${i}"${x.disabled&&x.disabled()?" disabled":""}>${esc(x.button())}</button></div>`;
           return h+`<label class="auth-sw" for="stX${i}"><span>${esc(x.label)}<small id="stX${i}n">${esc(x.note(x.get()))}</small></span><input type="checkbox" id="stX${i}" role="switch"${x.get()?" checked":""}${x.disabled&&x.disabled()?" disabled":""}><i aria-hidden="true"></i></label>`; }).join(""); })()}
         <p class="auth-sec">Diese Seite</p>
         <p class="auth-note">${sid?(type==="gym"?`Das ist dein eigener Trainingsplan. Freunde können ihn ansehen, aber nicht ändern.`:`Du bist in ${type==="chores"||type==="budget"?"einem":"einer"} ${esc(PAGE.noun)}. Wer ${type==="chores"?"ihn":type==="budget"?"es":"sie"} sieht, steht unter „Personen bei ${esc(PAGE.label)}“.`):`Für ${esc(PAGE.label)} gibt es noch keine Liste.`}</p>
@@ -941,7 +975,9 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
         <button class="auth-link" type="button" id="stClose">Schließen</button>`,true);
       $a("#stClose").onclick=hide;
       const kc=$a("#stKcal"); if(kc) kc.onchange=()=>{ applyKcal(type,kc.checked); db.ref(`users/${user.uid}/settings/${KC_KEY[type]}`).set(kc.checked).catch(()=>{ msg("Speichern hat nicht geklappt. Prüf die Internetverbindung.",true); }); };
-      (window.Auth.pageSettings||[]).forEach((x,i)=>{ const el=$a("#stX"+i); if(!el) return; el.onchange=async()=>{ const n=$a("#stX"+i+"n");
+      (window.Auth.pageSettings||[]).forEach((x,i)=>{ const el=$a("#stX"+i); if(!el) return;
+        if(x.button){ el.onclick=async()=>{ try{ await x.action(); }catch(err){ msg(err&&err.message||"Das hat nicht geklappt.",true); } if($a("#stX"+i)) settingsView(); }; return; }
+        el.onchange=async()=>{ const n=$a("#stX"+i+"n");
         try{ await x.set(el.checked); }catch(err){ msg("Speichern hat nicht geklappt. Prüf die Internetverbindung.",true); } if(n) n.textContent=x.note(x.get()); }; });
       $a("#stOut").onclick=()=>auth.signOut();
       $a("#stPw").onclick=async()=>{
@@ -2424,6 +2460,115 @@ Auth.pageSettings.push({sec:"Freunde",label:"Freunde dürfen meinen Gymplan sehe
 document.addEventListener("ours-pub",()=>{ if(view==="fr") render(); });
 
 document.addEventListener("ours-kcal",e=>{ if(e.detail.type==="gym"&&myUid) render(); });
+/* ---------- Spotify (Anmeldung mit PKCE direkt im Browser, Token bleibt auf diesem Gerät) ---------- */
+// Client-ID aus dem Spotify Developer Dashboard (developer.spotify.com → Dashboard → deine App)
+const SPOTIFY_CLIENT_ID = "";
+const SP_SCOPES="user-read-playback-state user-modify-playback-state user-read-currently-playing";
+const spRedirect=()=>location.origin+location.pathname;
+let spTok=null; try{ spTok=JSON.parse(localStorage.getItem("spotify.tok")||"null"); }catch(e){}
+let spMe=null, spState=null, spAt=0, spOpen=false, spPoll=null, spTick=null, spMsg="", spErr=false, spBusy=false;
+const b64url=buf=>btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+const spSave=t=>{ spTok=t; try{ t?localStorage.setItem("spotify.tok",JSON.stringify(t)):localStorage.removeItem("spotify.tok"); }catch(e){} };
+async function spConnect(){
+  if(!SPOTIFY_CLIENT_ID) throw new Error("Spotify ist für diese App noch nicht eingerichtet.");
+  const rnd=crypto.getRandomValues(new Uint8Array(48)), verifier=b64url(rnd), state=b64url(crypto.getRandomValues(new Uint8Array(12)));
+  const challenge=b64url(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(verifier)));
+  try{ sessionStorage.setItem("spotify.pkce",JSON.stringify({verifier,state})); }catch(e){}
+  location.href="https://accounts.spotify.com/authorize?"+new URLSearchParams({client_id:SPOTIFY_CLIENT_ID,response_type:"code",redirect_uri:spRedirect(),
+    code_challenge_method:"S256",code_challenge:challenge,scope:SP_SCOPES,state}).toString();
+}
+async function spTokenReq(params){
+  const r=await fetch("https://accounts.spotify.com/api/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({client_id:SPOTIFY_CLIENT_ID,...params})});
+  const d=await r.json().catch(()=>({})); if(!r.ok) throw new Error(d.error_description||d.error||"Spotify-Anmeldung fehlgeschlagen.");
+  return {at:d.access_token,rt:d.refresh_token||(spTok&&spTok.rt),exp:Date.now()+(d.expires_in||3600)*1000-60000};
+}
+// Rückkehr von Spotify: ?code=…&state=… gleich beim Laden abholen
+const spBack=(()=>{ const q=new URLSearchParams(location.search); if(!q.has("code")&&!q.has("error")) return null;
+  const o={code:q.get("code"),state:q.get("state"),error:q.get("error")}; history.replaceState(null,"",location.pathname+location.hash); return o; })();
+const spReady=(async()=>{
+  if(!spBack) return; let p=null; try{ p=JSON.parse(sessionStorage.getItem("spotify.pkce")||"null"); sessionStorage.removeItem("spotify.pkce"); }catch(e){}
+  if(spBack.error){ spMsg=spBack.error==="access_denied"?"Spotify-Verbindung abgebrochen.":"Spotify hat die Verbindung abgelehnt."; spErr=true; return; }
+  if(!p||p.state!==spBack.state){ spMsg="Die Spotify-Anmeldung konnte nicht bestätigt werden. Versuch es nochmal."; spErr=true; return; }
+  try{ spSave(await spTokenReq({grant_type:"authorization_code",code:spBack.code,redirect_uri:spRedirect(),code_verifier:p.verifier})); $("#status").textContent="Spotify ist verbunden. Tippe auf den grünen Knopf unten."; }
+  catch(e){ spMsg=e.message; spErr=true; }
+})();
+async function spApi(path,opt={}){
+  if(!spTok) throw new Error("Nicht mit Spotify verbunden.");
+  if(Date.now()>spTok.exp){ try{ spSave(await spTokenReq({grant_type:"refresh_token",refresh_token:spTok.rt})); }catch(e){ spSave(null); spUpd(); throw new Error("Die Spotify-Verbindung ist abgelaufen. Verbinde sie in den Einstellungen neu."); } }
+  const r=await fetch("https://api.spotify.com/v1"+path,{...opt,headers:{Authorization:"Bearer "+spTok.at,...(opt.body?{"Content-Type":"application/json"}:{})}});
+  if(r.status===401){ spTok.exp=0; return spApi(path,opt); }
+  if(r.status===204||r.status===202) return null;
+  const d=await r.json().catch(()=>null);
+  if(!r.ok){ const reason=d&&d.error&&d.error.reason;
+    if(reason==="PREMIUM_REQUIRED"||r.status===403&&/premium/i.test(JSON.stringify(d||""))) throw new Error("Steuern geht nur mit Spotify Premium.");
+    if(reason==="NO_ACTIVE_DEVICE"||r.status===404) throw new Error("Kein aktives Gerät. Starte Spotify kurz auf deinem Handy.");
+    if(r.status===403) throw new Error("Dein Spotify-Konto ist für diese App noch nicht freigeschaltet.");
+    throw new Error((d&&d.error&&d.error.message)||"Spotify hat nicht geantwortet."); }
+  return d;
+}
+const spFmt=ms=>{ const s=Math.max(0,Math.floor(ms/1000)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); };
+const spPos=()=>!spState||!spState.item?0:Math.min(spState.item.duration_ms,spState.progress_ms+(spState.is_playing?Date.now()-spAt:0));
+async function spFetch(){
+  try{ spState=await spApi("/me/player"); spAt=Date.now(); if(spMsg&&!spBusy&&!spErr) spMsg=""; }
+  catch(e){ spMsg=e.message; spErr=true; }
+  spPaint();
+}
+const SP_IC={prev:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 6v12M18 6l-8.5 6L18 18z" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+  next:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 6v12M6 6l8.5 6L6 18z" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+  play:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>',
+  pause:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 5.5h3v13h-3zM13.5 5.5h3v13h-3z" fill="currentColor"/></svg>'};
+function spPaint(){
+  const fab=$("#spFab"); if(!fab) return; fab.classList.toggle("playing",!!(spState&&spState.is_playing));
+  if(!spOpen) return;
+  const it=spState&&spState.item, img=it&&it.album&&it.album.images&&it.album.images.length?it.album.images[it.album.images.length>1?1:0].url:"";
+  const who=it?(it.artists?it.artists.map(a=>a.name).join(", "):(it.show&&it.show.name)||""):"";
+  $("#spCard").innerHTML=`<div class="sp-top">${img?`<img src="${esc(img)}" alt="">`:`<span class="sp-ph">♪</span>`}
+      <span class="sp-t"><b>${it?esc(it.name):"Gerade läuft nichts"}</b><small>${it?esc(who):"Starte Musik in Spotify, dann siehst du sie hier."}${spState&&spState.device&&it?` · ${esc(spState.device.name)}`:""}</small></span>
+      <button class="sp-x" type="button" id="spClose" aria-label="Schließen">×</button></div>
+    ${it?`<div class="sp-bar" id="spBar" role="slider" aria-label="Position im Lied" aria-valuemin="0" aria-valuemax="${Math.round(it.duration_ms/1000)}"><i><b id="spFill"></b></i></div>
+    <div class="sp-time"><span id="spCur">0:00</span><span>${spFmt(it.duration_ms)}</span></div>`:""}
+    <div class="sp-ctl"><button type="button" data-sp="prev" aria-label="Vorheriges Lied"${spBusy?" disabled":""}>${SP_IC.prev}</button>
+      <button type="button" class="sp-pp" data-sp="${spState&&spState.is_playing?"pause":"play"}" aria-label="${spState&&spState.is_playing?"Pause":"Abspielen"}"${spBusy?" disabled":""}>${spState&&spState.is_playing?SP_IC.pause:SP_IC.play}</button>
+      <button type="button" data-sp="next" aria-label="Nächstes Lied"${spBusy?" disabled":""}>${SP_IC.next}</button></div>
+    ${spMsg?`<p class="sp-msg${spErr?" err":""}">${esc(spMsg)}</p>`:""}`;
+  spProg();
+}
+function spProg(){ const it=spState&&spState.item, fl=$("#spFill"), c=$("#spCur"); if(!it||!fl) return; const p=spPos(); fl.style.width=(p/it.duration_ms*100)+"%"; if(c) c.textContent=spFmt(p); }
+function spUpd(){ const fab=$("#spFab"); if(fab) fab.hidden=!spTok; if(!spTok&&spOpen) spToggle(false); }
+function spToggle(open){
+  spOpen=open; $("#spCard").hidden=!open; $("#spFab").setAttribute("aria-expanded",open);
+  clearInterval(spPoll); clearInterval(spTick);
+  if(open){ spMsg=spErr?spMsg:""; spErr=false; spPaint(); spFetch(); spPoll=setInterval(()=>{ if(!document.hidden) spFetch(); },4000); spTick=setInterval(spProg,500); }
+}
+async function spDo(act){
+  spBusy=true; spMsg=""; spErr=false; spPaint();
+  try{
+    if(act==="play") await spApi("/me/player/play",{method:"PUT"});
+    else if(act==="pause") await spApi("/me/player/pause",{method:"PUT"});
+    else await spApi("/me/player/"+act,{method:"POST"});
+    if(spState&&(act==="play"||act==="pause")){ spState.progress_ms=spPos(); spAt=Date.now(); spState.is_playing=act==="play"; }
+  }catch(e){ spMsg=e.message; spErr=true; }
+  spBusy=false; spPaint(); setTimeout(spFetch,act==="next"||act==="prev"?450:250);
+}
+$("#spFab").addEventListener("click",e=>{ e.stopPropagation(); setGFab&&$("#gFab").getAttribute("aria-expanded")==="true"&&setGFab(false); spToggle(!spOpen); });
+$("#spCard").addEventListener("click",e=>{
+  e.stopPropagation();
+  if(e.target.closest("#spClose")) return spToggle(false);
+  const b=e.target.closest("[data-sp]"); if(b&&!spBusy) return spDo(b.dataset.sp==="prev"?"previous":b.dataset.sp);
+  const bar=e.target.closest("#spBar"); if(bar&&spState&&spState.item){ const r=bar.getBoundingClientRect(), pos=Math.round(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*spState.item.duration_ms);
+    spState.progress_ms=pos; spAt=Date.now(); spProg(); spApi("/me/player/seek?position_ms="+pos,{method:"PUT"}).catch(err=>{ spMsg=err.message; spErr=true; spPaint(); }); }
+});
+document.addEventListener("click",e=>{ if(spOpen&&!e.target.closest("#spCard,#spFab")) spToggle(false); });
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden&&spOpen) spFetch(); });
+// Eintrag in den Einstellungen
+Auth.pageSettings.push({sec:"Musik",label:"Spotify",button:()=>spTok?"Trennen":"Verbinden",alt:()=>!!spTok,
+  noteHtml:()=>!SPOTIFY_CLIENT_ID?`Noch nicht eingerichtet. Weiterleitungs-Adresse für Spotify: <span class="sel">${esc(spRedirect())}</span>`
+    :spTok?`Verbunden${spMe&&spMe.display_name?` als ${esc(spMe.display_name)}`:""}. Unten in der Mitte steuerst du deine Musik.`
+    :spErr&&spMsg?esc(spMsg):"Verbinde dein Spotify, dann kannst du im Gym Lieder sehen und steuern (Steuern braucht Premium).",
+  disabled:()=>!SPOTIFY_CLIENT_ID,
+  action:async()=>{ if(spTok){ spSave(null); spMe=null; spState=null; spUpd(); return; } await spConnect(); }});
+spReady.then(async()=>{ spUpd(); if(spTok){ try{ spMe=await spApi("/me"); }catch(e){} } if(spErr&&spMsg) $("#status").textContent=spMsg; });
+
 // Knopf unten rechts: Meine Angaben / Freunde
 const setGFab=open=>{ $("#gFabMenu").classList.toggle("open",open); $("#gFabMenu").setAttribute("aria-hidden",!open); $("#gFab").setAttribute("aria-expanded",open);
   document.querySelectorAll("[data-fabview]").forEach(b=>{ b.tabIndex=open?0:-1; b.setAttribute("aria-current",b.dataset.fabview===view); }); };
