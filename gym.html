@@ -284,6 +284,16 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
 .me-grid input{font:inherit;font-size:1rem;padding:9px 10px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);min-width:0;width:100%;text-align:center}
 .me-grid input:focus{outline:none;border-color:var(--accent)}
 .me-card.res{border-color:var(--band)}
+.chips.col{flex-direction:column;align-items:stretch}
+.chip.big{display:flex;justify-content:space-between;align-items:baseline;gap:10px;text-align:left;padding:9px 14px;border-radius:12px;font-weight:600}
+.chip.big small{font-weight:400;font-size:.76rem;color:var(--muted);text-align:right}
+.chip.big[aria-pressed="true"] small{color:var(--on-band-muted)}
+.opt-in{display:flex;flex-direction:column;gap:4px;font-size:.86rem;color:var(--ink)}
+.opt-in small{font-size:.74rem;color:var(--muted)}
+.opt-in input{width:110px;font:inherit;font-size:1rem;padding:9px 10px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);text-align:center}
+.save-bar{display:flex;flex-direction:column;gap:6px}
+.save-bar .btn:disabled{opacity:.55;cursor:default}
+.save-msg{color:var(--ok);font-weight:600}
 .me-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
 .me-list li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:.9rem}
 .me-list li span{color:var(--muted)}
@@ -648,7 +658,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-05-000248";
+  const APP_VERSION="2026-11-05-000819";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1704,14 +1714,17 @@ document.addEventListener("click",e=>{
 let body={};
 const bodyKg=()=>num(body.weight)||num(bw[myUid])||75;
 const ageOf=()=>{ const y=+body.birth; return y>1900?new Date().getFullYear()-y:null; };
-const hrMaxOf=()=>num(body.hrMax)||(ageOf()?Math.round(208-0.7*ageOf()):null);   // Tanaka-Formel, wenn nicht gemessen
+const hrMaxOf=()=>ageOf()?Math.round(208-0.7*ageOf()):null;   // geschätzter Maximalpuls (Tanaka)
 // Grundumsatz pro Stunde aus Größe, Gewicht, Alter, Geschlecht (Mifflin-St Jeor); ohne Angaben: 1 kcal je kg und Stunde
-function bmrPerHour(){
-  const kg=bodyKg(), cm=num(body.height), age=ageOf(), sx=body.sex;
-  if(!cm||!age||!sx) return kg;
-  const m=10*kg+6.25*cm-5*age+5, w=10*kg+6.25*cm-5*age-161;
-  return (sx==="m"?m:sx==="w"?w:(m+w)/2)/24;
+function bmrOf(b){
+  const kg=num(b.weight), cm=num(b.height), y=+b.birth, age=y>1900?new Date().getFullYear()-y:null, sx=b.sex, bf=num(b.fat);
+  if(!kg) return null;
+  if(bf&&bf>3&&bf<60) return 370+21.6*kg*(1-bf/100);   // Katch-McArdle: mit Körperfettanteil am genauesten
+  if(!cm||!age||!sx) return null;
+  const m=10*kg+6.25*cm-5*age+5, w=10*kg+6.25*cm-5*age-161;   // Mifflin-St Jeor
+  return sx==="m"?m:sx==="w"?w:(m+w)/2;
 }
+function bmrPerHour(){ const b=bmrOf(body); return b?b/24:bodyKg(); }
 // Wie anstrengend war das Training? (Sätze pro Minute) → MET für Krafttraining zwischen 3,5 und 6
 function metOf(se,ex){
   if(ex.length&&ex.filter(x=>x.group==="cardio").length>=ex.length/2) return 7;
@@ -1745,51 +1758,69 @@ function syncKcal(){
   mySessions().filter(x=>x.end).forEach(x=>{ const k=kcalFor(x); if(k!==x.kcal){ upd[x.id+"/kcal"]=k; sessions[x.id].kcal=k; } });
   if(Object.keys(upd).length) root.child("sessions").update(upd).catch(()=>{});
 }
-function bodyCalc(){
-  const kg=num(body.weight), cm=num(body.height), age=ageOf(), sx=body.sex;
-  if(!kg||!cm||!age||!sx) return null;
-  const m=10*kg+6.25*cm-5*age+5, w=10*kg+6.25*cm-5*age-161;   // Mifflin-St Jeor
-  const bmr=sx==="m"?m:sx==="w"?w:(m+w)/2, act={1:1.2,2:1.375,3:1.55,4:1.725,5:1.9}[body.act||2];
-  const tdee=bmr*act, goal=body.goal==="lose"?tdee-400:body.goal==="gain"?tdee+300:tdee, bmi=kg/((cm/100)**2);
-  const prot=Math.round(kg*(body.goal==="gain"?1.8:body.goal==="lose"?1.6:1.4));
-  return {bmr:Math.round(bmr),tdee:Math.round(tdee),goal:Math.round(goal),bmi,prot};
+const ACT={1:[1.2,"Sitzend","Büro, kaum Bewegung, unter 5.000 Schritte"],2:[1.375,"Leicht aktiv","etwas zu Fuß, 5.000–7.500 Schritte"],3:[1.55,"Mäßig aktiv","viel auf den Beinen, 7.500–10.000 Schritte"],4:[1.725,"Aktiv","Job mit Bewegung, über 10.000 Schritte"],5:[1.9,"Sehr aktiv","schwere körperliche Arbeit"]};
+const GOALS={lose2:[-550,"Abnehmen","ca. 0,5 kg pro Woche"],lose1:[-275,"Langsam abnehmen","ca. 0,25 kg pro Woche"],keep:[0,"Gewicht halten","so viel essen, wie du verbrauchst"],gain1:[250,"Langsam aufbauen","wenig Fett, ca. 0,25 kg pro Woche"],gain2:[450,"Aufbauen","schneller, ca. 0,5 kg pro Woche"]};
+const goalKey=b=>b.goal==="lose"?"lose2":b.goal==="gain"?"gain1":b.goal||"keep";
+function bodyCalc(b){
+  b=b||body; const bmr=bmrOf(b), kg=num(b.weight), cm=num(b.height);
+  if(!bmr||!kg||!cm||!b.sex||!(+b.birth>1900)) return null;
+  const act=(ACT[b.act||2]||ACT[2])[0], g=GOALS[goalKey(b)]||GOALS.keep, tdee=bmr*act, bmi=kg/((cm/100)**2);
+  const goal=Math.max(Math.round(bmr*1.05),tdee+g[0]);   // nie deutlich unter den Grundumsatz
+  const prot=Math.round(kg*(goalKey(b).startsWith("gain")?1.8:goalKey(b).startsWith("lose")?1.8:1.4));
+  return {bmr:Math.round(bmr),tdee:Math.round(tdee),goal:Math.round(goal),bmi,prot,katch:!!num(b.fat)};
 }
 const bmiText=b=>b<18.5?"Untergewicht":b<25?"Normalgewicht":b<30?"Übergewicht":"Adipositas";
+let meDraft=null, meMsg="";
+const BODY_KEYS=["sex","birth","height","weight","fat","act","goal"];
+const sameBody=()=>BODY_KEYS.every(k=>String(meDraft[k]??"")===String(body[k]??""));
 function renderMe(){
-  const c=bodyCalc(), hm=hrMaxOf(), wk=mySessions().filter(x=>x.end&&Date.now()-x.start<7*864e5), wkK=wk.reduce((a,x)=>a+kcalOf(x),0);
-  const opt=(id,v,l)=>`<button type="button" class="chip" data-body="${id}" data-val="${v}" aria-pressed="${String(body[id])===String(v)}">${l}</button>`;
-  $("#list").innerHTML=`<p class="card-note">Damit schätzen wir, wie viele Kalorien du am Tag brauchst und beim Training verbrennst. Das bleibt bei dir: Freunde sehen diese Angaben nicht.</p>
-    <section class="me-card"><b class="me-t">Über dich</b>
-      <div class="field"><span class="flabel">Geschlecht</span><div class="chips">${opt("sex","w","Weiblich")}${opt("sex","m","Männlich")}${opt("sex","d","Divers")}</div></div>
+  if(!meDraft) meDraft={...body,goal:body.goal?goalKey(body):undefined};
+  const d=meDraft, c=bodyCalc(body), wk=mySessions().filter(x=>x.end&&Date.now()-x.start<7*864e5), wkK=wk.reduce((a,x)=>a+kcalOf(x),0), avgT=wk.length?Math.round(wkK/wk.length):Math.round(5*bmrPerHour());
+  const chip=(k,v,l,sub)=>`<button type="button" class="chip${sub?" big":""}" data-md="${k}" data-val="${v}" aria-pressed="${String(d[k])===String(v)}">${l}${sub?`<small>${sub}</small>`:""}</button>`;
+  const missing=[!d.sex&&"Geschlecht",!(+d.birth>1900)&&"Geburtsjahr",!num(d.height)&&"Größe",!num(d.weight)&&"Gewicht"].filter(Boolean);
+  const changed=!sameBody();
+  $("#list").innerHTML=`<p class="card-note">Diese Angaben brauchen wir, um deinen Kalorienbedarf zu berechnen. Sie bleiben bei dir, Freunde sehen sie nicht.</p>
+    <section class="me-card"><b class="me-t">Körper</b>
+      <div class="field"><span class="flabel">Geschlecht</span><div class="chips">${chip("sex","w","Weiblich")}${chip("sex","m","Männlich")}${chip("sex","d","Divers")}</div></div>
       <div class="me-grid">
-        <label>Geburtsjahr<input data-bodyin="birth" inputmode="numeric" maxlength="4" placeholder="z.B. 1998" value="${esc(body.birth||"")}"></label>
-        <label>Größe (cm)<input data-bodyin="height" inputmode="numeric" placeholder="z.B. 178" value="${esc(body.height||"")}"></label>
-        <label>Gewicht (kg)<input data-bodyin="weight" inputmode="decimal" placeholder="z.B. 75" value="${body.weight?fmtKg(num(body.weight)):""}"></label>
+        <label>Geburtsjahr<input data-mdin="birth" inputmode="numeric" maxlength="4" placeholder="z.B. 1998" value="${esc(d.birth||"")}"></label>
+        <label>Größe (cm)<input data-mdin="height" inputmode="numeric" maxlength="3" placeholder="z.B. 178" value="${esc(d.height||"")}"></label>
+        <label>Gewicht (kg)<input data-mdin="weight" inputmode="decimal" maxlength="5" placeholder="z.B. 75" value="${d.weight?fmtKg(num(d.weight)):""}"></label>
       </div>
-      <div class="field"><span class="flabel">Wie aktiv bist du im Alltag (ohne Training)?</span><div class="chips">${opt("act",1,"Kaum (Büro)")}${opt("act",2,"Etwas")}${opt("act",3,"Mittel")}${opt("act",4,"Sehr")}${opt("act",5,"Extrem (körperlicher Job)")}</div></div>
-      <div class="field"><span class="flabel">Dein Ziel</span><div class="chips">${opt("goal","lose","Abnehmen")}${opt("goal","keep","Halten")}${opt("goal","gain","Muskeln aufbauen")}</div></div>
+      <label class="opt-in">Körperfettanteil in % <small>optional, z.B. von einer Waage – macht die Berechnung genauer</small><input data-mdin="fat" inputmode="decimal" maxlength="4" placeholder="–" value="${d.fat?fmtKg(num(d.fat)):""}"></label>
     </section>
-    <section class="me-card"><b class="me-t">Herzfrequenz <small>optional</small></b>
-      <p class="card-note">Wenn du eine Uhr oder einen Brustgurt hast: Trag Ruhe- und Maximalpuls ein. Den Durchschnittspuls eines Trainings gibst du nach dem Training in der Zusammenfassung ein, dann wird die Kalorien-Schätzung genauer.</p>
-      <div class="me-grid two">
-        <label>Ruhepuls<input data-bodyin="hrRest" inputmode="numeric" placeholder="z.B. 60" value="${esc(body.hrRest||"")}"></label>
-        <label>Maximalpuls<input data-bodyin="hrMax" inputmode="numeric" placeholder="${ageOf()?`geschätzt ${hrMaxOf()}`:"z.B. 190"}" value="${esc(body.hrMax||"")}"></label>
-      </div>
-    </section>
-    ${c?`<section class="me-card res"><b class="me-t">Dein Bedarf (geschätzt)</b>
-      <div class="sum-stats"><div><b>${c.bmr.toLocaleString("de-DE")}</b><small>Grundumsatz kcal</small></div><div><b>${c.tdee.toLocaleString("de-DE")}</b><small>Tagesbedarf kcal</small></div><div><b>${c.goal.toLocaleString("de-DE")}</b><small>für dein Ziel</small></div></div>
-      <ul class="me-list"><li><span>BMI</span><b>${c.bmi.toFixed(1).replace(".",",")} · ${bmiText(c.bmi)}</b></li><li><span>Eiweiß pro Tag</span><b>ca. ${c.prot} g</b></li>
-        ${hm?`<li><span>Maximalpuls</span><b>${hm}${body.hrMax?"":" (geschätzt)"}</b></li>`:""}${hm&&num(body.hrRest)?`<li><span>Fettverbrennung / Ausdauer</span><b>${Math.round(num(body.hrRest)+.6*(hm-num(body.hrRest)))}–${Math.round(num(body.hrRest)+.75*(hm-num(body.hrRest)))} Puls</b></li>`:""}
-        <li><span>Training letzte 7 Tage</span><b>${wk.length}× · ca. ${wkK.toLocaleString("de-DE")} kcal</b></li>
-        <li><span>1 Std. Krafttraining</span><b>ca. ${Math.round(5*bmrPerHour())} kcal</b></li>
-        <li><span>Pro Trainingstag zusätzlich</span><b>ca. ${wk.length?Math.round(wkK/wk.length).toLocaleString("de-DE"):"–"} kcal</b></li></ul>
-      <p class="card-note">Grundumsatz nach Mifflin-St Jeor, mal Aktivitätsfaktor. „Für dein Ziel“: −400 kcal zum Abnehmen, +300 kcal zum Aufbauen. Das sind Richtwerte, keine medizinische Beratung.</p></section>`
-      :`<section class="me-card res"><p class="card-note">Gib Geschlecht, Geburtsjahr, Größe und Gewicht an, dann siehst du hier deinen Kalorienbedarf.</p></section>`}`;
+    <section class="me-card"><b class="me-t">Alltag <small>ohne Sport – dein Training rechnen wir extra dazu</small></b>
+      <div class="chips col">${Object.entries(ACT).map(([k,a])=>chip("act",k,a[1],a[2])).join("")}</div></section>
+    <section class="me-card"><b class="me-t">Ziel</b>
+      <div class="chips col">${Object.entries(GOALS).map(([k,g])=>chip("goal",k,g[1],g[2])).join("")}</div></section>
+    <div class="save-bar"><button class="btn primary big" type="button" id="meSave"${changed?"":" disabled"}>${changed?"Speichern":"Gespeichert"}</button>
+      ${meMsg?`<p class="card-note save-msg">${esc(meMsg)}</p>`:missing.length?`<p class="card-note">Für die Berechnung fehlt noch: ${missing.join(", ")}.</p>`:""}</div>
+    ${c?`<section class="me-card res"><b class="me-t">Dein Kalorienbedarf</b>
+      <div class="sum-stats"><div><b>${c.bmr.toLocaleString("de-DE")}</b><small>Grundumsatz</small></div><div><b>${c.tdee.toLocaleString("de-DE")}</b><small>Ruhetag</small></div><div><b>${c.goal.toLocaleString("de-DE")}</b><small>für dein Ziel</small></div></div>
+      <ul class="me-list"><li><span>An Trainingstagen zusätzlich</span><b>ca. ${avgT.toLocaleString("de-DE")} kcal</b></li>
+        <li><span>Eiweiß pro Tag</span><b>ca. ${c.prot} g</b></li><li><span>BMI</span><b>${c.bmi.toFixed(1).replace(".",",")} · ${bmiText(c.bmi)}</b></li>
+        <li><span>Training letzte 7 Tage</span><b>${wk.length}× · ca. ${wkK.toLocaleString("de-DE")} kcal</b></li></ul>
+      <p class="card-note">Grundumsatz nach ${c.katch?"Katch-McArdle (mit Körperfett)":"Mifflin-St Jeor"} × Alltagsfaktor. Deine Trainings kommen im Essplan je nach Tag dazu. Richtwerte, keine medizinische Beratung.</p></section>`:""}`;
 }
-function saveBody(k,v){ body[k]=v; if(myUid) fdb().ref(`users/${myUid}/body/${k}`).set(v==null||v===""?null:v).catch(showErr); syncKcal(); }
-document.addEventListener("click",e=>{ const b=e.target.closest("[data-body]"); if(!b) return; const k=b.dataset.body, v=k==="act"?+b.dataset.val:b.dataset.val; saveBody(k,v); render(); });
-document.addEventListener("change",e=>{ const i=e.target.closest("[data-bodyin]"); if(!i) return; const k=i.dataset.bodyin, v=num(i.value);
-  if(k==="birth"&&v&&(v<1920||v>new Date().getFullYear()-10)) return; saveBody(k,v); if(k==="weight"&&v) { bw[myUid]=v; } render(); });
+// Änderungen erst beim Speichern übernehmen – und nur, wenn sich etwas geändert hat
+async function saveMe(){
+  if(!meDraft||!myUid) return;
+  const by=+meDraft.birth; if(meDraft.birth&&(!(by>=1920)||by>new Date().getFullYear()-10)){ meMsg="Bitte ein gültiges Geburtsjahr eingeben."; return render(); }
+  if(sameBody()){ meMsg="Keine Änderungen."; return render(); }
+  const before=bodyCalc(body), upd={}; BODY_KEYS.forEach(k=>{ const v=meDraft[k]; upd[k]=v==null||v===""?null:v; });
+  upd.hrRest=null; upd.hrMax=null;   // Pulswerte werden nicht mehr gebraucht
+  try{ await fdb().ref(`users/${myUid}/body`).update(upd); }catch(e){ showErr(e); return; }
+  Object.assign(body,upd); BODY_KEYS.forEach(k=>{ if(body[k]==null) delete body[k]; }); if(num(body.weight)) bw[myUid]=num(body.weight);
+  syncKcal(); const after=bodyCalc(body);
+  meMsg=after?(before&&before.goal!==after.goal?`Gespeichert. Dein Tagesziel ist jetzt ${after.goal.toLocaleString("de-DE")} kcal (vorher ${before.goal.toLocaleString("de-DE")}).`:"Gespeichert. Tagesbedarf neu berechnet."):"Gespeichert.";
+  meDraft={...body}; render(); setTimeout(()=>{ meMsg=""; if(view==="me") render(); },6000);
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-md]"); if(b&&meDraft){ const k=b.dataset.md, v=k==="act"?+b.dataset.val:b.dataset.val; meDraft[k]=v; meMsg=""; render(); return; }
+  if(e.target.closest("#meSave")) saveMe();
+});
+document.addEventListener("input",e=>{ const i=e.target.closest("[data-mdin]"); if(!i||!meDraft) return; const v=num(i.value); meDraft[i.dataset.mdin]=v==null?null:v; meMsg="";
+  const btn=$("#meSave"); if(btn){ const ch=!sameBody(); btn.disabled=!ch; btn.textContent=ch?"Speichern":"Gespeichert"; } });
 async function endTraining(){
   const a=activeSession(); if(!a) return;
   const end=Date.now(), dur=Math.round((end-a.start)/1000), t=templates[a.tpl]||{}, ex=tEx(t);
@@ -2091,7 +2122,7 @@ function exportCal(onlyKey){
 
 /* ---------- Klicks ---------- */
 document.addEventListener("click",e=>{
-  const v=e.target.closest("[data-view]"); if(v){ view=v.dataset.view; try{ localStorage.setItem("gym.view",view); }catch(err){} if(view==="fr"){ frOpen=null; loadFriends(); } render(); return; }
+  const v=e.target.closest("[data-view]"); if(v){ if(v.dataset.view==="me"&&view!=="me"){ meDraft=null; meMsg=""; } view=v.dataset.view; try{ localStorage.setItem("gym.view",view); }catch(err){} if(view==="fr"){ frOpen=null; loadFriends(); } render(); return; }
   const wk=e.target.closest("[data-wk]"); if(wk){ weekOff=wk.dataset.wk==="0"?0:weekOff+(+wk.dataset.wk); openKey=null; render(); return; }
 
   const ow=e.target.closest("[data-open-w]"); if(ow){ const k=ow.dataset.openW; openKey=openKey===k?null:k; showEx=false; render(); return; }
@@ -2169,7 +2200,7 @@ Auth.start(firebaseConfig,"gym",(r,info)=>{
   if(root&&info){ initShare(); if(view==="fr") loadFriends();
     loadRecipes();
     fdb().ref(`users/${myUid}/meals`).on("value",s=>{ meals=s.val()||{}; if(view==="food") render(); },()=>{});
-    fdb().ref(`users/${myUid}/body`).on("value",s=>{ body=s.val()||{}; setTimeout(syncKcal,800); if(view==="me"&&!(document.activeElement&&document.activeElement.matches("[data-bodyin]"))) render(); },()=>{}); } history.replaceState(null,"",location.pathname); render();
+    fdb().ref(`users/${myUid}/body`).on("value",s=>{ body=s.val()||{}; setTimeout(syncKcal,800); if(!meDraft||sameBody()){ meDraft=null; if(view==="me"&&!(document.activeElement&&document.activeElement.matches("[data-mdin]"))) render(); } },()=>{}); } history.replaceState(null,"",location.pathname); render();
   if(!root){ $("#status").textContent="Die Datenbank konnte nicht geladen werden. Prüf die Internetverbindung und lade die Seite neu."; return; }
   root.child("exercises").on("value",s=>{ exercises=s.val()||{}; render(); },showErr);
   root.child("workouts").on("value",s=>{ workouts=s.val()||{}; wLoaded=true; migrateWeek(); migratePlan(); render(); });
