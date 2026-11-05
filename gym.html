@@ -275,6 +275,27 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
 .fr-tpl-t>svg{flex:none;width:18px;height:18px;color:var(--muted);transition:transform .2s}
 .fr-tpl.open .fr-tpl-t>svg{transform:rotate(180deg)}
 .seg button{padding:7px 4px;font-size:.84rem}
+/* Knopf unten rechts mit zwei Optionen (wie bei Rezepte) */
+.fab{position:absolute;z-index:6;width:56px;height:56px;border-radius:50%;border:0;background:var(--band);color:var(--on-band);display:grid;place-items:center;
+  box-shadow:0 6px 16px -8px var(--shadow),0 0 0 1px color-mix(in srgb,var(--on-band) 14%,transparent)}
+.g-fab{right:var(--chat-x,16px);bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 22px)}
+.fab svg{width:26px;height:26px;transition:transform .25s ease}
+.fab:active{transform:scale(.94)}
+.fab[aria-expanded="true"] svg{transform:rotate(45deg)}
+.fab.on{box-shadow:0 0 0 3px var(--accent-soft),0 6px 16px -8px var(--shadow)}
+.fab-menu{position:absolute;right:calc(var(--chat-x,16px) + 4px);bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 88px);z-index:7;display:flex;flex-direction:column;align-items:flex-end;gap:10px;pointer-events:none}
+.fab-opt{display:flex;align-items:center;gap:10px;border:0;background:none;padding:0;color:var(--ink);font-weight:600;font-size:.92rem;
+  opacity:0;transform:translateY(46px) scale(.6);transition:opacity .18s ease,transform .25s cubic-bezier(.3,1.4,.5,1)}
+.fab-opt span{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px;box-shadow:0 6px 16px -8px var(--shadow)}
+.fab-opt i{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:var(--band);color:var(--on-band);box-shadow:0 8px 18px -8px var(--shadow)}
+.fab-opt i svg{width:22px;height:22px}
+.fab-opt[aria-current="true"] span{background:var(--band);color:var(--on-band);border-color:var(--band)}
+.fab-menu.open{pointer-events:auto}
+.fab-menu.open .fab-opt{opacity:1;transform:none}
+.fab-menu.open .fab-opt:nth-child(1){transition-delay:.05s}
+@media (prefers-reduced-motion:reduce){.fab-opt,.fab svg{transition:none}}
+.view-head{display:flex;align-items:center;gap:8px}
+.view-head b{font-family:var(--display);font-weight:400;font-size:1.4rem;flex:1}
 /* Ich */
 .me-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:12px}
 .me-t{font-family:var(--display);font-weight:400;font-size:1.25rem}
@@ -415,11 +436,16 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
 
   <section class="panel">
     <div class="topbar">
-      <div class="seg" role="group" aria-label="Ansicht"><button type="button" data-view="week" aria-pressed="true">Plan</button><button type="button" data-view="ex" aria-pressed="false">Übungen</button><button type="button" data-view="food" aria-pressed="false">Essen</button><button type="button" data-view="fr" aria-pressed="false">Freunde</button><button type="button" data-view="me" aria-pressed="false">Ich</button></div>
+      <div class="seg" role="group" aria-label="Ansicht"><button type="button" data-view="week" aria-pressed="true">Plan</button><button type="button" data-view="ex" aria-pressed="false">Übungen</button><button type="button" data-view="food" aria-pressed="false">Essen</button></div>
     </div>
     <div class="scroll" id="list"></div>
   </section>
   <div class="status" id="status" aria-live="polite"></div>
+  <div class="fab-menu" id="gFabMenu" aria-hidden="true">
+    <button class="fab-opt" type="button" data-fabview="me" tabindex="-1"><span>Meine Angaben</span><i><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></i></button>
+    <button class="fab-opt" type="button" data-fabview="fr" tabindex="-1"><span>Freunde & ihre Pläne</span><i><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M16.5 6.2a2.8 2.8 0 0 1 0 5.4M17 14.3c2 .5 3.2 2.1 3.6 4.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></i></button>
+  </div>
+  <button class="fab g-fab" id="gFab" type="button" aria-expanded="false" aria-controls="gFabMenu" aria-label="Meine Angaben und Freunde"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
 </div>
 
 <div class="modal" id="exModal" hidden>
@@ -659,7 +685,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-05-120237";
+  const APP_VERSION="2026-11-05-121444";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1437,6 +1463,8 @@ function render(){
   renderStreakHead();
   document.querySelectorAll("[data-view]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.view===view));
   if(view==="week") renderWeek(); else if(view==="fr") renderFriends(); else if(view==="me") renderMe(); else if(view==="food") renderFood(); else renderEx();
+  const fab=$("#gFab"); if(fab) fab.classList.toggle("on",view==="me"||view==="fr");
+  if(view==="me"||(view==="fr"&&!frOpen)) $("#list").insertAdjacentHTML("afterbegin",`<div class="view-head"><b>${view==="me"?"Meine Angaben":"Freunde"}</b><button class="linkish" type="button" data-view="week">‹ Zurück zum Plan</button></div>`);
 }
 /* ---------- Freunde: Gympläne ansehen (nur lesen) und kopieren ---------- */
 let mySid=null, myName="Ich", shareOn=true, frList=null, frLoading=false, frOpen=null, frWeekOff=0; const frTplOpen=new Set();
@@ -2202,6 +2230,17 @@ function migratePlan(){
 
 document.addEventListener("change",e=>{ if(e.target.id!=="gymShare") return; shareOn=e.target.checked; root.child("share/"+myUid).set(shareOn).catch(showErr); applyShare(); render(); });
 document.addEventListener("ours-pub",()=>{ if(view==="fr") render(); });
+
+// Knopf unten rechts: Meine Angaben / Freunde
+const setGFab=open=>{ $("#gFabMenu").classList.toggle("open",open); $("#gFabMenu").setAttribute("aria-hidden",!open); $("#gFab").setAttribute("aria-expanded",open);
+  document.querySelectorAll("[data-fabview]").forEach(b=>{ b.tabIndex=open?0:-1; b.setAttribute("aria-current",b.dataset.fabview===view); }); };
+$("#gFab").addEventListener("click",e=>{ e.stopPropagation(); setGFab($("#gFab").getAttribute("aria-expanded")!=="true"); });
+document.addEventListener("click",e=>{
+  const o=e.target.closest("[data-fabview]");
+  if(o){ setGFab(false); const v=o.dataset.fabview; if(v==="me"&&view!=="me"){ meDraft=null; meMsg=""; } if(v==="fr"){ frOpen=null; loadFriends(); }
+    view=v; try{ localStorage.setItem("gym.view",view); }catch(err){} render(); $("#list").scrollTop=0; return; }
+  if(!e.target.closest("#gFabMenu,#gFab") && $("#gFab").getAttribute("aria-expanded")==="true") setGFab(false);
+});
 
 /* ---------- Start ---------- */
 Auth.start(firebaseConfig,"gym",(r,info)=>{
