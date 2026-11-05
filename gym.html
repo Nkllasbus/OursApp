@@ -189,6 +189,29 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
 .mus-figs .m.sel{stroke:var(--ink);stroke-width:2}
 .mus-pick{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:6px}
 .mus-pick b{font-weight:700}
+/* Freunde: gemeinsam trainieren, Challenge, Reaktionen */
+.inv-card{background:color-mix(in srgb,var(--band) 9%,var(--surface));border:1.5px solid var(--band);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.inv-card .row{display:flex;gap:8px;flex-wrap:wrap}
+.inv-card b{font-weight:700}
+.chal{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.chal h4{margin:0;font-family:var(--display);font-weight:400;font-size:1.2rem}
+.chal ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.chal li{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:10px}
+.chal li.me{background:var(--accent-soft)}
+.chal li .pl{width:24px;text-align:center;font-weight:700}
+.chal li .nm{flex:1;font-weight:600}
+.chal li .sc{font-variant-numeric:tabular-nums;font-weight:700}
+.chal li .sc small{font-weight:400;color:var(--muted);font-size:.74rem;margin-left:4px}
+.reacts{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 0 52px}
+.reacts span{font-size:.76rem;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
+.rx-btns{display:flex;gap:4px;margin-left:auto}
+.hlist .rx-btns button,.rx-btns button{flex:none;width:auto;border:1px solid var(--line)!important;background:var(--surface);border-radius:999px;padding:3px 7px;font-size:.9rem;box-shadow:none;min-height:0}
+.rx-btns button[aria-pressed="true"]{background:var(--band);border-color:var(--band)}
+.with-l{font-size:.76rem;color:var(--muted)}
+.cmp{list-style:none;margin:0;padding:0;font-size:.84rem;display:flex;flex-direction:column;gap:3px}
+.cmp li{display:grid;grid-template-columns:1fr auto auto;gap:10px}
+.cmp li b{font-weight:600}
+.cmp .h{color:var(--muted);font-size:.74rem}
 /* Feedback nach dem Training */
 .fb-card{border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;background:var(--bg);border:1px solid var(--line)}
 .fb-card.great{background:#e2f2e4;border-color:#9fd0a8}
@@ -667,6 +690,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
 
 <div class="modal" id="mealModal" hidden><div class="sheet" role="dialog" aria-modal="true" aria-label="Essen eintragen" id="mealBody"></div></div>
 
+<div class="modal" id="invModal" hidden><div class="sheet" role="dialog" aria-modal="true" aria-label="Freund einladen" id="invBody"></div></div>
 <div class="modal" id="swapModal" hidden><div class="sheet" role="dialog" aria-modal="true" aria-label="Übung tauschen" id="swapBody"></div></div>
 <div class="modal" id="sumModal" hidden><div class="sheet sum-sheet" role="dialog" aria-modal="true" aria-label="Zusammenfassung" id="sumBody"></div></div>
 
@@ -888,7 +912,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-05-133004";
+  const APP_VERSION="2026-11-05-133540";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1880,6 +1904,102 @@ document.addEventListener("click",async e=>{
     try{ if(navigator.share) await navigator.share({text:txt}); else { await navigator.clipboard.writeText(txt); $("#status").textContent="Rückblick kopiert."; } }catch(err){} }
 });
 
+/* ---------- Gemeinsam trainieren, Monats-Challenge, Reaktionen (über Chat-Nachrichten) ---------- */
+const cidOf=(a,b)=>[a,b].sort().join("_");
+let friendsIdx={}, reacts={}, invState={};
+async function chatSend(fid,text,extra){
+  const at=Date.now(), cid=cidOf(myUid,fid), last=text.replace(/\s+/g," ").slice(0,80), ref=fdb().ref(`chats/${cid}/messages`).push();
+  await ref.set({by:myUid,text,at,...(extra||{})});
+  await fdb().ref(`chatIndex/${myUid}/${cid}`).update({with:fid,name:(friendsIdx[fid]||{}).name||"Freund",last,lastBy:myUid,at,unread:0}).catch(()=>{});
+  const inc=firebase.database.ServerValue&&firebase.database.ServerValue.increment?firebase.database.ServerValue.increment(1):1;
+  await fdb().ref(`chatIndex/${fid}/${cid}`).update({with:myUid,name:myName,last,lastBy:myUid,at,unread:inc}).catch(()=>{});
+  return ref.key;
+}
+// Reaktionen auf Trainings stehen als Nachrichten mit „gr“ im Chat mit dem Freund
+async function loadReacts(){
+  if(!myUid) return; const out={};
+  try{ friendsIdx=(await fdb().ref(`friends/${myUid}`).once("value")).val()||{}; }catch(e){ return; }
+  await Promise.all(Object.keys(friendsIdx).map(async fid=>{ try{ const m=(await fdb().ref(`chats/${cidOf(myUid,fid)}/messages`).once("value")).val()||{};
+    Object.entries(m).forEach(([k,v])=>{ if(v&&v.gr&&v.gr.s){ (out[v.gr.s]=out[v.gr.s]||[]).push({key:k,by:v.by,e:v.gr.e,fid}); } }); }catch(e){} }));
+  reacts=out; render();
+}
+const withNames=(w,di)=>Object.entries((w&&w.inv)||{}).filter(([,d])=>d===di).map(([fid])=>(friendsIdx[fid]||{}).name||"Freund").join(", ");
+function openInvite(wid,di){
+  const w=workouts[wid]; if(!w) return; const fl=Object.entries(friendsIdx);
+  $("#invBody").innerHTML=`<h3>Zusammen trainieren</h3><p class="card-note">${esc(wTitle(w))} am ${new Date(di+"T12:00").toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"})}${w.time?` um ${w.time} Uhr`:""}. Dein Freund bekommt eine Nachricht und kann das Workout in seinen Plan übernehmen.</p>
+    ${!shareOn?`<p class="err">Damit Freunde die Einladung sehen, muss „Freunde dürfen meinen Gymplan sehen“ in den Einstellungen an sein.</p>`:""}
+    ${fl.length?`<div class="tpls">${fl.map(([fid,fv])=>{ const on=w.inv&&w.inv[fid]===di; return `<button type="button" class="fr-row-g" data-invto="${esc(fid)}" data-w="${esc(wid)}|${di}"${on?" disabled":""}>${Auth.avatar?Auth.avatar(fid,fv.name,40):""}<span class="pb-txt"><b>${esc(fv.name||"Freund")}</b><small>${on?"schon eingeladen":"einladen"}</small></span></button>`; }).join("")}</div>`:`<p class="card-note">Du hast noch keine Freunde. Füg sie über den Profil-Knopf hinzu.</p>`}
+    <div class="sheet-actions"><div class="right"><button class="ghost" type="button" id="invClose">Schließen</button></div></div>`;
+  $("#invModal").hidden=false;
+}
+async function sendInvite(fid,wid,di){
+  const w=workouts[wid]; if(!w||!root) return; w.inv=w.inv||{}; w.inv[fid]=di;
+  try{ await root.child(`workouts/${wid}/inv/${fid}`).set(di);
+    await chatSend(fid,`🏋️ Trainierst du mit? „${wTitle(w)}“ am ${new Date(di+"T12:00").toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"})}${w.time?` um ${w.time} Uhr`:""}. Du findest die Einladung im Gym.`,{gi:{s:mySid,w:wid,d:di}});
+    $("#status").textContent=`${(friendsIdx[fid]||{}).name||"Dein Freund"} ist eingeladen.`; setTimeout(()=>{ $("#status").textContent=""; },4000);
+  }catch(e){ showErr(e); }
+  $("#invModal").hidden=true; render();
+}
+// Einladungen von Freunden: deren Plan enthält inv[meineUid] = Datum
+function myInvites(){
+  if(!frList) return []; const today=iso(new Date()), out=[];
+  frList.forEach(f=>{ if(!f.sid) return; Object.entries(f.workouts||{}).forEach(([wid,w])=>{ const d=w&&w.inv&&w.inv[myUid]; if(!d||d<today) return; const k=`${f.fid}_${wid}_${d}`; if(invState[k]) return;
+    const t=(f.templates||{})[w.tpl]; if(t) out.push({k,f,wid,w,t,d}); }); });
+  return out.sort((a,b)=>a.d.localeCompare(b.d));
+}
+function invitesHtml(){
+  return myInvites().map(x=>`<section class="inv-card"><span>👥 <b>${esc(x.f.name)}</b> lädt dich ein: <b>${esc(x.t.title)}</b> am ${new Date(x.d+"T12:00").toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"short"})}${x.w.time?` um ${x.w.time} Uhr`:""}</span>
+    <div class="row"><button class="btn primary" type="button" data-invyes="${esc(x.k)}">In meinen Plan</button><button class="btn" type="button" data-invno="${esc(x.k)}">Nein danke</button></div></section>`).join("");
+}
+async function answerInvite(k,yes){
+  const x=myInvites().find(i=>i.k===k); if(!x) return; invState[k]=yes?"yes":"no"; fdb().ref(`users/${myUid}/gymInv/${k}`).set(invState[k]).catch(()=>{});
+  if(yes&&root){ const exUpd={}, tplUpd={}; const mineSame=tplList().find(t=>t.title===x.t.title&&t.from===x.f.name); const tid=mineSame?mineSame.id:copyTpl(x.f,x.w.tpl,exUpd,tplUpd);
+    const wid=uid(), pw={tpl:tid,time:x.w.time||null,dur:x.w.dur||60,rep:{type:"once",date:x.d},at:Date.now(),with:{[x.f.fid]:true}};
+    try{ if(Object.keys(exUpd).length) await root.child("exercises").update(exUpd); if(Object.keys(tplUpd).length) await root.child("templates").update(tplUpd); await root.child("workouts/"+wid).set(pw);
+      Object.assign(exercises,exUpd); Object.assign(templates,tplUpd); workouts[wid]=pw;
+      chatSend(x.f.fid,`👍 Bin dabei: „${x.t.title}“ am ${new Date(x.d+"T12:00").toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"})}!`).catch(()=>{});
+      $("#status").textContent=`„${x.t.title}“ mit ${x.f.name} ist in deinem Plan.`; setTimeout(()=>{ $("#status").textContent=""; },5000); }catch(e){ showErr(e); } }
+  render();
+}
+// Vergleich mit dem Trainingspartner (gleiches Datum, Übungen nach Namen)
+function partnerCompare(se){
+  const w=se.plan&&workouts[se.plan], ids=new Set([...Object.keys((w&&w.with)||{}),...Object.entries((w&&w.inv)||{}).filter(([,d])=>d===se.date).map(([f])=>f)]);
+  if(!ids.size||!frList) return ""; let html="";
+  ids.forEach(fid=>{ const f=frList.find(x=>x.fid===fid); if(!f||!f.sid) return; const fs=Object.values(f.sessions||{}).find(x=>x&&x.end&&x.by===fid&&x.date===se.date); if(!fs) return;
+    const rows=sessEx(se).map(x=>{ const fe=Object.entries(f.exercises||{}).find(([,v])=>v&&v.name&&v.name.toLowerCase()===x.name.toLowerCase()); if(!fe) return null;
+      const a=best(setsOf(se,x.id)), b=best(setsOf(fs,fe[0])); if(!a&&!b) return null; const fm=z=>!z?"–":x.group==="cardio"?`${z.tot} min`:`${z.reps}×${fmtKg(z.kg)} kg`;
+      return `<li><b>${esc(x.name)}</b><span>${fm(a)}</span><span>${fm(b)}</span></li>`; }).filter(Boolean);
+    if(rows.length) html+=`<p class="sec-l">Vergleich mit ${esc(f.name)}</p><ul class="cmp"><li class="h"><span></span><span>Du</span><span>${esc(f.name)}</span></li>${rows.join("")}</ul>`; });
+  return html;
+}
+// Monats-Challenge: Trainings diesen Monat unter Freunden
+function challengeHtml(){
+  if(!frList||!frList.some(f=>f.sid)) return ""; const m0=new Date(); m0.setDate(1); m0.setHours(0,0,0,0); const t0=m0.getTime();
+  const sc=(ses,by)=>{ const l=Object.values(ses||{}).filter(x=>x&&x.end&&x.by===by&&x.start>=t0); return {n:l.length,vol:l.reduce((a,x)=>a+(x.vol||0),0)}; };
+  const rows=[{fid:myUid,name:"Du",...sc(sessions,myUid),me:true},...frList.filter(f=>f.sid).map(f=>({fid:f.fid,name:f.name,...sc(f.sessions,f.fid)}))].sort((a,b)=>b.n-a.n||b.vol-a.vol);
+  return `<section class="chal"><h4>🏁 Monats-Challenge ${m0.toLocaleDateString("de-DE",{month:"long"})}</h4><span class="card-note">Wer schafft diesen Monat die meisten Trainings?</span>
+    <ol>${rows.map((r,i)=>`<li class="${r.me?"me":""}"><span class="pl">${["🥇","🥈","🥉"][i]||i+1}</span><span class="nm">${esc(r.name)}</span><span class="sc">${r.n}× <small>${fmtKg(Math.round(r.vol/100)/10)} t</small></span></li>`).join("")}</ol></section>`;
+}
+async function toggleReact(fid,sesId,e){
+  const mine=(reacts[sesId]||[]).find(r=>r.by===myUid&&r.e===e);
+  try{ if(mine){ await fdb().ref(`chats/${cidOf(myUid,fid)}/messages/${mine.key}`).remove(); reacts[sesId]=reacts[sesId].filter(r=>r!==mine); }
+    else { const f=(frList||[]).find(x=>x.fid===fid), se=f&&f.sessions&&f.sessions[sesId], t=se&&f.templates&&f.templates[se.tpl];
+      const key=await chatSend(fid,`${e} für dein Training${t?` „${t.title}“`:""}${se?` am ${new Date(se.start).toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"})}`:""}`,{gr:{s:sesId,e}});
+      (reacts[sesId]=reacts[sesId]||[]).push({key,by:myUid,e,fid}); } }catch(err){ showErr(err); }
+  render();
+}
+const RX=["🔥","💪","👏"];
+document.addEventListener("click",e=>{
+  const iv=e.target.closest("[data-invite]"); if(iv){ const [wid,di]=iv.dataset.invite.split("|"); return openInvite(wid,di); }
+  const iy=e.target.closest("[data-invyes]"); if(iy) return answerInvite(iy.dataset.invyes,true);
+  const ino=e.target.closest("[data-invno]"); if(ino) return answerInvite(ino.dataset.invno,false);
+  const rx=e.target.closest("[data-rx]"); if(rx){ const [fid,sid,em]=rx.dataset.rx.split("|"); return toggleReact(fid,sid,em); }
+});
+$("#invModal").addEventListener("click",e=>{
+  if(e.target.id==="invModal"||e.target.closest("#invClose")){ $("#invModal").hidden=true; return; }
+  const t=e.target.closest("[data-invto]"); if(t){ const [wid,di]=t.dataset.w.split("|"); sendInvite(t.dataset.invto,wid,di); }
+});
+
 /* ---------- Freunde: Gympläne ansehen (nur lesen) und kopieren ---------- */
 let mySid=null, myName="Ich", shareOn=true, frList=null, frLoading=false, frOpen=null, frWeekOff=0; const frTplOpen=new Set();
 const fdb=()=>firebase.database();
@@ -1921,8 +2041,8 @@ function renderFriends(){
     const f=(frList||[]).find(x=>x.fid===frOpen); if(!f){ frOpen=null; return renderFriends(); }
     const ts=fTpls(f), plan=fPlan(f), stt=tierOf(f.streak||0);
     const mon=monday(frWeekOff), todayIso=iso(new Date()), dates=DAYS.map((_,i)=>{ const d=new Date(mon); d.setDate(mon.getDate()+i); return d; });
-    const fs=Object.values(f.sessions||{}).filter(x=>x&&x.end&&x.by===f.fid).sort((a,b)=>b.start-a.start);
-    const fDone=(di,wid,w)=>fs.some(x=>x.date===di&&(x.plan===wid||x.tpl===w.tpl));
+    const fs=Object.entries(f.sessions||{}).filter(([,x])=>x&&x.end&&x.by===f.fid).sort((a,b)=>b[1].start-a[1].start);
+    const fDone=(di,wid,w)=>fs.some(([,x])=>x.date===di&&(x.plan===wid||x.tpl===w.tpl));
     $("#list").innerHTML=`<button class="linkish back-l" type="button" data-fr-back>‹ Alle Freunde</button>
       <div class="fr-head">${av(f.fid,f.name,56)}<div><b>${esc(f.name)}</b><small>${ts.length} ${ts.length===1?"Workout":"Workouts"} · ${fs.length} ${fs.length===1?"Training":"Trainings"} gemacht</small></div></div>
       ${f.streak>0?`<div class="streak-card${stt?" "+stt.cls:""}"><span class="sc-emo">${stt?"🔥".repeat(Math.min(3,stt.flames)):"💪"}</span><span class="pb-txt"><b>${f.streak} ${f.streak===1?"Workout":"Workouts"} in Folge</b><small>${stt?`${esc(f.name)} ist ${stt.label==="Streak"?"auf einer Streak":stt.label}!`:"Noch keine Streak"}</small></span></div>`:""}
@@ -1937,9 +2057,10 @@ function renderFriends(){
             :`<span class="wadd" style="flex:1;display:grid;place-items:center;font-size:.62rem;border-style:dashed">Ruhe</span>`}</div></div>`; }).join("")}</div>`
         :`<p class="card-note">${esc(f.name)} hat noch nichts eingeplant.</p>`}
       <div class="sec-h"><b>Historie</b></div>
-      ${fs.length?`<ul class="hlist">${fs.slice(0,10).map(x=>{ const t=(f.templates||{})[x.tpl]||{title:"Training"}, ty=TYPES.find(y=>y.re.test(t.title||""))||{col:"var(--band)"};
+      ${fs.length?`<ul class="hlist">${fs.slice(0,10).map(([sid,x])=>{ x={id:sid,...x}; const t=(f.templates||{})[x.tpl]||{title:"Training"}, ty=TYPES.find(y=>y.re.test(t.title||""))||{col:"var(--band)"};
           return `<li><div class="hrow" style="--tc:${ty.col}"><span class="hd"><b>${new Date(x.start).getDate()}</b><small>${new Date(x.start).toLocaleDateString("de-DE",{month:"short"})}</small></span>
-            <span class="pb-txt"><b>${esc(t.title)}</b><small>${new Date(x.start).toLocaleDateString("de-DE",{weekday:"long"})} · ${fmtDur(x.dur||0)}${x.kcal?` · ${x.kcal} kcal`:""}${x.vol?` · ${fmtKg(x.vol/1000)} t`:""}</small></span></div></li>`; }).join("")}</ul>`
+            <span class="pb-txt"><b>${esc(t.title)}</b><small>${new Date(x.start).toLocaleDateString("de-DE",{weekday:"long"})} · ${fmtDur(x.dur||0)}${x.kcal?` · ${x.kcal} kcal`:""}${x.vol?` · ${fmtKg(x.vol/1000)} t`:""}</small></span>
+            <span class="rx-btns">${RX.map(em=>`<button type="button" data-rx="${esc(f.fid)}|${esc(x.id)}|${em}" aria-pressed="${(reacts[x.id]||[]).some(r=>r.by===myUid&&r.e===em)}" aria-label="${em} senden">${em}</button>`).join("")}</span></div></li>`; }).join("")}</ul>`
         :`<p class="card-note">${esc(f.name)} hat noch kein Training beendet.</p>`}
       <div class="sec-h"><b>Workouts</b></div>
       ${ts.length?ts.map(t=>{ const ty=typeOfT(f,t), ex=fTplEx(f,t);
@@ -1955,7 +2076,7 @@ function renderFriends(){
   else if(!frList||!frList.length) body=`<div class="empty"><strong>Noch keine Freunde</strong><span>Füg über den Profil-Knopf oben rechts unter „Freunde“ jemanden hinzu. Dann siehst du hier die Gympläne deiner Freunde.</span></div>`;
   else body=`<div class="tpls">${frList.map(f=>{ const ts=f.sid?fTpls(f):[], pl=f.sid?fPlan(f):[];
       return `<button type="button" class="fr-row-g" data-fr="${esc(f.fid)}"${f.sid?"":" disabled"}>${av(f.fid,f.name,44)}<span class="pb-txt"><b>${esc(f.name)}</b><small>${f.sid?`${ts.length} ${ts.length===1?"Workout":"Workouts"} · ${pl.length} im Plan`:"teilt keinen Gymplan"}</small></span>${f.sid&&f.streak>=3?`<span class="fr-streak">🔥 ${f.streak}</span>`:""}${f.sid?NEXT:""}</button>`; }).join("")}</div>`;
-  $("#list").innerHTML=share+body;
+  $("#list").innerHTML=share+challengeHtml()+body;
 }
 function typeOfT(f,t){ const ex=fTplEx(f,t), tt=TYPES.find(x=>x.re.test(t.title||"")); if(tt) return t.col?{...tt,col:t.col}:tt; if(!ex.length) return {col:t.col||"#888",emo:"🏋️"};
   const cnt={}; ex.forEach(x=>cnt[x.group]=(cnt[x.group]||0)+1); const g=grpOf(Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0]); return {col:t.col||g.col,emo:g.emo}; }
@@ -2027,6 +2148,7 @@ function renderWeek(){
   if(!count && !tplList().length) html+=`<div class="empty"><strong>So geht's</strong><span>1. Unter <b>„Übungen“</b> ein Workout erstellen, z.B. „Push“ mit deinen Übungen.</span><span>2. Hier auf einen Tag tippen und das Workout mit Uhrzeit und Wiederholung in den Plan legen.</span><span>3. Am Trainingstag unten auf <b>„Training starten“</b>: Timer läuft, du trägst Wiederholungen und Gewicht ein und siehst, was du letztes Mal geschafft hast.</span></div>`;
   const sn=streakOf(workouts,sessions,myUid), st=tierOf(sn);
   if(sn>0) html=`<div class="streak-card${st?" "+st.cls:""}"><span class="sc-emo">${st?"🔥".repeat(Math.min(3,st.flames)):"💪"}</span><span class="pb-txt"><b>${sn} ${sn===1?"Workout":"Workouts"} in Folge</b><small>${st?st.txt:`Noch ${3-sn} bis zur Streak. Schaff deine geplanten Workouts!`}</small></span></div>`+html;
+  html=invitesHtml()+html;
   html+=weekGrid(dates,todayIso,occ);
   html+=deloadHtml()+muscleHtml(occ)+trainingHtml(todayIso)+historyHtml();
   // was gerade eingetippt wird, bleibt beim Neuzeichnen erhalten
@@ -2073,6 +2195,7 @@ function wBlock(wid,w,di,lg){
       ${w.tpl&&templates[w.tpl]?`<div class="pb-cols"><small>Farbe von „${esc(wTitle(w))}“</small>${colPicker(templates[w.tpl].col||"",`data-wcol-t="${esc(w.tpl)}" data-wcol`)}</div>`:""}
       <div class="day-actions"><button class="btn" type="button" data-edit-w="${esc(wid)}">Plan ändern</button>
         <button class="linkish" type="button" data-cal-w="${esc(key)}">Nur diesen Termin in den Kalender</button></div>
+      ${w.tpl?`<div class="day-actions"><button class="btn" type="button" data-invite="${esc(wid)}|${di}">👥 Freund einladen</button>${withNames(w,di)?`<span class="with-l">mit ${esc(withNames(w,di))}</span>`:""}</div>`:""}
     </div>`:""}
   </div>`;
 }
@@ -2232,7 +2355,7 @@ function historyHtml(){
       const ty=TYPES.find(y=>y.re.test(t.title||""))||{col:"var(--band)",emo:"🏋️"};
       return `<li><button type="button" data-sum="${esc(x.id)}" style="--tc:${ty.col}"><span class="hd"><b>${new Date(x.start).getDate()}</b><small>${new Date(x.start).toLocaleDateString("de-DE",{month:"short"})}</small></span>
         <span class="pb-txt"><b>${esc(t.title)}</b><small>${new Date(x.start).toLocaleDateString("de-DE",{weekday:"long"})} · ${fmtDur(x.dur||0)} · ${kcalOf(x)} kcal${x.vol?` · ${fmtKg(x.vol/1000)} t`:""}</small></span>
-        ${ups?`<span class="dif up">▲ ${ups}</span>`:""}</button></li>`; }).join("")}</ul>
+        ${ups?`<span class="dif up">▲ ${ups}</span>`:""}</button>${(reacts[x.id]||[]).filter(r=>r.by!==myUid).length?`<div class="reacts">${(reacts[x.id]||[]).filter(r=>r.by!==myUid).map(r=>`<span>${r.e} ${esc((friendsIdx[r.by]||{}).name||"Freund")}</span>`).join("")}</div>`:""}</li>`; }).join("")}</ul>
     ${list.length>histN?`<button class="linkish" type="button" id="histMore">Ältere anzeigen (${list.length-histN})</button>`:""}</section>`;
 }
 function runTimer(){
@@ -2514,6 +2637,7 @@ function showSummary(id){
     <div class="sum-stats"><div><b>${fmtDur(se.dur||0)}</b><small>Dauer</small></div><div><b>ca. ${kcalOf(se)}</b><small>kcal</small></div>
       <div><b>${fmtKg((se.vol||0)/1000)} t</b><small>bewegt${dv!=null?` · <span class="${dv>=0?"up":"down"}">${dv>0?"+":""}${dv} %</span>`:""}</small></div></div>
     ${fb}
+    ${partnerCompare(se)}
     ${rows.length?`<p class="sec-l">Im Vergleich zum letzten Mal${ups?` · ${ups}× gesteigert`:""}</p><ul class="sum-list">${rows.join("")}</ul>`:`<p class="card-note">Du hast keine Sätze eingetragen.</p>`}
     <div class="hr-row"><span class="flabel">Herzfrequenz in diesem Training <small>optional</small></span>
       <div class="me-grid"><label>Ø Puls<input data-hr="hrAvg" inputmode="numeric" placeholder="–" value="${esc(se.hrAvg||"")}"></label><label>Max.<input data-hr="hrMax" inputmode="numeric" placeholder="–" value="${esc(se.hrMax||"")}"></label><label>Min.<input data-hr="hrMin" inputmode="numeric" placeholder="–" value="${esc(se.hrMin||"")}"></label></div>
@@ -3030,7 +3154,8 @@ document.addEventListener("click",e=>{
 /* ---------- Start ---------- */
 Auth.start(firebaseConfig,"gym",(r,info)=>{
   root=r; if(info){ myUid=info.uid; mySid=info.sid; myName=info.name||"Ich"; }
-  if(root&&info){ initShare(); if(view==="fr") loadFriends();
+  if(root&&info){ initShare(); setTimeout(()=>{ loadFriends(); loadReacts(); },600);
+    fdb().ref(`users/${myUid}/gymInv`).on("value",s=>{ invState=s.val()||{}; render(); },()=>{});
     loadRecipes();
     fdb().ref(`users/${myUid}/meals`).on("value",s=>{ meals=s.val()||{}; if(view==="food") render(); },()=>{});
     fdb().ref(`users/${myUid}/foods`).on("value",s=>{ foods=s.val()||{}; if(mealPick&&mealPick.tab==="food") renderSug(); },()=>{});
