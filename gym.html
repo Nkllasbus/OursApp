@@ -105,6 +105,30 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
 .wsum{flex-wrap:wrap}
 .cal-btn svg{width:17px;height:17px}
 .plan{display:flex;flex-direction:column;gap:8px}
+/* Wochenplan waagerecht: 7 Tage nebeneinander */
+.wgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.wcol{display:flex;flex-direction:column;gap:4px;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px 3px 5px;min-height:150px}
+.wcol.today{border-color:var(--band);box-shadow:0 0 0 1.5px var(--band) inset}
+.wcol.past .wch{opacity:.55}
+.wch{display:flex;flex-direction:column;align-items:center;line-height:1.1;padding:2px 0 3px}
+.wch small{font-size:.66rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.wch b{font-size:1.05rem;font-weight:700;font-variant-numeric:tabular-nums}
+.wcol.today .wch small,.wcol.today .wch b{color:var(--band)}
+.wcb{flex:1;display:flex;flex-direction:column;gap:4px}
+.wb{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;width:100%;min-width:0;border:0;border-top:3px solid var(--tc);border-radius:8px;padding:5px 2px 4px;
+  background:color-mix(in srgb,var(--tc) 14%,var(--surface));color:var(--ink);text-align:center;font:inherit}
+.wb .wb-e{font-size:1rem;line-height:1}
+.wb b{font-size:.66rem;font-weight:700;line-height:1.15;width:100%;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+.wb small{font-size:.6rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.wb.open{box-shadow:0 0 0 2px var(--tc)}
+.wb.is-done{--tc:#3f8a4f;background:#3f8a4f;color:#fff}
+.wb.is-miss{--tc:#c0453a;background:#c0453a;color:#fff}
+.wb.is-done small,.wb.is-miss small{color:rgba(255,255,255,.85)}
+.wb .wmk{position:absolute;top:1px;right:3px;font-size:.62rem;font-weight:800}
+.wadd{margin-top:auto;border:1px dashed var(--line);background:none;color:var(--muted);border-radius:8px;min-height:30px;font-size:1rem;font-weight:600}
+.wcb .wadd:only-child{flex:1;font-size:.62rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.wdet-h{margin:2px 0 -4px;font-size:.78rem;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+@media (min-width:700px){.wb b{font-size:.74rem}.wb small{font-size:.66rem}.wcol{min-height:190px;padding:6px 5px}}
 .prow{display:flex;gap:10px;align-items:stretch}
 .pdate{flex:none;width:44px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:10px;line-height:1.1}
 .pdate small{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
@@ -754,7 +778,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-05-125214";
+  const APP_VERSION="2026-11-05-130225";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1720,10 +1744,10 @@ function renderFriends(){
       <div class="weeknav"><button class="arr" type="button" data-frwk="-1" aria-label="Woche zurück">${PREV}</button>
         <span style="text-align:center"><b>${frWeekOff===0?"Diese Woche":frWeekOff===1?"Nächste Woche":frWeekOff===-1?"Letzte Woche":`KW ${kw(mon)}`}</b><small>${dates[0].toLocaleDateString("de-DE",{day:"numeric",month:"short"})} – ${dates[6].toLocaleDateString("de-DE",{day:"numeric",month:"short"})}${frWeekOff?` · <button class="linkish" type="button" data-frwk="0">heute</button>`:""}</small></span>
         <button class="arr" type="button" data-frwk="1" aria-label="Woche vor">${NEXT}</button></div>
-      ${plan.length?`<div class="plan">${dates.map((d,i)=>{ const di=iso(d), occ=plan.filter(w=>occurs(w,di)).sort((a,b)=>(a.time||"99").localeCompare(b.time||"99"));
-          return `<div class="prow${di===todayIso?" today":""}${di<todayIso?" past":""}"><div class="pdate"><small>${DSHORT[i]}</small><b>${d.getDate()}</b>${di===todayIso?`<span class="tdy">heute</span>`:""}</div><div class="pcol">${occ.length?occ.map(w=>{ const t=f.templates[w.tpl], ty=typeOfT(f,t), done=fDone(di,w.id,w), miss=!done&&di<todayIso&&di>=iso(new Date(w.at||0));
-            return `<div class="pblock${done?" is-done":miss?" is-miss":""}" style="--tc:${ty.col}"><div class="pb-head ro"><span class="pb-emo">${ty.emo}</span><span class="pb-txt"><b>${esc(t.title)}</b><small>${w.time?`${w.time}–${endTime(w.time,w.dur||60)} Uhr`:"ohne Uhrzeit"} · ${esc(repText(w))}</small></span>${done?`<span class="mark ok">✓</span>`:miss?`<span class="mark miss">✗</span>`:""}</div></div>`; }).join("")
-            :`<div class="prest ro"><span>Ruhetag</span></div>`}</div></div>`; }).join("")}</div>`
+      ${plan.length?`<div class="wgrid">${dates.map((d,i)=>{ const di=iso(d), occ=plan.filter(w=>occurs(w,di)).sort((a,b)=>(a.time||"99").localeCompare(b.time||"99"));
+          return `<div class="wcol${di===todayIso?" today":""}${di<todayIso?" past":""}"><div class="wch"><small>${DSHORT[i]}</small><b>${d.getDate()}</b></div><div class="wcb">${occ.length?occ.map(w=>{ const t=f.templates[w.tpl], ty=typeOfT(f,t), done=fDone(di,w.id,w), miss=!done&&di<todayIso&&di>=iso(new Date(w.at||0));
+            return `<div class="wb${done?" is-done":miss?" is-miss":""}" style="--tc:${ty.col}" title="${esc(t.title)}${w.time?` · ${w.time}–${endTime(w.time,w.dur||60)} Uhr`:""}">${done?`<span class="wmk">✓</span>`:miss?`<span class="wmk">✗</span>`:""}<span class="wb-e" aria-hidden="true">${ty.emo}</span><b>${esc(t.title)}</b><small>${w.time||"–"}</small></div>`; }).join("")
+            :`<span class="wadd" style="flex:1;display:grid;place-items:center;font-size:.62rem;border-style:dashed">Ruhe</span>`}</div></div>`; }).join("")}</div>`
         :`<p class="card-note">${esc(f.name)} hat noch nichts eingeplant.</p>`}
       <div class="sec-h"><b>Historie</b></div>
       ${fs.length?`<ul class="hlist">${fs.slice(0,10).map(x=>{ const t=(f.templates||{})[x.tpl]||{title:"Training"}, ty=TYPES.find(y=>y.re.test(t.title||""))||{col:"var(--band)"};
@@ -1812,13 +1836,27 @@ function renderWeek(){
   if(!count && !tplList().length) html+=`<div class="empty"><strong>So geht's</strong><span>1. Unter <b>„Übungen“</b> ein Workout erstellen, z.B. „Push“ mit deinen Übungen.</span><span>2. Hier auf einen Tag tippen und das Workout mit Uhrzeit und Wiederholung in den Plan legen.</span><span>3. Am Trainingstag unten auf <b>„Training starten“</b>: Timer läuft, du trägst Wiederholungen und Gewicht ein und siehst, was du letztes Mal geschafft hast.</span></div>`;
   const sn=streakOf(workouts,sessions,myUid), st=tierOf(sn);
   if(sn>0) html=`<div class="streak-card${st?" "+st.cls:""}"><span class="sc-emo">${st?"🔥".repeat(Math.min(3,st.flames)):"💪"}</span><span class="pb-txt"><b>${sn} ${sn===1?"Workout":"Workouts"} in Folge</b><small>${st?st.txt:`Noch ${3-sn} bis zur Streak. Schaff deine geplanten Workouts!`}</small></span></div>`+html;
-  html+=`<div class="plan">${dates.map((d,i)=>dayRow(d,i,todayIso,occ[i])).join("")}</div>`;
+  html+=weekGrid(dates,todayIso,occ);
   html+=trainingHtml(todayIso)+historyHtml();
   // was gerade eingetippt wird, bleibt beim Neuzeichnen erhalten
   const act=document.activeElement, keep=act&&act.id&&$("#list").contains(act)&&act.matches("input")?act:null;
   $("#list").innerHTML=html;
   if(keep){ const n=document.getElementById(keep.id); if(n){ n.replaceWith(keep); keep.focus(); } }
   runTimer();
+}
+// Wochenplan waagerecht; angetipptes Training erscheint darunter mit allen Details
+function weekGrid(dates,todayIso,occ){
+  let det="";
+  const cols=dates.map((d,i)=>{ const di=iso(d), past=di<todayIso, lg=log[di]||{};
+    const blocks=occ[i].map(([wid,w])=>{ const key=`${di}|${wid}`, open=openKey===key, ty=typeOf(w), t=timeOfW(w);
+      const done=mySessions().find(x=>x.end&&x.date===di&&(x.plan===wid||(w.tpl&&x.tpl===w.tpl)));
+      const missed=!done&&di<todayIso&&di>=iso(new Date(w.at||0));
+      if(open) det=`<p class="wdet-h">${DAYS[i]}, ${d.getDate()}. ${d.toLocaleDateString("de-DE",{month:"long"})}</p>`+wBlock(wid,w,di,lg);
+      return `<button type="button" class="wb${open?" open":""}${done?" is-done":missed?" is-miss":""}" style="--tc:${ty.col}" data-open-w="${esc(key)}" aria-expanded="${open}" aria-label="${esc(wTitle(w))} am ${DAYS[i]}${t?` um ${t}`:""}${done?", erledigt":missed?", verpasst":""}">
+        ${done?`<span class="wmk">✓</span>`:missed?`<span class="wmk">✗</span>`:""}<span class="wb-e" aria-hidden="true">${ty.emo}</span><b>${esc(wTitle(w))}</b><small>${t||"–"}</small></button>`; }).join("");
+    return `<div class="wcol${di===todayIso?" today":""}${past?" past":""}" id="day-${i}"><div class="wch"><small>${DSHORT[i]}</small><b>${d.getDate()}</b></div>
+      <div class="wcb">${blocks}<button type="button" class="wadd" data-new-on="${di}" aria-label="Training am ${DAYS[i]} planen">${occ[i].length?"+":`<span>Ruhe</span>+`}</button></div></div>`; }).join("");
+  return `<div class="wgrid">${cols}</div>${det?`<div class="plan">${det}</div>`:""}`;
 }
 function dayRow(d,i,todayIso,list){
   const di=iso(d), lg=log[di]||{}, past=di<todayIso;
