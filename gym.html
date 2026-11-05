@@ -131,6 +131,22 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
 .mus-h small{flex:1;font-size:.8rem;color:var(--muted);text-align:right}
 .mus-h svg{flex:none;width:20px;height:20px;color:var(--muted);transition:transform .2s}
 .mus-h[aria-expanded="true"] svg{transform:rotate(180deg)}
+/* Pausen-Timer, Vorschlag, Tauschen */
+.rest-bar{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 92px);z-index:9;display:flex;align-items:center;gap:8px;
+  background:var(--ink);color:var(--surface);border-radius:999px;padding:6px 6px 6px 16px;box-shadow:0 14px 30px -12px rgba(0,0,0,.5);white-space:nowrap}
+.rest-bar[hidden]{display:none}
+.rest-bar b{font-size:1.15rem;font-variant-numeric:tabular-nums;min-width:3.2em}
+.rest-bar small{font-size:.75rem;opacity:.75}
+.rest-bar button{border:0;border-radius:999px;background:rgba(255,255,255,.14);color:inherit;font:inherit;font-size:.8rem;font-weight:700;padding:7px 10px}
+.rest-bar.done{background:#3f8a4f}
+.rest-set{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:.8rem;color:var(--muted)}
+.rest-set button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:4px 10px;font:inherit;font-size:.8rem}
+.rest-set button[aria-pressed="true"]{background:var(--band);color:var(--on-band);border-color:var(--band)}
+.sug-set{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:color-mix(in srgb,var(--band) 8%,var(--surface));border:1px dashed color-mix(in srgb,var(--band) 40%,var(--line));border-radius:10px;padding:6px 10px;font-size:.82rem}
+.sug-set b{font-weight:700}
+.sug-set button{margin-left:auto;border:0;background:var(--band);color:var(--on-band);border-radius:999px;padding:5px 10px;font:inherit;font-size:.78rem;font-weight:700}
+.swap-btn{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 9px;font:inherit;font-size:.75rem;font-weight:600}
+.swap-list{display:flex;flex-direction:column;max-height:50vh;overflow-y:auto}
 /* Feedback nach dem Training */
 .fb-card{border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;background:var(--bg);border:1px solid var(--line)}
 .fb-card.great{background:#e2f2e4;border-color:#9fd0a8}
@@ -567,6 +583,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
   <div class="status" id="status" aria-live="polite"></div>
   <button class="fab sp-fab" id="spFab" type="button" hidden aria-expanded="false" aria-controls="spCard" aria-label="Spotify-Player"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 9.3c3.8-1.1 8-.8 11.2 1M7.2 12.6c3.1-.9 6.4-.6 9 .9M7.9 15.7c2.4-.6 4.8-.4 6.8.7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></button>
   <div class="sp-card" id="spCard" hidden role="dialog" aria-label="Spotify"></div>
+  <div class="rest-bar" id="restBar" hidden role="timer" aria-live="polite"></div>
   <div class="fab-menu" id="gFabMenu" aria-hidden="true">
     <button class="fab-opt" type="button" data-fabview="me" tabindex="-1"><span>Meine Angaben</span><i><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></i></button>
     <button class="fab-opt" type="button" data-fabview="fr" tabindex="-1"><span>Freunde & ihre Pläne</span><i><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M16.5 6.2a2.8 2.8 0 0 1 0 5.4M17 14.3c2 .5 3.2 2.1 3.6 4.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></i></button>
@@ -607,6 +624,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
 
 <div class="modal" id="mealModal" hidden><div class="sheet" role="dialog" aria-modal="true" aria-label="Essen eintragen" id="mealBody"></div></div>
 
+<div class="modal" id="swapModal" hidden><div class="sheet" role="dialog" aria-modal="true" aria-label="Übung tauschen" id="swapBody"></div></div>
 <div class="modal" id="sumModal" hidden><div class="sheet sum-sheet" role="dialog" aria-modal="true" aria-label="Zusammenfassung" id="sumBody"></div></div>
 
 <div class="modal" id="dayModal" hidden>
@@ -827,7 +845,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-05-131651";
+  const APP_VERSION="2026-11-05-132503";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1462,6 +1480,8 @@ const tplOf=w=>w&&w.tpl?templates[w.tpl]:w;
 const wTitle=w=>{ const t=tplOf(w); return (t&&t.title)||"Workout"; };
 const tEx=t=>(t&&Array.isArray(t.ex)?t.ex:[]).map(id=>exercises[id]?{id,...exercises[id]}:null).filter(Boolean);
 const wEx=w=>tEx(tplOf(w));
+// Übungen eines Trainings: eigene Liste der Session (nach „Übung tauschen“), sonst die des Workouts
+const sessEx=se=>se&&Array.isArray(se.ex)?tEx({ex:se.ex}):tEx(templates[se&&se.tpl]||{});
 const tplList=()=>Object.entries(templates).map(([id,t])=>({id,...t})).filter(t=>t&&t.title).sort((a,b)=>(a.at||0)-(b.at||0));
 const mySessions=()=>Object.entries(sessions).map(([id,x])=>({id,...x})).filter(x=>x&&x.by===myUid);
 const activeSession=()=>mySessions().find(x=>x.start&&!x.end);
@@ -1944,7 +1964,7 @@ let editId=null;
 const workSession=()=>editId&&sessions[editId]?{id:editId,...sessions[editId]}:activeSession();
 function trainingHtml(todayIso){
   if(editId&&sessions[editId]){
-    const a={id:editId,...sessions[editId]}, t=templates[a.tpl]||{title:"Training",ex:[]}, ex=tEx(t);
+    const a={id:editId,...sessions[editId]}, t=templates[a.tpl]||{title:"Training",ex:[]}, ex=sessEx(a);
     return `<section class="train edit" id="train"><div class="train-head"><div><small>Training bearbeiten</small><b>${esc(t.title)}</b></div>
         <span class="card-note">${new Date(a.start).toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"})}</span></div>
       <div class="edit-dur"><label>Dauer <input id="editDur" inputmode="numeric" value="${Math.round((a.dur||0)/60)}"> Minuten</label></div>
@@ -1954,9 +1974,11 @@ function trainingHtml(todayIso){
   }
   const a=activeSession();
   if(a){
-    const t=templates[a.tpl]||{title:"Training",ex:[]}, ex=tEx(t);
+    const t=templates[a.tpl]||{title:"Training",ex:[]}, ex=sessEx(a);
     return `<section class="train" id="train"><div class="train-head"><div><small>Training läuft</small><b>${esc(t.title)}</b></div><span class="timer" id="tTimer">${fmtDur((Date.now()-a.start)/1000)}</span></div>
       ${ex.map(x=>exSetsHtml(a,x)).join("")||`<p class="card-note">Dieses Workout hat keine Übungen.</p>`}
+      <div class="rest-set">Pause nach jedem Satz: ${[[60,"1:00"],[90,"1:30"],[120,"2:00"],[180,"3:00"],[0,"aus"]].map(([v,l])=>`<button type="button" data-restsec="${v}" aria-pressed="${restSec===v}">${l}</button>`).join("")}</div>
+      <p class="card-note">📱 Der Bildschirm bleibt an, solange das Training läuft.</p>
       <button class="btn primary big" type="button" id="endTrain">Training beenden</button>
       <button class="linkish" type="button" id="cancelTrain">Training abbrechen (nicht speichern)</button></section>`;
   }
@@ -1968,6 +1990,16 @@ function trainingHtml(todayIso){
   if(others.length) h+=`<p class="card-note">${today.length?"Oder ein anderes Workout:":"Freies Training starten:"}</p><div class="chips">${others.map(t=>`<button type="button" class="chip" data-start="${esc(t.id)}">▶ ${esc(t.title)}</button>`).join("")}</div>`;
   if(!tplList().length) h+=`<p class="card-note">Erstell zuerst unter „Übungen“ ein Workout.</p>`;
   return h+`</section>`;
+}
+// Vorschlag für heute (progressive Überlastung): alle Sätze geschafft → etwas mehr Gewicht, sonst gleiches Gewicht und 1 Wdh. mehr
+function suggestFor(a,x){
+  if(x.group==="cardio") return null; const last=lastFor(x.id,a.start); if(!last) return null;
+  const ls=doneSets(setsOf(last,x.id)); if(!ls.length) return null;
+  const target=parseInt(x.reps,10)||10, kg=Math.max(...ls.map(z=>num(z.kg)||0)), top=ls.filter(z=>(num(z.kg)||0)===kg), minR=Math.min(...top.map(z=>num(z.r)||0));
+  const planned=+x.sets||3, allDone=ls.length>=planned&&top.length===ls.length;
+  if(!kg){ const r=Math.max(...ls.map(z=>num(z.r)||0))+1; return {kg:0,r,txt:`${r} Wdh.`,why:"1 Wiederholung mehr als letztes Mal"}; }
+  if(minR>=target&&allDone){ const step=kg<20?1:2.5, nk=Math.round((kg+step)*10)/10; return {kg:nk,r:target,txt:`${target} × ${fmtKg(nk)} kg`,why:`letztes Mal alle Sätze mit ${fmtKg(kg)} kg geschafft`}; }
+  const r=Math.min(target,minR+1); return {kg,r,txt:`${r} × ${fmtKg(kg)} kg`,why:`gleiches Gewicht, ${r>minR?"1 Wdh. mehr":"alle Sätze sauber schaffen"}`};
 }
 // angezeigter Wert eines Satzes: eingetragen > letztes Mal (gleicher Satz, sonst letzter Satz) > Standard (10 Wdh., Cardio 20 min)
 function setVal(a,x,k,f){
@@ -1988,7 +2020,8 @@ function exSetsHtml(a,x){
       <button type="button" class="sb" data-step="${esc(x.id)}|${k}|${f}|1" aria-label="mehr">+</button></div>`; };
   return `<div class="exset${doneN>=n?" all":""}"><div class="exset-h"><button type="button" class="th-btn" data-info="${esc(x.id)}">${thumb(imgOf(x))}</button>
       <span class="exn"><b>${esc(x.name)}</b><small>${last?`Letztes Mal: ${ls.map(z=>cardio?`${z.r} min`:`${z.r}×${fmtKg(num(z.kg)||0)} kg`).join(", ")}`:"Zum ersten Mal – pass die Werte an und hak jeden Satz ab."}</small></span>
-      <span class="sdone">${doneN}/${n}</span></div>
+      <span class="sdone">${doneN}/${n}</span>${editId?"":`<button type="button" class="swap-btn" data-swap="${esc(x.id)}" aria-label="${esc(x.name)} tauschen">⇄ Tauschen</button>`}</div>
+    ${(()=>{ const sg=suggestFor(a,x); return sg&&!doneN?`<div class="sug-set">💡 Heute: <b>${sg.txt}</b><small>${esc(sg.why)}</small><button type="button" data-sugapply="${esc(x.id)}" data-kg="${sg.kg}" data-r="${sg.r}">Übernehmen</button></div>`:""; })()}
     <div class="sets"><div class="set-h"><span>Satz</span><span>${cardio?"Minuten":"Wdh."}</span>${cardio?"":"<span>kg</span>"}</div>
       ${Array.from({length:n},(_,k)=>{ const c=cur[k]||{}, l=ls[k]||ls[ls.length-1];
         return `<div class="set${c.d?" on":""}${cardio?" cardio":""}"><button type="button" class="sn" data-done="${esc(x.id)}|${k}" aria-pressed="${!!c.d}" aria-label="Satz ${k+1} ${c.d?"nicht mehr erledigt":"erledigt"}">${c.d?CHECK:k+1}</button>
@@ -2045,7 +2078,7 @@ function historyHtml(){
   if(!list.length) return `<section class="hist-sec"><div class="sec-h"><b>Historie</b></div><p class="card-note">Hier erscheinen deine Trainings, sobald du eins beendet hast.</p></section>`;
   const week=list.filter(x=>Date.now()-x.start<7*864e5), mins=week.reduce((a,x)=>a+(x.dur||0),0)/60, kc=week.reduce((a,x)=>a+kcalOf(x),0);
   return `<section class="hist-sec"><div class="sec-h"><b>Historie</b><span class="card-note">letzte 7 Tage: ${week.length}× · ${Math.round(mins)} min · ${kc} kcal</span></div>
-    <ul class="hlist">${list.slice(0,histN).map(x=>{ const t=templates[x.tpl]||{title:"Training"}, ups=tEx(t).filter(e=>{ const b=best(setsOf(x,e.id)), l=lastFor(e.id,x.start), lb=l?best(setsOf(l,e.id)):null; return b&&lb&&(b.kg>lb.kg||(b.kg===lb.kg&&b.reps>lb.reps)); }).length;
+    <ul class="hlist">${list.slice(0,histN).map(x=>{ const t=templates[x.tpl]||{title:"Training"}, ups=sessEx(x).filter(e=>{ const b=best(setsOf(x,e.id)), l=lastFor(e.id,x.start), lb=l?best(setsOf(l,e.id)):null; return b&&lb&&(b.kg>lb.kg||(b.kg===lb.kg&&b.reps>lb.reps)); }).length;
       const ty=TYPES.find(y=>y.re.test(t.title||""))||{col:"var(--band)",emo:"🏋️"};
       return `<li><button type="button" data-sum="${esc(x.id)}" style="--tc:${ty.col}"><span class="hd"><b>${new Date(x.start).getDate()}</b><small>${new Date(x.start).toLocaleDateString("de-DE",{month:"short"})}</small></span>
         <span class="pb-txt"><b>${esc(t.title)}</b><small>${new Date(x.start).toLocaleDateString("de-DE",{weekday:"long"})} · ${fmtDur(x.dur||0)} · ${kcalOf(x)} kcal${x.vol?` · ${fmtKg(x.vol/1000)} t`:""}</small></span>
@@ -2053,7 +2086,7 @@ function historyHtml(){
     ${list.length>histN?`<button class="linkish" type="button" id="histMore">Ältere anzeigen (${list.length-histN})</button>`:""}</section>`;
 }
 function runTimer(){
-  clearInterval(tick); const a=activeSession(); if(!a) return;
+  clearInterval(tick); syncWake(); const a=activeSession(); if(!a){ if(restEnd) stopRest(); return; }
   tick=setInterval(()=>{ const el=$("#tTimer"); if(el) el.textContent=fmtDur((Date.now()-a.start)/1000); },1000);
 }
 function startTraining(tid,planId){
@@ -2083,7 +2116,67 @@ document.addEventListener("click",e=>{
   const [exId,k]=dn.dataset.done.split("|"), x={id:exId,...exercises[exId]}, c=(setsOf(a,exId)[+k])||{};
   const vals={d:!c.d, r:setVal(a,x,+k,"r")}; if(x.group!=="cardio") vals.kg=setVal(a,x,+k,"kg");
   saveSet(a,exId,k,vals); render();
+  if(vals.d&&!editId&&x.group!=="cardio"&&restSec>0) startRest(); else if(!vals.d) stopRest();
 },true);
+document.addEventListener("click",e=>{
+  const sa=e.target.closest("[data-sugapply]"); if(sa){ const a=workSession(); if(!a) return; const exId=sa.dataset.sugapply, x={id:exId,...exercises[exId]};
+    const n=Math.max(setsOf(a,exId).length,+((a.n||{})[exId])||0,+x.sets||0,3), kg=+sa.dataset.kg, r=+sa.dataset.r;
+    for(let k=0;k<n;k++){ const c=setsOf(a,exId)[k]||{}; if(!c.d) saveSet(a,exId,k,kg?{kg,r}:{r}); } render(); return; }
+  const sw=e.target.closest("[data-swap]"); if(sw) return openSwap(sw.dataset.swap);
+});
+/* ---------- Übung tauschen (nur in diesem Training) ---------- */
+let swapFrom=null;
+function openSwap(exId){
+  const a=activeSession(); if(!a) return; swapFrom=exId; const x=exercises[exId]; if(!x) return;
+  const inSes=new Set(sessEx(a).map(e=>e.id)), own=exList().filter(e=>e.group===x.group&&!inSes.has(e.id));
+  const ownImgs=new Set(exList().map(e=>e.img).filter(Boolean)), cat=CATALOG.filter(c=>c.g===x.group&&!ownImgs.has(c.img));
+  const row=(attr,img,name,sub)=>`<button type="button" class="pickrow" ${attr}>${thumb(img)}<span class="exn"><b>${esc(name)}</b><small>${esc(sub)}</small></span><span class="plus">⇄</span></button>`;
+  $("#swapBody").innerHTML=`<h3>${esc(x.name)} tauschen</h3><p class="card-note">Gerät besetzt? Nimm eine andere Übung für ${esc(grpOf(x.group).name)}. Das gilt nur für dieses Training.</p>
+    <div class="swap-list">${own.length?`<p class="sec-l">Deine Übungen</p>${own.map(e=>row(`data-swapto="${esc(e.id)}"`,imgOf(e),e.name,fmtEx(e))).join("")}`:""}
+      ${cat.length?`<p class="sec-l">Weitere Übungen</p>${cat.map(c=>row(`data-swapcat="${esc(c.img)}"`,c.img,c.n,c.s?`${c.s} × ${c.r}`:c.r)).join("")}`:""}
+      ${!own.length&&!cat.length?`<p class="card-note">Für diese Muskelgruppe gibt es keine andere Übung.</p>`:""}</div>
+    <div class="sheet-actions"><div class="right"><button class="ghost" type="button" id="swapClose">Abbrechen</button></div></div>`;
+  $("#swapModal").hidden=false;
+}
+function doSwap(toId){
+  const a=activeSession(); if(!a||!swapFrom) return; const list=sessEx(a).map(e=>e.id).map(id=>id===swapFrom?toId:id);
+  sessions[a.id].ex=list; root.child(`sessions/${a.id}/ex`).set(list).catch(showErr);
+  $("#status").textContent=`Getauscht: ${exercises[swapFrom].name} → ${exercises[toId].name}`; setTimeout(()=>{ $("#status").textContent=""; },4000);
+  $("#swapModal").hidden=true; swapFrom=null; render();
+}
+$("#swapModal").addEventListener("click",e=>{
+  if(e.target.id==="swapModal"||e.target.closest("#swapClose")){ $("#swapModal").hidden=true; swapFrom=null; return; }
+  const t=e.target.closest("[data-swapto]"); if(t) return doSwap(t.dataset.swapto);
+  const c=e.target.closest("[data-swapcat]"); if(c){ const k=catByImg(c.dataset.swapcat); if(!k||!root) return; const id=uid(), data={name:k.n,img:k.img,group:k.g,sets:k.s?+k.s:null,reps:k.r||null,kg:null,at:Date.now()};
+    exercises[id]=data; root.child("exercises/"+id).set(data).catch(showErr); doSwap(id); }
+});
+/* ---------- Pausen-Timer nach jedem abgehakten Satz ---------- */
+let restSec=90; try{ restSec=+localStorage.getItem("gym.rest")||90; }catch(e){}
+let restEnd=0, restTick=null;
+function beep(){ try{ const c=new (window.AudioContext||window.webkitAudioContext)(); [0,.25].forEach(t=>{ const o=c.createOscillator(), g=c.createGain(); o.frequency.value=880; o.connect(g); g.connect(c.destination);
+  g.gain.setValueAtTime(.0001,c.currentTime+t); g.gain.exponentialRampToValueAtTime(.3,c.currentTime+t+.02); g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+t+.2); o.start(c.currentTime+t); o.stop(c.currentTime+t+.22); }); }catch(e){} }
+function restPaint(){
+  const el=$("#restBar"); if(!el) return; if(!restEnd){ el.hidden=true; return; }
+  const left=Math.ceil((restEnd-Date.now())/1000);
+  if(left<=0){ el.classList.add("done"); el.innerHTML=`<b>Los!</b><small>Pause vorbei</small><button type="button" data-rest="x">OK</button>`; return; }
+  el.classList.remove("done"); el.innerHTML=`<b>${Math.floor(left/60)}:${String(left%60).padStart(2,"0")}</b><small>Pause</small><button type="button" data-rest="-15">−15</button><button type="button" data-rest="15">+15</button><button type="button" data-rest="x" aria-label="Pause beenden">✕</button>`;
+}
+function startRest(){
+  clearInterval(restTick); restEnd=Date.now()+restSec*1000; $("#restBar").hidden=false; restPaint(); let rung=false;
+  restTick=setInterval(()=>{ restPaint(); if(!rung&&Date.now()>=restEnd){ rung=true; try{ navigator.vibrate&&navigator.vibrate([250,120,250]); }catch(e){} beep(); setTimeout(()=>{ if(rung&&Date.now()-restEnd>8000) stopRest(); },9000); } },250);
+}
+function stopRest(){ clearInterval(restTick); restEnd=0; restPaint(); }
+$("#restBar").addEventListener("click",e=>{ e.stopPropagation(); const b=e.target.closest("[data-rest]"); if(!b) return;
+  if(b.dataset.rest==="x") return stopRest(); restEnd=Math.max(Date.now()+1000,restEnd+(+b.dataset.rest)*1000); restPaint(); });
+document.addEventListener("click",e=>{ const r=e.target.closest("[data-restsec]"); if(!r) return; restSec=+r.dataset.restsec; try{ localStorage.setItem("gym.rest",restSec); }catch(err){} render(); });
+/* ---------- Bildschirm bleibt während des Trainings an ---------- */
+let wakeLock=null;
+async function syncWake(){
+  const want=!!activeSession()&&!document.hidden;
+  try{ if(want&&!wakeLock&&navigator.wakeLock){ wakeLock=await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release",()=>{ wakeLock=null; }); }
+    else if(!want&&wakeLock){ await wakeLock.release(); wakeLock=null; } }catch(e){}
+}
+document.addEventListener("visibilitychange",syncWake);
 // grob geschätzte Kalorien: MET × Körpergewicht × Stunden (Krafttraining ≈ 5, Cardio ≈ 7)
 /* ---------- Körperdaten (nur für dich gespeichert) und Kalorien ---------- */
 let body={};
@@ -2109,7 +2202,7 @@ function metOf(se,ex){
 // Kalorien eines Trainings: mit Ø-Puls nach Keytel (2005, nutzt Puls, Gewicht, Alter, Geschlecht),
 // sonst „korrigierter MET“: MET × eigener Grundumsatz pro Stunde × Stunden (nutzt Größe, Gewicht, Alter, Geschlecht)
 function kcalFor(se,ex){
-  ex=ex||tEx(templates[se.tpl]||{});
+  ex=ex||sessEx(se);
   const kg=bodyKg(), min=(se.dur||0)/60, cardio=ex.length&&ex.filter(x=>x.group==="cardio").length>=ex.length/2;
   const hr=num(se.hrAvg), age=ageOf(), sx=body.sex;
   if(hr&&hr>60&&age&&sx&&min>0){
@@ -2198,7 +2291,7 @@ document.addEventListener("input",e=>{ const i=e.target.closest("[data-mdin]"); 
   const btn=$("#meSave"); if(btn){ const ch=!sameBody(); btn.disabled=!ch; btn.textContent=ch?"Speichern":"Gespeichert"; } });
 async function endTraining(){
   const a=activeSession(); if(!a) return;
-  const end=Date.now(), dur=Math.round((end-a.start)/1000), t=templates[a.tpl]||{}, ex=tEx(t);
+  const end=Date.now(), dur=Math.round((end-a.start)/1000), t=templates[a.tpl]||{}, ex=sessEx(a);
   let vol=0; ex.forEach(x=>{ const b=best(setsOf(a,x.id)); if(b) vol+=b.vol; });
   const upd={end,dur,vol:Math.round(vol)}; upd.kcal=kcalFor({...a,dur},ex);
   const anyDone=ex.some(x=>doneSets(setsOf(a,x.id)).length);
@@ -2207,7 +2300,7 @@ async function endTraining(){
   clearInterval(tick); render(); showSummary(a.id);
 }
 function recalc(id){
-  const se={id,...sessions[id]}, ex=tEx(templates[se.tpl]||{}); let vol=0; ex.forEach(x=>{ const b=best(setsOf(se,x.id)); if(b) vol+=b.vol; });
+  const se={id,...sessions[id]}, ex=sessEx(se); let vol=0; ex.forEach(x=>{ const b=best(setsOf(se,x.id)); if(b) vol+=b.vol; });
   return {vol:Math.round(vol),kcal:kcalFor(se,ex)};
 }
 async function saveEdit(){
@@ -2252,7 +2345,7 @@ function trainingFeedback(se,ex,prev,dv){
     <div class="field"><span class="flabel">Wie hat es sich angefühlt?</span><div class="feel">${[["easy","😌","Leicht"],["good","🙂","Genau richtig"],["hard","🥵","Hart"]].map(([k,e,l])=>`<button type="button" data-feel="${k}" aria-pressed="${se.feel===k}"><span>${e}</span>${l}</button>`).join("")}</div></div>`;
 }
 function showSummary(id){
-  const se={id,...sessions[id]}, t=templates[se.tpl]||{title:"Training"}, ex=tEx(t);
+  const se={id,...sessions[id]}, t=templates[se.tpl]||{title:"Training"}, ex=sessEx(se);
   const prev=mySessions().filter(x=>x.end&&x.tpl===se.tpl&&x.start<se.start).sort((a,b)=>b.start-a.start)[0];
   const rows=ex.map(x=>{ const b=best(setsOf(se,x.id)); if(!b) return null; const l=lastFor(x.id,se.start), lb=l?best(setsOf(l,x.id)):null, cardio=x.group==="cardio";
     let diff="neu", cls="new";
