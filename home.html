@@ -178,7 +178,7 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
 })();
 (function(){
   // Zukunftsprojekte: stehen im Menü, sind aber noch nicht anklickbar
-  const SOON = [{label:"Kalender",color:"#4f7a5a"},{label:"Smart Home",color:"#5a5f6e"}];
+  const SOON = [{label:"Smart Home",color:"#5a5f6e"}];
   const PAGES = [
     {type:"home",    file:"home.html",     label:"Home",  color:"#2b2a33", noSpace:true, menu:true},
     {type:"dates",   file:"index.html",    label:"Dateideen", color:"#8c7559", noun:"Dateideen-Liste",
@@ -196,6 +196,9 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
     {type:"gym",     file:"gym.html",      label:"Gym", color:"#3c4270", noun:"Trainingsplan",
      empty:"Noch kein Trainingsplan", hint:"Leg deinen Plan an: Übungen nach Muskelgruppen und ein Wochenplan. Später kannst du deinen Trainingspartner dazuholen.",
      keys:[]},
+    {type:"calendar",file:"kalender.html", label:"Kalender", color:"#2f6b4f", noun:"Kalender",
+     empty:"Noch kein Kalender", hint:"Leg einen Kalender an und lad deine Freundin oder deinen Freund ein. Ihr seht und bearbeitet dieselben Termine. Gym, Dateideen und Budget kommen automatisch dazu – die siehst nur du.",
+     keys:["events"]},
     {type:"chat",    file:"chat.html",     label:"Chats", color:"#5f6e54", noSpace:true},
     {type:"mail",    file:"mail.html",     label:"Mail",  color:"#7a2e2e", noSpace:true, menu:true},
   ];
@@ -379,7 +382,7 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-06-225554";
+  const APP_VERSION="2026-11-06-230930";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -396,6 +399,7 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
     chores:  {keys:["chores","rooms","choreLog"], word:["Aufgabe","Aufgaben"]},
     budget:  {keys:["recurring","expenses","cats"], word:["Eintrag","Einträge"]},
     gym:     {keys:["exercises","templates","workouts","sessions","bw","week","log"], word:["Übung","Übungen"]},
+    calendar:{keys:["events"], word:["Termin","Termine"]},
   };
   function pgToggle(open){ const m=document.getElementById("pgMenu"), b=document.querySelector("header .wordmark.pg-title")||document.getElementById("pgBtn"); if(!m||!b) return; m.hidden=!open; b.setAttribute("aria-expanded",open); }
   // Schalter in den Einstellungen, getrennt pro Seite (standardmäßig aus):
@@ -979,10 +983,11 @@ const TILES=[
   {file:"haushalt.html",label:"Haushalt", sub:"Aufgaben teilen",     ic:"🧹", c:"#3f6f8c"},
   {file:"budget.html", label:"Budget",    sub:"Konten & Verträge",   ic:"💶", c:"#123354", id:"budget"},
   {file:"gym.html",    label:"Gym",       sub:"Plan & Training",     ic:"🏋️", c:"#3c4270"},
+  {file:"kalender.html",label:"Kalender", sub:"Gemeinsame Termine",  ic:"📅", c:"#2f6b4f"},
   {file:"mail.html",   label:"Mail",      sub:"Gmail lesen",         ic:"✉️", c:"#7a2e2e"},
   {file:"chat.html?from=home", label:"Chats", sub:"Mit Freunden schreiben", ic:"💬", c:"#5f6e54", id:"chat"},
 ];
-const SOON=[{label:"Kalender",sub:"Mit dem iPhone synchron",ic:"📅"},{label:"Smart Home",sub:"Licht & Heizung",ic:"🏠"}];
+const SOON=[{label:"Smart Home",sub:"Licht & Heizung",ic:"🏠"}];
 const extra={};
 function paint(){
   $("#tiles").innerHTML=TILES.map(t=>`<a class="tile" href="${t.file}" style="--c:${t.c}"><span class="ic" aria-hidden="true">${t.ic}</span><span><b>${t.label}</b><small>${esc(extra[t.id]&&extra[t.id].sub||t.sub)}</small></span>${extra[t.id]&&extra[t.id].badge?`<span class="badge">${esc(extra[t.id].badge)}</span>`:""}</a>`).join("");
