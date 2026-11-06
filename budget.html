@@ -320,6 +320,14 @@ header{border-bottom:0!important}
 .sortbar span:last-child{margin-left:auto;font-weight:700;color:var(--accent)}
 .orig{background:var(--surface2);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
 .orig .kv{font-size:.82rem}
+.accrows{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.accrows .accrow{display:flex;align-items:center;gap:12px;width:100%;border:0;border-bottom:1px solid var(--line);background:none;color:var(--ink);text-align:left;padding:11px 2px}
+.accrows .accrow:hover{background:var(--surface2)}
+.accrows .accrow .ico{font-size:1rem}
+.accrows .accrow .main b{font-weight:600}
+.accrows .accrow .amt{font-size:1rem}
+.accrows .accrow.add{justify-content:center;color:var(--accent);font-weight:600;font-size:.88rem;border-bottom:0;padding-bottom:2px}
+.accrows .chev{flex:none;color:var(--muted);font-size:1.2rem}
 .alert{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 8px 10px 12px;box-shadow:0 1px 2px var(--shadow)}
 .alert .ai{font-size:1.1rem;flex:none}
 .alert .at{flex:1;border:0;background:none;color:var(--ink);text-align:left;font-size:.86rem;padding:0;line-height:1.35}
@@ -668,7 +676,7 @@ header{border-bottom:0!important}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-06-205248";
+  const APP_VERSION="2026-11-06-210044";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1464,35 +1472,27 @@ function renderHome(){
   Object.values(fin.eb||{}).forEach(s=>{ const d=s.validUntil?(new Date(s.validUntil)-Date.now())/864e5:999; if(d<14) h+=`<div class="warnbox">⚠️ <span>Die Freigabe für <b>${esc(s.bank||"deine Bank")}</b> ${d<0?"ist abgelaufen":`läuft in ${Math.max(0,Math.ceil(d))} Tagen ab`}.</span><button class="btn" type="button" data-renew="${esc(s.bank||"")}">Erneuern</button></div>`; });
   if(accs.length){
     const sessions=Object.keys(fin.eb||{}).length, last=Math.max(0,...accs.map(a=>a.syncAt||0));
-    h+=`<div class="hero"><div class="hero-row"><span class="lbl">Kontostand</span>${sessions?`<button class="sync${syncing?" spin":""}" type="button" id="syncBtn"${syncing?" disabled":""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 1-14.3 4.9M4 12a8 8 0 0 1 14.3-4.9M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>${syncing?"Lädt …":ago(last)}</button>`:""}</div>
+    h+=`<div class="hero"><div class="hero-row"><span class="lbl">Gesamt</span>${sessions?`<button class="sync${syncing?" spin":""}" type="button" id="syncBtn"${syncing?" disabled":""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 1-14.3 4.9M4 12a8 8 0 0 1 14.3-4.9M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>${syncing?"Lädt …":ago(last)}</button>`:""}</div>
       <span class="total num" style="color:${total>=0?"var(--ink)":"var(--minus)"}">${money(total)}</span>
-      <div class="acc-list">${accs.sort((a,b)=>(b.balance||0)-(a.balance||0)).map(a=>{ const sp=accSpent(a.id);
-        return `<button type="button" class="acc" data-acc="${esc(a.id)}"><small>${esc(a.bank||(a.kind==="depot"?"Depot":"Manuell"))}</small><b>${a.balance!=null?money(a.balance):"–"}</b><small>${esc(a.name)}</small>${sp?`<small style="color:var(--minus)">−${money(sp)} im ${MONTHS[now.getMonth()].slice(0,3)}.</small>`:""}</button>`; }).join("")}
-        <button type="button" class="acc add" data-fab="bank">+ Konto</button></div>
-      <p class="note" style="margin:0">Tipp auf ein Konto, um seine Umsätze zu sehen.</p></div>`;
+      <ul class="accrows">${accs.sort((a,b)=>(b.balance||0)-(a.balance||0)).map(a=>`<li><button type="button" class="accrow" data-acc="${esc(a.id)}"><span class="ico" style="background:${a.kind==="depot"?"#7c3aed":a.kind==="cash"?"#16a34a":"var(--band)"}">${a.kind==="depot"?"📈":a.kind==="cash"?"💶":"🏦"}</span>
+        <span class="main"><b>${esc(a.name)}</b><small>${esc(a.bank||(a.kind==="depot"?"Depot":a.src==="csv"?"CSV-Import":"Manuell"))}</small></span><span class="amt" style="color:${(a.balance||0)<0?"var(--minus)":"var(--ink)"}">${a.balance!=null?money(a.balance):"–"}</span><span class="chev">›</span></button></li>`).join("")}
+        <li><button type="button" class="accrow add" data-fab="bank">+ Konto hinzufügen</button></li></ul></div>`;
   } else {
     h+=`<div class="hero"><span class="lbl">Deine Finanzen auf einen Blick</span><p class="hint" style="font-size:.9rem;color:var(--ink)">Verbinde dein Bankkonto oder importiere Umsätze als CSV.</p>
       <div class="fchips"><button class="btn primary" type="button" data-fab="bank">🏦 Konto verbinden</button><button class="btn" type="button" data-fab="csv">📄 CSV importieren</button></div>
       <div class="safe"><span>🔒</span><span>Deine Bank-Zugangsdaten gibst du nur auf der Seite deiner Bank ein. Ours bekommt nur Lesezugriff.</span></div></div>`;
   }
-  // dieser Monat und Durchschnitt
-  const tm=totals(now.getFullYear(),now.getMonth());
-  if(hasBank()||Object.keys(exp).length) h+=`<div class="sec"><div class="sec-head"><h2>${MONTHS[now.getMonth()]} bisher</h2><button class="note" type="button" data-view="stats" style="border:0;background:none;color:var(--accent);font-weight:600;cursor:pointer">Auswertung ›</button></div>
-    <div class="avg"><div><span>Rein</span><b style="color:var(--plus)">${money(tm.inc)}</b></div><div><span>Raus</span><b>${money(tm.out)}</b></div><div><span>Übrig</span><b style="color:${tm.left>=0?"var(--accent)":"var(--minus)"}">${money(tm.left)}</b></div></div></div>`;
-  h+=alertsHtml();
-  h+=forecastHtml();
-  if(now.getDate()<=10) h+=reviewHtml();
-  h+=avgHtml();
-  h+=goalsHtml();
-  const uns=unsortedGroups(); if(uns.length) h+=`<button type="button" class="sortbar" data-sorter="1">🗂️ <span><b>${uns.reduce((a,g)=>a+g.txs.length,0)} Ausgaben</b> sind noch in „Sonstiges“</span><span>Sortieren ›</span></button>`;
-  // nächste Zahlungen (30 Tage)
-  const up=upcoming(30), upSum=up.reduce((a,c)=>a+c.avg,0);
-  h+=`<div class="sec"><div class="sec-head"><h2>Nächste Zahlungen</h2><span class="sum">${up.length?`${money(upSum)} in 30 Tagen`:""}</span></div>
-    ${up.length?`<ul>${up.slice(0,6).map(conRow).join("")}</ul>${up.length>6?`<button class="add" type="button" data-view="con">Alle ${up.length} anzeigen</button>`:""}`:`<div class="empty">In den nächsten 30 Tagen ist keine Vertragszahlung zu erwarten.</div>`}</div>`;
-  // letzte Umsätze
-  const list=allTx().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8);
-  h+=`<div class="sec"><div class="sec-head"><h2>Letzte Umsätze</h2></div>
-    ${list.length?`<ul>${list.map(txRow).join("")}</ul><button class="add" type="button" data-view="tx">Alle Umsätze anzeigen</button>`:`<div class="empty">Noch keine Umsätze.</div>`}</div>`;
+  // Diagramme: Ausgaben diesen Monat nach Kategorie + rein/raus der letzten 6 Monate
+  const tm=totals(now.getFullYear(),now.getMonth()), cats=Object.entries(tm.byCat).sort((a,b)=>(a[0]==="Sonstiges")-(b[0]==="Sonstiges")||b[1]-a[1]);
+  if(cats.length) h+=`<div class="chart-card"><div class="sec-head"><h2>${MONTHS[now.getMonth()]}</h2><span class="sum"><span style="color:var(--plus)">+${money(tm.inc)}</span> · −${money(tm.out)}</span></div>
+    <div class="donut-wrap">${donut(cats.map(([c,v])=>({l:c,v,c:catColor(c)})),tm.out,"Ausgaben nach Kategorie")}<div class="legend">${cats.slice(0,6).map(([c,v])=>`<button type="button" class="lg" data-view="stats"><i style="background:${catColor(c)}"></i><span>${esc(c)}</span><b><small>${Math.round(v/tm.out*100)} %</small>${money(v)}</b></button>`).join("")}${cats.length>6?`<button type="button" class="lg" data-view="stats"><i></i><span style="color:var(--accent)">Alle ${cats.length} Kategorien ›</span><b></b></button>`:""}</div></div></div>`;
+  if(hasBank()){ const months=[]; for(let i=5;i>=0;i--){ const x=new Date(now.getFullYear(),now.getMonth()-i,1), t=totals(x.getFullYear(),x.getMonth()); months.push({l:MONTHS[x.getMonth()].slice(0,3),inc:t.inc,out:t.out}); }
+    h+=`<div class="chart-card"><div class="sec-head"><h2>Rein und raus</h2><span class="sum">letzte 6 Monate</span></div>${barsChart(months)}
+      <div class="chart-leg"><span><i style="background:var(--plus)"></i>Einnahmen</span><span><i style="background:var(--minus)"></i>Ausgaben</span></div></div>`; }
+  // letzte 5 Ausgaben
+  const list=allTx().filter(t=>t.amount<0&&!t.ex).sort((a,b)=>b.date.localeCompare(a.date)||a.amount-b.amount).slice(0,5);
+  h+=`<div class="sec"><div class="sec-head"><h2>Letzte Ausgaben</h2><button class="note" type="button" data-view="tx" style="border:0;background:none;color:var(--accent);font-weight:600;cursor:pointer">Alle ›</button></div>
+    ${list.length?`<ul>${list.map(t=>txRow(t,true)).join("")}</ul>`:`<div class="empty">Noch keine Ausgaben.</div>`}</div>`;
   return h;
 }
 /* ---------- Hinweise (wegklickbar) ---------- */
@@ -1644,7 +1644,8 @@ function renderStats(){
   const d=new Date(now.getFullYear(),now.getMonth()+smOff,1), y=d.getFullYear(), m=d.getMonth(), tt=totals(y,m);
   const cats=Object.entries(tt.byCat).sort((a,b)=>(a[0]==="Sonstiges")-(b[0]==="Sonstiges")||b[1]-a[1]);
   const parts=cats.map(([c,v])=>({l:c,v,c:catColor(c)})), unsorted=unsortedGroups();
-  let h=`<div class="chart-card"><div class="mnav"><button type="button" data-sm="-1" aria-label="Monat zurück">‹</button><b>${MONTHS[m]} ${y}</b><button type="button" data-sm="1" aria-label="Monat vor"${smOff>=0?" disabled":""}>›</button></div>
+  let h=smOff===0?alertsHtml()+forecastHtml():"";
+  h+=`<div class="chart-card"><div class="mnav"><button type="button" data-sm="-1" aria-label="Monat zurück">‹</button><b>${MONTHS[m]} ${y}</b><button type="button" data-sm="1" aria-label="Monat vor"${smOff>=0?" disabled":""}>›</button></div>
     <div class="avg"><div><span>Rein</span><b style="color:var(--plus)">${money(tt.inc)}</b></div><div><span>Raus</span><b>${money(tt.out)}</b></div><div><span>Übrig</span><b style="color:${tt.left>=0?"var(--accent)":"var(--minus)"}">${money(tt.left)}</b></div></div>
     ${tt.back?`<p class="note">Davon zurückbekommen (Rückzahlungen): <b style="color:var(--plus)">+${money(tt.back)}</b></p>`:""}
     ${cats.length?`<div class="donut-wrap">${donut(parts,tt.out,"Ausgaben nach Kategorie")}<div class="legend">${cats.map(([c,v])=>`<button type="button" class="lg" data-scat="${esc(c)}" aria-expanded="${openCat===c}"><i style="background:${catColor(c)}"></i><span>${esc(c)}${fin.budgets[c]?`<small style="margin-left:6px;color:${v>fin.budgets[c]?"var(--minus)":"var(--muted)"}">/ ${money(fin.budgets[c])}</small>`:""}</span><b><small>${Math.round(v/tt.out*100)} %</small>${money(v)}</b></button>
@@ -1660,6 +1661,7 @@ function renderStats(){
     <div class="chart-leg"><span><i style="background:var(--plus)"></i>Einnahmen</span><span><i style="background:var(--minus)"></i>Ausgaben</span><span>Werte in €</span></div></div>`;
   h+=avgHtml();
   h+=historyHtml();
+  h+=goalsHtml();
   if(smOff===0) h+=reviewHtml();
   h+=feesHtml();
   h+=`<p class="note">Umbuchungen zwischen eigenen Konten zählen nicht mit. Sparpläne und Depot-Überweisungen gelten als gespart, nicht als ausgegeben.</p>
