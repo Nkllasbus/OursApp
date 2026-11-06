@@ -47,7 +47,14 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
 .tile.soon{background:var(--surface);color:var(--muted);box-shadow:0 1px 2px var(--shadow);border:1.5px dashed var(--line);cursor:default}
 .tile.soon::after{display:none}
 .tile.soon .badge{background:var(--accent-soft);color:var(--muted)}
-#news{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+#news{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.one{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:14px;padding:12px 14px;color:var(--ink);text-decoration:none;box-shadow:0 1px 2px var(--shadow)}
+.one .e{font-size:1.3rem;flex:none}
+.one .tx{flex:1;min-width:0;font-size:.9rem;line-height:1.35}
+.one .tx small{display:block;color:var(--muted);font-size:.74rem;margin-bottom:1px}
+.one .tx b{font-weight:600}
+.one .r{flex:none;font-weight:700;font-variant-numeric:tabular-nums}
+.one .chev{flex:none;color:var(--muted);font-size:1.2rem}
 .news-h{display:flex;justify-content:space-between;align-items:baseline;margin:0 2px}
 .news-h b{font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
 .news-h small{font-size:.72rem;color:var(--muted)}
@@ -74,8 +81,8 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
   </header>
   <div class="scroll">
     <div class="hello"><h2 id="hello">Hallo!</h2><p id="today"></p></div>
-    <section id="news" hidden></section>
     <nav class="grid" id="tiles" aria-label="Bereiche"></nav>
+    <section id="news" hidden></section>
     <p class="sec-l">Bald</p>
     <div class="grid" id="soon"></div>
     <div class="tip" id="tip"><span>📱</span><span><b>Tipp:</b> Leg diese Seite auf deinen Home-Bildschirm: in Safari auf <b>Teilen → „Zum Home-Bildschirm“</b>. Dann öffnet sich Ours wie eine App.</span></div>
@@ -372,7 +379,7 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-06-225426";
+  const APP_VERSION="2026-11-06-225554";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -995,24 +1002,27 @@ const isoD=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${St
 const dayName=di=>{ const t=new Date(); t.setHours(12,0,0,0); const d=new Date(di+"T12:00"); const n=Math.round((d-t)/864e5); return n===0?"heute":n===1?"morgen":d.toLocaleDateString("de-DE",{weekday:"long"}); };
 const ago=ms=>{ const m=Math.round((Date.now()-ms)/60000); return m<60?"gerade aktuell":m<1440?`Stand vor ${Math.round(m/60)} Std.`:`Stand vor ${Math.round(m/1440)} Tagen`; };
 let homeData={};
+// genau eine Nachricht: die wichtigste aus Gym und Budget (nach Priorität)
 function paintNews(){
-  const g=homeData.gym, bu=homeData.budget, gi=[], bi=[];
-  if(g&&g.days){ const today=isoD(new Date()), td=(g.days.find(x=>x.d===today)||{items:[]}).items;
-    if(g.active) gi.push(`<span class="e">⏱️</span><span>Training läuft: <b>${esc(g.active)}</b></span>`);
-    td.forEach(x=>gi.push(x.done?`<span class="e">✅</span><span><b>${esc(x.t)}</b> heute erledigt</span>`:`<span class="e">${esc(x.emo)}</span><span>Heute: <b>${esc(x.t)}</b>${x.time?` um ${esc(x.time)} Uhr`:""}</span>`));
-    if(!td.length){ const nx=g.days.find(x=>x.d>today&&x.items.length); gi.push(`<span class="e">😴</span><span>Heute Ruhetag${nx?` – nächstes Training: <b>${esc(nx.items[0].t)}</b> ${dayName(nx.d)}${nx.items[0].time?` um ${esc(nx.items[0].time)}`:""}`:""}</span>`); }
-    if(g.streak>=3) gi.push(`<span class="e">🔥</span><span><b>${g.streak} Workouts</b> in Folge</span>`);
-    else if(g.last){ const n=Math.round((Date.now()-new Date(g.last.d+"T12:00"))/864e5); if(n>=4) gi.push(`<span class="e">💪</span><span>Letztes Training vor ${n} Tagen (${esc(g.last.t)})</span>`); } }
+  const g=homeData.gym, bu=homeData.budget, c=[], today=isoD(new Date());
+  const add=(p,src,e,t,r)=>c.push({p,src,e,t,r});
+  if(g&&g.days){ const td=(g.days.find(x=>x.d===today)||{items:[]}).items;
+    if(g.active) add(1,"g","⏱️",`Training läuft: <b>${esc(g.active)}</b>`);
+    td.filter(x=>!x.done).forEach(x=>add(4,"g",x.emo,`Heute: <b>${esc(x.t)}</b>${x.time?` um ${esc(x.time)} Uhr`:""}`));
+    td.filter(x=>x.done).forEach(x=>add(8,"g","✅",`<b>${esc(x.t)}</b> heute erledigt${g.streak>=3?` · 🔥 ${g.streak} in Folge`:""}`));
+    if(!td.length){ const nx=g.days.find(x=>x.d>today&&x.items.length); if(nx) add(9,"g","📅",`Nächstes Training: <b>${esc(nx.items[0].t)}</b> ${dayName(nx.d)}${nx.items[0].time?` um ${esc(nx.items[0].time)}`:""}`); }
+    if(g.streak>=3) add(10,"g","🔥",`<b>${g.streak} Workouts</b> in Folge`); }
   if(bu){
-    (bu.alerts||[]).slice(0,3).forEach(a=>bi.push(`<span class="e">${esc(a.ic)}</span><span>${esc(a.t)}</span>`));
-    (bu.pays||[]).filter(p=>{ const n=Math.round((new Date(p.d+"T12:00")-new Date().setHours(12,0,0,0))/864e5); return n>=0&&n<=3; }).slice(0,3)
-      .forEach(p=>bi.push(`<span class="e">📅</span><span>${dayName(p.d)==="heute"?"Heute":dayName(p.d)==="morgen"?"Morgen":"Am "+dayName(p.d)} fällig: <b>${esc(p.name)}</b></span><span class="r">${EUR(p.amt)}</span>`));
-    if(bu.fc) bi.push(`<span class="e">${bu.fc.rest>=0?"🔮":"⚠️"}</span><span>${bu.fc.pay?"Bis zum Gehalt":"Bis Monatsende"} voraussichtlich übrig</span><span class="r" style="color:${bu.fc.rest>=0?"inherit":"#d92d20"}">${EUR(bu.fc.rest)}</span>`);
-    if(bu.expire){ const d=(new Date(bu.expire)-Date.now())/864e5; if(d<14) bi.push(`<span class="e">🏦</span><span>Bankfreigabe ${d<0?"abgelaufen":`läuft in ${Math.max(0,Math.ceil(d))} Tagen ab`} – im Budget erneuern</span>`); }
-    if(bu.unsorted>=10&&bi.length<5) bi.push(`<span class="e">🗂️</span><span>${bu.unsorted} Ausgaben noch in „Sonstiges“</span>`); }
-  const card=(href,c,ic,title,items,at)=>items.length?`<div class="ncard" style="--c:${c}"><a class="ncard-h" href="${href}">${ic} <span>${title}</span>${at?`<small>${ago(at)}</small>`:""} ›</a>${items.map(x=>`<a class="ni" href="${href}">${x}</a>`).join("")}</div>`:"";
-  const html=card("gym.html","#3c4270","🏋️","Gym",gi,g&&g.at)+card("budget.html","#123354","💶","Budget",bi,bu&&bu.at);
-  $("#news").hidden=!html; $("#news").innerHTML=html?`<div class="news-h"><b>Neuigkeiten</b></div>${html}`:"";
+    if(bu.expire){ const d=(new Date(bu.expire)-Date.now())/864e5; if(d<3) add(2,"b","🏦",`Bankfreigabe ${d<0?"abgelaufen":`läuft in ${Math.max(0,Math.ceil(d))} Tagen ab`} – im Budget erneuern`); }
+    (bu.alerts||[]).forEach((a,i)=>add(a.ic==="⚠️"||a.ic==="💸"?3:5,"b",a.ic,esc(a.t)));
+    (bu.pays||[]).forEach(p=>{ const n=Math.round((new Date(p.d+"T12:00")-new Date().setHours(12,0,0,0))/864e5); if(n>=0&&n<=1) add(6,"b","📅",`${n===0?"Heute":"Morgen"} fällig: <b>${esc(p.name)}</b>`,EUR(p.amt)); });
+    if(bu.fc&&bu.fc.rest<0) add(5,"b","⚠️",`${bu.fc.pay?"Bis zum Gehalt":"Bis Monatsende"} voraussichtlich im Minus`,EUR(bu.fc.rest));
+    else if(bu.fc) add(11,"b","🔮",`${bu.fc.pay?"Bis zum Gehalt":"Bis Monatsende"} voraussichtlich übrig`,EUR(bu.fc.rest)); }
+  c.sort((a,b)=>a.p-b.p); const x=c[0];
+  if(!x){ $("#news").hidden=true; $("#news").innerHTML=""; return; }
+  const gym=x.src==="g";
+  $("#news").hidden=false;
+  $("#news").innerHTML=`<a class="one" href="${gym?"gym.html":"budget.html"}" style="--c:${gym?"#3c4270":"#123354"}"><span class="e">${x.e}</span><span class="tx"><small>${gym?"Gym":"Budget"}</small>${x.t}</span>${x.r?`<span class="r"${/^-/.test(x.r)?' style="color:#d92d20"':""}>${x.r}</span>`:""}<span class="chev">›</span></a>`;
 }
 greet(""); paint();
 Auth.start(firebaseConfig,"home",(r,info)=>{
