@@ -187,7 +187,7 @@ html,body{height:100%}
 :root{--logo-bg:#232428}
 
 /* ===== Neues Budget: Konten, Umsätze, Verträge, Budgets ===== */
-.seg{flex:none;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:3px}
+.seg{flex:none;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:3px}
 .seg button{border:0;background:none;border-radius:9px;padding:7px 2px;font-size:.84rem;font-weight:600;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--accent);color:#16130b}
 .topbar .month{margin:0 auto}
@@ -273,7 +273,7 @@ html,body{height:100%}
   <div class="count foot-count" id="count">Verbindet …</div>
 
   <section class="panel">
-    <div class="seg" role="group" aria-label="Ansicht"><button type="button" data-view="home" aria-pressed="true">Übersicht</button><button type="button" data-view="tx" aria-pressed="false">Umsätze</button><button type="button" data-view="con" aria-pressed="false">Verträge</button><button type="button" data-view="bud" aria-pressed="false">Budgets</button></div>
+    <div class="seg" role="group" aria-label="Ansicht"><button type="button" data-view="home" aria-pressed="true">Übersicht</button><button type="button" data-view="tx" aria-pressed="false">Umsätze</button><button type="button" data-view="con" aria-pressed="false">Verträge</button></div>
     <div class="topbar" id="monthBar">
       <div class="month" role="group" aria-label="Monat wählen">
         <button type="button" id="prevM" aria-label="Vorheriger Monat"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -595,7 +595,7 @@ html,body{height:100%}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-06-175746";
+  const APP_VERSION="2026-11-06-185056";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1227,7 +1227,7 @@ function nextDate(r){ const t=new Date(); t.setHours(0,0,0,0);
 let rec={}, exp={}, customCats={};                    // gemeinsamer Bereich (manuelle Einträge)
 let fin={accounts:{},tx:{},rules:{},budgets:{},contracts:{},eb:{},meta:{}};   // privat: users/<uid>/fin
 const now=new Date(); let vy=now.getFullYear(), vm=now.getMonth();
-let view="home"; try{ const v=localStorage.getItem("budget.view"); if(["home","tx","con","bud"].includes(v)) view=v; }catch(e){}
+let view="home"; try{ const v=localStorage.getItem("budget.view"); if(["home","tx","con"].includes(v)) view=v; }catch(e){}
 let q="", txFilter="all";
 const catList=()=>[...CATS,...Object.values(customCats).filter(c=>!CATS.includes(c))];
 const catColor=c=>{ const l=catList(); const i=l.indexOf(c); return PALETTE[(i<0?l.length:i)%PALETTE.length]; };
@@ -1309,11 +1309,11 @@ function contracts(){
 /* ---------- Rendern ---------- */
 function render(){
   document.querySelectorAll("[data-view]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.view===view));
-  $("#monthBar").hidden=view==="con"; $("#monthLabel").textContent=`${MONTHS[vm]} ${vy}`;
+  $("#monthBar").hidden=true;
   const nAcc=Object.keys(fin.accounts||{}).length, nTx=Object.keys(fin.tx||{}).length;
-  $("#count").textContent=nAcc?`${nAcc} ${nAcc===1?"Konto":"Konten"} · ${nTx} Umsätze`:`${MONTHS[vm]} · manuell`;
+  $("#count").textContent=nAcc?`${nAcc} ${nAcc===1?"Konto":"Konten"} · ${nTx} Umsätze`:"Budget";
   const sc=$("#list"), top=sc.scrollTop, act=document.activeElement, keepQ=act&&act.id==="txQ";
-  sc.innerHTML=view==="tx"?renderTx():view==="con"?renderCon():view==="bud"?renderBud():renderHome();
+  sc.innerHTML=view==="tx"?renderTx():view==="con"?renderCon():renderHome();
   if(keepQ){ const i=$("#txQ"); if(i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length); } }
   sc.scrollTop=top;
 }
@@ -1324,69 +1324,69 @@ function txRow(t){
     <span class="main"><b>${esc(t.name||c)}${t.pending?`<span class="tag">vorgemerkt</span>`:""}${t.src==="manual"?`<span class="tag">manuell</span>`:""}</b><small>${esc(c)}${acc?` · ${esc(acc.name)}`:""}${t.text?` · ${esc(t.text.slice(0,40))}`:""}</small></span>
     <span class="amt${pos?" plus":" minus"}">${pos?"+":""}${money(t.amount)}</span></button></li>`;
 }
+// Datum freundlich: heute, morgen, in 3 Tagen
+const until=d=>{ const t=new Date(); t.setHours(0,0,0,0); const n=Math.round((d-t)/864e5); return n===0?"heute":n===1?"morgen":n<0?`vor ${-n} Tagen`:`in ${n} Tagen`; };
+const dateLong=d=>d.toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"});
+function upcoming(days){
+  const t=new Date(); t.setHours(0,0,0,0); const end=new Date(t); end.setDate(end.getDate()+days);
+  return contracts().filter(c=>c.next&&c.next>=t&&c.next<=end).sort((a,b)=>a.next-b.next);
+}
+function conRow(c){
+  return `<li><button type="button" class="row" data-con="${esc(c.key)}"><span class="ico" style="background:${catColor(c.cat)};font-size:1.05rem">${conIcon(c.name)}</span>
+    <span class="main"><b>${esc(c.name)}</b><small>${c.next?`${dateLong(c.next)} · ${until(c.next)}`:"–"} · ${esc(c.rlabel)}</small></span>
+    <span class="amt">${money(c.avg)}</span></button></li>`;
+}
 function renderHome(){
-  const st=monthStats(vy,vm), accs=Object.entries(fin.accounts||{}).map(([id,a])=>({id,...a})), total=accs.reduce((a,x)=>a+(x.balance||0),0);
-  const cons=contracts(), today=new Date(); today.setHours(0,0,0,0); const isNow=vy===today.getFullYear()&&vm===today.getMonth();
+  const accs=Object.entries(fin.accounts||{}).map(([id,a])=>({id,...a})), total=accs.reduce((a,x)=>a+(x.balance||0),0);
   let h="";
-  // Freigaben, die bald ablaufen
   Object.values(fin.eb||{}).forEach(s=>{ const d=s.validUntil?(new Date(s.validUntil)-Date.now())/864e5:999; if(d<14) h+=`<div class="warnbox">⚠️ <span>Die Freigabe für <b>${esc(s.bank||"deine Bank")}</b> ${d<0?"ist abgelaufen":`läuft in ${Math.max(0,Math.ceil(d))} Tagen ab`}.</span><button class="btn" type="button" data-renew="${esc(s.bank||"")}">Erneuern</button></div>`; });
-  Object.values(fin.contracts||{}).forEach(()=>{});
-  cons.filter(c=>c.meta&&c.meta.cancelBy).forEach(c=>{ const d=(fromIso(c.meta.cancelBy)-today)/864e5; if(d>=0&&d<=30) h+=`<div class="warnbox">✂️ <span><b>${esc(c.name)}</b> kündigen bis ${fromIso(c.meta.cancelBy).toLocaleDateString("de-DE")} (${d===0?"heute":`noch ${Math.round(d)} Tage`}).</span></div>`; });
   if(accs.length){
     const sessions=Object.keys(fin.eb||{}).length, last=Math.max(0,...accs.map(a=>a.syncAt||0));
-    h+=`<div class="hero"><div class="hero-row"><span class="lbl">Gesamtsaldo</span>${sessions?`<button class="sync${syncing?" spin":""}" type="button" id="syncBtn"${syncing?" disabled":""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 1-14.3 4.9M4 12a8 8 0 0 1 14.3-4.9M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>${syncing?"Lädt …":ago(last)}</button>`:""}</div>
-      <span class="total num ${total>=0?"":"neg"}" style="color:${total>=0?"var(--ink)":"var(--minus)"}">${money(total)}</span>
-      <div class="acc-list">${accs.sort((a,b)=>(b.balance||0)-(a.balance||0)).map(a=>{ const s=a.session&&fin.eb[a.session], warn=s&&s.validUntil&&new Date(s.validUntil)<Date.now();
-        return `<button type="button" class="acc${warn?" warn":""}" data-acc="${esc(a.id)}"><small>${esc(a.bank||(a.kind==="depot"?"Depot":a.src==="csv"?"CSV-Import":"Manuell"))}</small><b>${a.balance!=null?money(a.balance):"–"}</b><small>${esc(a.name)}${a.iban?` · ${esc(maskIban(a.iban).slice(-4))}`:""}</small></button>`; }).join("")}
-        <button type="button" class="acc add" data-fab="bank">+ Konto</button></div></div>`;
+    h+=`<div class="hero"><div class="hero-row"><span class="lbl">Kontostand</span>${sessions?`<button class="sync${syncing?" spin":""}" type="button" id="syncBtn"${syncing?" disabled":""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 1-14.3 4.9M4 12a8 8 0 0 1 14.3-4.9M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>${syncing?"Lädt …":ago(last)}</button>`:""}</div>
+      <span class="total num" style="color:${total>=0?"var(--ink)":"var(--minus)"}">${money(total)}</span>
+      ${accs.length>1?`<div class="acc-list">${accs.sort((a,b)=>(b.balance||0)-(a.balance||0)).map(a=>`<button type="button" class="acc" data-acc="${esc(a.id)}"><small>${esc(a.bank||(a.kind==="depot"?"Depot":"Manuell"))}</small><b>${a.balance!=null?money(a.balance):"–"}</b><small>${esc(a.name)}</small></button>`).join("")}</div>`
+        :`<button type="button" class="note" data-acc="${esc(accs[0].id)}" style="border:0;background:none;padding:0;text-align:left">${esc(accs[0].bank||accs[0].name)} · ${esc(accs[0].name)}</button>`}</div>`;
   } else {
-    h+=`<div class="hero"><span class="lbl">Deine Finanzen auf einen Blick</span><p class="hint" style="font-size:.9rem;color:var(--ink)">Verbinde dein Bankkonto, importiere Umsätze als CSV (z.B. von PayPal) oder trag Ausgaben selbst ein.</p>
-      <div class="fchips"><button class="btn primary" type="button" data-fab="bank">🏦 Konto verbinden</button><button class="btn" type="button" data-fab="csv">📄 CSV importieren</button><button class="btn" type="button" data-fab="manualacc">+ Konto manuell</button></div>
-      <div class="safe"><span>🔒</span><span>Deine Bank-Zugangsdaten gibst du nur auf der Seite deiner Bank ein. Ours bekommt nur Lesezugriff auf Kontostand und Umsätze.</span></div></div>`;
+    h+=`<div class="hero"><span class="lbl">Deine Finanzen auf einen Blick</span><p class="hint" style="font-size:.9rem;color:var(--ink)">Verbinde dein Bankkonto oder importiere Umsätze als CSV.</p>
+      <div class="fchips"><button class="btn primary" type="button" data-fab="bank">🏦 Konto verbinden</button><button class="btn" type="button" data-fab="csv">📄 CSV importieren</button></div>
+      <div class="safe"><span>🔒</span><span>Deine Bank-Zugangsdaten gibst du nur auf der Seite deiner Bank ein. Ours bekommt nur Lesezugriff.</span></div></div>`;
   }
-  // Monat
-  const tot=Math.max(st.inc,st.out+st.saved,1), rate=st.inc?Math.round((st.inc-st.out)/st.inc*100):null;
-  h+=`<div class="sec"><div class="sec-head"><h2>${MONTHS[vm]}</h2><span class="sum">${rate!=null?`Sparquote ${rate} %`:""}</span></div>
-    <div class="tiles"><div class="tile"><span>Einnahmen</span><b class="num" style="color:var(--plus)">${money(st.inc)}</b></div><div class="tile"><span>Ausgaben</span><b class="num">${money(st.out)}</b></div><div class="tile"><span>Gespart</span><b class="num" style="color:var(--accent)">${money(st.saved)}</b></div></div>
-    <div class="split" aria-hidden="true"><span style="width:${st.out/tot*100}%;background:#9aa4b5"></span><span style="width:${st.saved/tot*100}%;background:var(--accent)"></span>${st.inc>st.out+st.saved?`<span style="width:${(st.inc-st.out-st.saved)/tot*100}%;background:var(--plus)"></span>`:""}</div></div>`;
-  // Was bleibt bis Monatsende
-  if(isNow){
-    const end=new Date(vy,vm+1,0), due=cons.filter(c=>c.next&&c.next>=today&&c.next<=end), dueSum=due.reduce((a,c)=>a+c.avg,0);
-    const liquid=accs.filter(a=>a.kind!=="depot").reduce((a,x)=>a+(x.balance||0),0);
-    if(accs.length||due.length) h+=`<div class="sec"><div class="sec-head"><h2>Bis Monatsende</h2><span class="sum">noch ${daysIn(vy,vm)-today.getDate()} Tage</span></div>
-      <div class="free"><div><span>Noch fällig (${due.length} ${due.length===1?"Vertrag":"Verträge"})</span><b>${money(dueSum)}</b></div>${accs.length?`<div><span>Frei verfügbar</span><b style="color:${liquid-dueSum>=0?"var(--plus)":"var(--minus)"}">${money(liquid-dueSum)}</b></div>`:""}</div></div>`;
-    const soon=cons.filter(c=>c.next&&(c.next-today)/864e5<=14&&c.next>=today).sort((a,b)=>a.next-b.next);
-    if(soon.length) h+=`<div class="sec"><div class="sec-head"><h2>Bald fällig</h2><span class="sum">nächste 14 Tage</span></div><div class="soon">${soon.map(c=>`<span class="pill">${short(c.next)} · ${esc(c.name)} <b class="num">${money(c.avg)}</b></span>`).join("")}</div></div>`;
-  }
-  // Kategorien mit Budgets
-  const cats=Object.entries(st.byCat).sort((a,b)=>b[1]-a[1]), cmax=Math.max(1,...cats.map(c=>c[1]));
-  if(cats.length) h+=`<div class="sec"><div class="sec-head"><h2>Wohin das Geld geht</h2><span class="sum">${money(st.out)}</span></div>
-    <div class="cats">${cats.map(([c,v])=>{ const b=fin.budgets[c]; return `<div class="cat"><span class="cat-name"><span class="dot" style="background:${catColor(c)}"></span>${esc(c)}</span><b class="num"${b&&v>b?` style="color:var(--minus)"`:""}>${money(v)}${b?` <small style="color:var(--muted);font-weight:400">/ ${money(b)}</small>`:""}</b>
-      <span class="track"><span style="width:${v/cmax*100}%;background:${catColor(c)}"></span></span></div>`; }).join("")}</div></div>`;
-  else h+=`<div class="empty">In diesem Monat noch keine Umsätze.</div>`;
+  // nächste Zahlungen (30 Tage)
+  const up=upcoming(30), upSum=up.reduce((a,c)=>a+c.avg,0);
+  h+=`<div class="sec"><div class="sec-head"><h2>Nächste Zahlungen</h2><span class="sum">${up.length?`${money(upSum)} in 30 Tagen`:""}</span></div>
+    ${up.length?`<ul>${up.slice(0,6).map(conRow).join("")}</ul>${up.length>6?`<button class="add" type="button" data-view="con">Alle ${up.length} anzeigen</button>`:""}`:`<div class="empty">In den nächsten 30 Tagen ist keine Vertragszahlung zu erwarten.</div>`}</div>`;
+  // letzte Umsätze
+  const list=allTx().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8);
+  h+=`<div class="sec"><div class="sec-head"><h2>Letzte Umsätze</h2></div>
+    ${list.length?`<ul>${list.map(txRow).join("")}</ul><button class="add" type="button" data-view="tx">Alle Umsätze anzeigen</button>`:`<div class="empty">Noch keine Umsätze.</div>`}</div>`;
   return h;
 }
+let txShown=100;
 function renderTx(){
   const ql=q.trim().toLowerCase();
-  let list=monthTx(vy,vm).filter(t=>txFilter==="all"||(txFilter==="out"?t.amount<0:t.amount>0));
-  if(ql) list=list.filter(t=>((t.name||"")+" "+(t.text||"")+" "+catOf(t)).toLowerCase().includes(ql));
-  const sum=list.filter(t=>!t.ex).reduce((a,t)=>a+t.amount,0);
-  let h=`<input class="search" id="txQ" type="search" placeholder="Suchen: Name, Zweck, Kategorie" value="${esc(q)}" autocomplete="off">
-    <div class="fchips">${[["all","Alle"],["out","Ausgaben"],["in","Einnahmen"]].map(([k,l])=>`<button type="button" class="chip" data-txf="${k}" aria-pressed="${txFilter===k}">${l}</button>`).join("")}<span class="sum num" style="margin-left:auto;color:var(--muted);font-size:.82rem">${list.length} · ${sum>0?"+":""}${money(sum)}</span></div>`;
-  if(!list.length) return h+`<div class="empty">${ql?"Nichts gefunden.":"Keine Umsätze in diesem Monat."}</div>`;
-  let lastDay=""; h+="<ul>"; list.forEach(t=>{ if(t.date!==lastDay){ lastDay=t.date; h+=`<li class="day">${fromIso(t.date).toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"})}</li>`; } h+=txRow(t); }); return h+"</ul>";
+  let list=allTx().filter(t=>txFilter==="all"||(txFilter==="out"?t.amount<0:t.amount>0)).sort((a,b)=>b.date.localeCompare(a.date)||Math.abs(b.amount)-Math.abs(a.amount));
+  if(ql) list=list.filter(t=>((t.name||"")+" "+(t.text||"")+" "+catOf(t)+" "+(t.amount/100).toFixed(2).replace(".",",")).toLowerCase().includes(ql));
+  let h=`<input class="search" id="txQ" type="search" placeholder="Suchen: Name, Zweck, Betrag" value="${esc(q)}" autocomplete="off">
+    <div class="fchips">${[["all","Alle"],["out","Ausgaben"],["in","Einnahmen"]].map(([k,l])=>`<button type="button" class="chip" data-txf="${k}" aria-pressed="${txFilter===k}">${l}</button>`).join("")}<span class="sum num" style="margin-left:auto;color:var(--muted);font-size:.82rem">${list.length} Umsätze</span></div>`;
+  if(!list.length) return h+`<div class="empty">${ql?"Nichts gefunden.":"Noch keine Umsätze."}</div>`;
+  // nach Monat gruppiert, mit Summe pro Monat
+  const shown=list.slice(0,txShown), sums={}; list.forEach(t=>{ if(t.ex) return; const k=t.date.slice(0,7); sums[k]=sums[k]||{in:0,out:0}; if(t.amount>0) sums[k].in+=t.amount; else sums[k].out+=t.amount; });
+  let lastM="", lastD=""; h+="<ul>";
+  shown.forEach(t=>{ const m=t.date.slice(0,7);
+    if(m!==lastM){ lastM=m; lastD=""; const [y,mm]=m.split("-").map(Number), sm=sums[m]||{in:0,out:0};
+      h+=`<li class="day" style="display:flex;justify-content:space-between;font-size:.8rem;margin-top:14px;color:var(--ink)"><b>${MONTHS[mm-1]} ${y}</b><span style="color:var(--muted)"><span style="color:var(--plus)">+${money(sm.in)}</span> · ${money(sm.out)}</span></li>`; }
+    if(t.date!==lastD){ lastD=t.date; h+=`<li class="day">${fromIso(t.date).toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"})}</li>`; }
+    h+=txRow(t); });
+  h+="</ul>";
+  if(list.length>txShown) h+=`<button class="add" type="button" id="txMore">Weitere ${Math.min(100,list.length-txShown)} anzeigen (${list.length-txShown} übrig)</button>`;
+  return h;
 }
 function renderCon(){
-  const cons=contracts(), pm=cons.reduce((a,c)=>a+c.perMonth,0);
-  let h=`<div class="con-sum"><div><b>${money(pm)}</b><span>pro Monat</span></div><div><b>${money(pm*12)}</b><span>pro Jahr</span></div></div>
-    <p class="note">${hasBank()?"Automatisch aus deinen Umsätzen erkannt: Zahlungen, die regelmäßig mit ähnlichem Betrag kommen.":"Verbinde ein Konto oder importiere eine CSV, dann erkennt Ours deine Verträge automatisch."}</p>`;
-  if(cons.length) h+=`<ul>${cons.map(c=>`<li><button type="button" class="row" data-con="${esc(c.key)}"><span class="ico" style="background:${catColor(c.cat)};font-size:1.05rem">${conIcon(c.name)}</span>
-      <span class="main"><b>${esc(c.name)}${c.auto?"":`<span class="tag">manuell</span>`}${c.meta&&c.meta.cancelBy?`<span class="tag">✂️ ${short(fromIso(c.meta.cancelBy))}</span>`:""}</b><small>${esc(c.rlabel)}${c.next?` · nächste ${short(c.next)}`:""} · ${esc(c.cat||"Sonstiges")}</small></span>
-      <span class="amt">${money(c.avg)}${c.rhythm!=="month"?`<small>≈ ${money(c.perMonth)}/Monat</small>`:""}</span></button></li>`).join("")}</ul>`;
-  else h+=`<div class="empty">Noch keine Verträge gefunden.</div>`;
-  const incs=Object.entries(rec).filter(([,r])=>r&&r.kind==="income");
-  h+=`<div class="fchips"><button class="add" type="button" data-new="rec">+ Abo oder Fixkosten manuell</button><button class="add" type="button" data-new="income">+ Einnahme manuell</button></div>`;
-  if(incs.length) h+=`<div class="sec"><div class="sec-head"><h2>Einnahmen (manuell)</h2></div><ul>${incs.map(([id,r])=>`<li><button type="button" class="row" data-edit="rec" data-id="${esc(id)}"><span class="ico" style="background:${catColor(r.cat)}">${esc((r.name||"?")[0].toUpperCase())}</span><span class="main"><b>${esc(r.name)}</b><small>${esc((EVERY.find(e=>e[0]===r.every)||[0,""])[1])}</small></span><span class="amt plus">+${money(r.amount)}</span></button></li>`).join("")}</ul></div>`;
+  const cons=contracts().sort((a,b)=>(a.next||Infinity)-(b.next||Infinity)), pm=cons.reduce((a,c)=>a+c.perMonth,0);
+  let h=`<div class="con-sum"><div><b>${money(pm)}</b><span>pro Monat</span></div><div><b>${cons.length}</b><span>${cons.length===1?"Vertrag":"Verträge"}</span></div></div>`;
+  h+=cons.length?`<ul>${cons.map(conRow).join("")}</ul>`:`<div class="empty">${hasBank()?"Noch keine Verträge erkannt.":"Verbinde ein Konto, dann erkennt Ours deine Verträge automatisch."}</div>`;
+  h+=`<p class="note">Automatisch erkannt: Zahlungen, die regelmäßig mit ähnlichem Betrag kommen. Antippen für Details oder „Ist kein Vertrag“.</p>
+    <button class="add" type="button" data-new="rec">+ Vertrag manuell hinzufügen</button>`;
   return h;
 }
 function renderBud(){
@@ -1694,12 +1694,13 @@ document.addEventListener("click",e=>{
   const co=t.closest("[data-con]"); if(co) return conSheet(co.dataset.con);
   const bu=t.closest("[data-bud]"); if(bu) return budSheet(bu.dataset.bud);
   const ac=t.closest("[data-acc]"); if(ac) return accSheet(ac.dataset.acc);
-  const tf=t.closest("[data-txf]"); if(tf){ txFilter=tf.dataset.txf; render(); return; }
+  const tf=t.closest("[data-txf]"); if(tf){ txFilter=tf.dataset.txf; txShown=100; render(); return; }
   if(t.closest("#syncBtn")) return syncAll(true);
+  if(t.closest("#txMore")){ txShown+=100; render(); return; }
   const rn=t.closest("[data-renew]"); if(rn){ bankQ=rn.dataset.renew; return bankSheet(); }
 });
 $("#txQ")&&0;
-document.addEventListener("input",e=>{ if(e.target.id==="txQ"){ q=e.target.value; render(); } if(e.target.id==="bankQ"){ bankQ=e.target.value; paintBanks(); } });
+document.addEventListener("input",e=>{ if(e.target.id==="txQ"){ q=e.target.value; txShown=100; render(); } if(e.target.id==="bankQ"){ bankQ=e.target.value; paintBanks(); } });
 $("#sheetModal").addEventListener("click",e=>{
   const t=e.target; if(t.id==="sheetModal"||t.closest("[data-close]")) return closeSheet();
   const b=t.closest("[data-bank]"); if(b) return startBank(b.dataset.bank);
