@@ -681,7 +681,7 @@ header{border-bottom:0!important}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-06-211447";
+  const APP_VERSION="2026-11-06-225426";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1277,7 +1277,7 @@ const firebaseConfig = {
 };
 // Adresse des Cloudflare-Helfers (Bankverbindung, Kategorien). Geheime Schlüssel liegen NUR dort, nie hier im Code.
 const WORKER_URL = "https://oursapp.niklasbergnerbus.workers.dev";
-let root=null, myUid=null;
+let root=null, myUid=null, finLoaded=false;
 const fdb=()=>firebase.database();
 function showErr(e){ $("#status").textContent=/permission/i.test(String(e&&(e.code||e.message)))?"Die Datenbank lässt nicht speichern. Prüf die Regeln in Firebase.":"Speichern hat nicht geklappt. Prüf die Internetverbindung."; }
 const say=(t,ms=4500)=>{ $("#status").textContent=t; clearTimeout(say.t); if(ms) say.t=setTimeout(()=>{ if($("#status").textContent===t) $("#status").textContent=""; },ms); };
@@ -1453,6 +1453,7 @@ function render(){
   const nAcc=Object.keys(fin.accounts||{}).length, nTx=Object.keys(fin.tx||{}).length;
   $("#count").textContent=nAcc?`${nAcc} ${nAcc===1?"Konto":"Konten"} · ${nTx} Umsätze`:"Budget";
   const sc=$("#list"), top=sc.scrollTop, act=document.activeElement, keepQ=act&&act.id==="txQ";
+  homeSummary();
   sc.innerHTML=view==="tx"?renderTx():view==="con"?renderCon():view==="stats"?renderStats():renderHome();
   if(keepQ){ const i=$("#txQ"); if(i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length); } }
   sc.scrollTop=top;
@@ -1504,6 +1505,22 @@ function renderHome(){
   h+=`<div class="sec"><div class="sec-head"><h2>Letzte Ausgaben</h2><button class="note" type="button" data-view="tx" style="border:0;background:none;color:var(--accent);font-weight:600;cursor:pointer">Alle ›</button></div>
     ${list.length?`<ul>${list.map(t=>txRow(t,true)).join("")}</ul>`:`<div class="empty">Noch keine Ausgaben.</div>`}</div>`;
   return h;
+}
+// Kurzinfo für die Startseite (users/<uid>/home/budget): Stand, Hinweise, fällige Zahlungen, Vorschau
+let homeSumT=null, homeSumLast="";
+function homeSummary(){
+  if(!myUid||!finLoaded) return; clearTimeout(homeSumT);
+  homeSumT=setTimeout(()=>{ try{
+    const accs=Object.values(fin.accounts||{}).filter(a=>a&&typeof a.balance==="number"), tm=totals(now.getFullYear(),now.getMonth());
+    const strip=h=>String(h).replace(/<[^>]+>/g,"").replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"');
+    const t=new Date(); t.setHours(0,0,0,0); const in7=new Date(t); in7.setDate(t.getDate()+7);
+    const pays=contracts().filter(c=>c.next&&c.next>=t&&c.next<=in7).sort((a,b)=>a.next-b.next).slice(0,4).map(c=>({d:iso(c.next),name:c.name,amt:c.avg}));
+    const f=forecast(), uns=unsortedGroups().reduce((a,g)=>a+g.txs.length,0);
+    const sum={total:accs.length?accs.reduce((a,x)=>a+x.balance,0):null,inc:tm.inc,out:tm.out,alerts:alerts().slice(0,4).map(x=>({ic:x.ic,t:strip(x.t)})),pays,
+      fc:f?{rest:f.rest,end:iso(f.end),pay:!!f.pay}:null,unsorted:uns,expire:Object.values(fin.eb||{}).map(s=>s.validUntil).filter(Boolean).sort()[0]||null};
+    const js=JSON.stringify(sum); if(js===homeSumLast) return; homeSumLast=js; sum.at=Date.now();
+    fdb().ref(`users/${myUid}/home/budget`).set(sum).catch(()=>{});
+  }catch(e){} },1500);
 }
 /* ---------- Hinweise (wegklickbar) ---------- */
 function alerts(){
@@ -2155,7 +2172,7 @@ Auth.start(firebaseConfig,"budget",(r,info)=>{
   root.child("expenses").on("value",s=>{ exp=s.val()||{}; render(); });
   root.child("cats").on("value",s=>{ customCats=s.val()||{}; render(); if(form) renderFormChips(); });
   if(myUid){ let first=true;
-    finRef().on("value",s=>{ const v=s.val()||{}; fin={accounts:v.accounts||{},tx:v.tx||{},rules:v.rules||{},budgets:v.budgets||{},contracts:v.contracts||{},eb:v.eb||{},meta:v.meta||{},alias:v.alias||{},aicat:v.aicat||{},goals:v.goals||{}};
+    finRef().on("value",s=>{ finLoaded=true; const v=s.val()||{}; fin={accounts:v.accounts||{},tx:v.tx||{},rules:v.rules||{},budgets:v.budgets||{},contracts:v.contracts||{},eb:v.eb||{},meta:v.meta||{},alias:v.alias||{},aicat:v.aicat||{},goals:v.goals||{}};
       if(!document.querySelector("#sheetModal:not([hidden]) input:focus")) render();
       if(first){ first=false; if(ebBack) finishBank();
         const last=Math.max(0,...Object.values(fin.accounts).filter(a=>a&&a.src==="eb").map(a=>a.syncAt||0));
