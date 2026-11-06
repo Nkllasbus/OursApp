@@ -1,0 +1,1172 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ours · Mail</title>
+<link rel="icon" href="ours-logo.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ours">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Mail: Gmail-Posteingang lesen (nur Lesezugriff, Anmeldung direkt bei Google) */
+:root{--page:#ece9e6;--band:#7a2e2e;--on-band:#fff;--on-band-muted:#e8c9c9;--bg:#f7f5f3;--surface:#fff;--surface2:#f0ecea;--ink:#1d1a19;--muted:#6f6866;--line:#e6e0dc;
+  --accent:#a13b3b;--accent-soft:#f7e6e6;--btn:#efebe8;--shadow:rgba(30,20,20,.1);--logo-bg:#5e2222;--body:"Inter",system-ui,-apple-system,sans-serif;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--page:#100c0c;--band:#5a2222;--on-band:#fff;--on-band-muted:#d7b4b4;--bg:#171313;--surface:#211b1b;--surface2:#2a2323;--ink:#efe9e7;--muted:#a59b98;--line:#352c2b;
+  --accent:#e07a7a;--accent-soft:#3a2424;--btn:#2a2323;--shadow:rgba(0,0,0,.5);--logo-bg:#3f1717;color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;overflow:hidden;color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;background:var(--page)}
+button{font:inherit;cursor:pointer;color:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:720px;height:100vh;height:100dvh;margin:0 auto;display:flex;flex-direction:column;background:var(--bg);overflow:hidden;position:relative;padding:0 16px max(10px,env(safe-area-inset-bottom,0px))}
+@media (min-width:661px){.wrap{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
+header{flex:none;margin:0 -16px;background:var(--band);color:var(--on-band);position:relative}
+header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:14px;background:var(--bg);border-radius:14px 14px 0 0}
+header.brand{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:calc(12px + env(safe-area-inset-top,0px)) 64px 25px!important;overflow:visible;z-index:30}
+header.brand .wordmark{font-weight:800;letter-spacing:-.02em;font-size:clamp(2.1rem,9.5vw,2.7rem);line-height:1;color:var(--on-band);white-space:nowrap}
+header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wrap.reading header{display:none}
+.status{flex:none;font-size:.82rem;color:var(--muted);padding:4px 0}
+.status:empty{display:none}
+.panel{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px}
+.topbar{flex:none;display:flex;align-items:center;gap:8px;padding-top:8px}
+.search{flex:1;min-width:0;font:inherit;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+.search:focus{outline:none;border-color:var(--accent)}
+.icon-btn{flex:none;width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;color:var(--ink)}
+.icon-btn svg{width:18px;height:18px}
+.icon-btn.spin svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tabs{flex:none;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:.84rem;font-weight:600}
+.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;margin:0 -16px;padding:0 16px 90px}
+.mlist{list-style:none;margin:0;padding:0}
+.mrow{display:flex;gap:12px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:11px 2px;color:var(--ink);align-items:flex-start}
+.mrow:hover{background:color-mix(in srgb,var(--accent-soft) 45%,transparent)}
+.av{flex:none;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:.95rem}
+.mmain{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.mtop{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.mtop b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mtop time{flex:none;font-size:.75rem;color:var(--muted)}
+.subj{font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.snip{font-size:.8rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrow.unread .mtop b,.mrow.unread .subj{font-weight:700}
+.mrow.unread .mtop time{color:var(--accent);font-weight:700}
+.clip{font-size:.75rem;color:var(--muted);margin-left:4px}
+.more{display:block;width:100%;margin:12px 0;border:1px dashed var(--line);background:none;border-radius:10px;padding:10px;color:var(--accent);font-weight:600}
+.empty,.setup{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 1px 2px var(--shadow);margin-top:8px}
+.setup h2{margin:0;font-size:1.2rem}
+.setup p,.empty p{margin:0;color:var(--muted);font-size:.9rem}
+.btn{background:var(--btn);color:var(--ink);border:0;border-radius:10px;padding:10px 14px;font-weight:600;font-size:.92rem}
+.btn.primary{background:var(--accent);color:#fff}
+.gbtn{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#1f1f1f;border:1px solid #dadce0;border-radius:999px;padding:10px 18px;font-weight:600}
+.safe{display:flex;gap:10px;align-items:flex-start;background:var(--surface2);border-radius:12px;padding:10px 12px;font-size:.82rem;color:var(--muted)}
+.code{font-family:ui-monospace,monospace;font-size:.78rem;background:var(--surface2);border-radius:6px;padding:2px 6px;user-select:all;word-break:break-all;color:var(--ink)}
+.acct{flex:none;font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:8px}
+.acct button{border:0;background:none;color:var(--accent);font-weight:600;font-size:.78rem;padding:0}
+.accs-h{display:flex;align-items:baseline;justify-content:space-between;margin-top:8px}
+.accs-h h2{margin:0;font-size:1.15rem}
+.accs-h span{font-size:.8rem;color:var(--muted)}
+.accs{list-style:none;margin:8px 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.accrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;color:var(--ink);box-shadow:0 1px 2px var(--shadow)}
+.accrow .mmain b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.accrow small{font-size:.8rem;color:var(--muted)}
+.accrow .un{color:var(--accent);font-weight:700}
+.badge{flex:none;background:var(--accent);color:#fff;border-radius:999px;font-size:.75rem;font-weight:700;padding:2px 8px}
+.chev{flex:none;color:var(--muted);font-size:1.3rem}
+#setupBox{display:flex;flex-direction:column;gap:10px}
+/* Lesen */
+.read{flex:1;min-height:0;display:flex;flex-direction:column}
+.rbar{flex:none;display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) 0 8px}
+.back{display:inline-flex;align-items:center;gap:2px;background:none;border:0;padding:6px 4px 6px 0;color:var(--accent);font-weight:600}
+.back svg{width:22px;height:22px}
+.rscroll{flex:1;min-height:0;overflow-y:auto;margin:0 -16px;padding:0 16px 30px;display:flex;flex-direction:column;gap:10px}
+.rh h2{margin:0 0 6px;font-size:1.2rem;line-height:1.3}
+.rmeta{display:flex;gap:10px;align-items:center}
+.rmeta .who{flex:1;min-width:0;font-size:.86rem}
+.rmeta .who b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rmeta .who small{color:var(--muted);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rmeta time{flex:none;font-size:.78rem;color:var(--muted)}
+.imgnote{display:flex;align-items:center;gap:10px;font-size:.8rem;color:var(--muted);background:var(--surface2);border-radius:10px;padding:8px 10px}
+.imgnote button{margin-left:auto;border:0;background:none;color:var(--accent);font-weight:600;font-size:.8rem}
+.body-frame{width:100%;border:1px solid var(--line);border-radius:12px;background:#fff;min-height:200px}
+.body-text{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.92rem;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.atts{display:flex;flex-wrap:wrap;gap:8px}
+.att{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px;font-size:.82rem;color:var(--ink);max-width:100%}
+.att span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+.att small{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <header class="brand" id="head">
+    <div class="wordmark" aria-hidden="true">Mail</div>
+    <h1 class="sr-only">Mail</h1>
+  </header>
+
+  <section class="panel" id="listView">
+    <div id="setupBox"></div>
+    <div id="mailUi" hidden>
+      <div class="topbar"><input class="search" id="q" type="search" placeholder="In Mails suchen" autocomplete="off" enterkeyhint="search">
+        <button class="icon-btn" type="button" id="refresh" aria-label="Aktualisieren"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 1-14.3 4.9M4 12a8 8 0 0 1 14.3-4.9M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+      <div class="tabs" id="tabs" role="group" aria-label="Ordner"></div>
+      <div class="acct" id="acct"></div>
+    </div>
+    <div class="scroll" id="list"></div>
+  </section>
+
+  <section class="read" id="readView" hidden>
+    <div class="rbar"><button class="back" type="button" id="readBack" aria-label="Zurück zum Posteingang"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Posteingang</button></div>
+    <div class="rscroll" id="readBody"></div>
+  </section>
+  <div class="status" id="status" aria-live="polite"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+/* Anmeldung, Profil und Bereiche für alle Seiten
+   - E-Mail und Passwort über Firebase Authentication
+   - Jede Seite hat ihren eigenen Bereich unter spaces/<id> mit eigenen Personen (access/<uid>)
+   - users/<uid>/spaces/<typ> merkt sich, welcher Bereich zu welcher Seite gehört
+   Seiten rufen Auth.start(firebaseConfig, "dates" | "recipes" | "chores" | "budget" | "gym", (ref, info) => { ... }) auf. */
+/* ---------- Offline: Seiten über den Service Worker, Daten über einen Zwischenspeicher ----------
+   Gelesene Daten (on/once "value") werden im localStorage gemerkt und ohne Netz von dort geliefert.
+   Schreibvorgänge kommen in eine Warteschlange und werden nachgereicht, sobald wieder Netz da ist. */
+(function(){
+  try{ if("serviceWorker" in navigator && !/claude|anthropic|usercontent/.test(location.hostname) && /^https?:$/.test(location.protocol)) addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{})); }catch(e){}
+  const F=window.firebase; if(!F||!F.database||!F.database.Query||!F.database.Reference) return;
+  const Q=F.database.Query.prototype, R=F.database.Reference.prototype;
+  const oOn=Q.on, oOff=Q.off, oOnce=Q.once, oSet=R.set, oUpdate=R.update, oRemove=R.remove;
+  const PRE="ofl:c:", OUT="ofl:outbox", t0=Date.now(), PAGE=t0.toString(36)+Math.random().toString(36).slice(2,6);
+  let conn=null, watching=false;
+  const pathOf=ref=>{ try{ return decodeURIComponent(String(ref.toString()).replace(/^[a-z]+:\/\/[^/]+\/?/i,"")).replace(/\/+$/,""); }catch(e){ return null; } };
+  const plain=q=>{ try{ return !q.ref||q.isEqual(q.ref); }catch(e){ return false; } };   // keine sortierten/gefilterten Abfragen
+  const okPath=p=>p!=null&&p!==""&&!p.startsWith(".info");
+  const lsGet=k=>{ try{ const v=localStorage.getItem(k); return v==null?undefined:JSON.parse(v); }catch(e){ return undefined; } };
+  const lsSet=(k,v)=>{ try{ const s=JSON.stringify(v===undefined?null:v); if(s.length>1500000) return; localStorage.setItem(k,s); }catch(e){} };
+  const watch=()=>{ if(watching) return; try{ if(!F.apps||!F.apps.length) return; watching=true;
+    oOn.call(F.database().ref(".info/connected"),"value",s=>{ conn=s.val()===true; if(conn) setTimeout(replay,500); }); }catch(e){ watching=false; } };
+  const offline=()=>conn!==true&&(navigator.onLine===false||Date.now()-t0>3500);
+  const wait=()=>conn===true?null:navigator.onLine===false?0:Math.max(0,3500-(Date.now()-t0));
+  function snap(v,ref){ const val=v===undefined?null:v;
+    return {key:ref&&ref.key,ref,val:()=>val==null?null:JSON.parse(JSON.stringify(val)),exportVal(){ return this.val(); },toJSON:()=>val,exists:()=>val!=null,
+      child:k=>snap(val&&typeof val==="object"?val[k]:null,ref&&ref.child(k)),hasChild:k=>!!(val&&typeof val==="object"&&val[k]!=null),
+      hasChildren:()=>!!(val&&typeof val==="object"&&Object.keys(val).length),numChildren:()=>val&&typeof val==="object"?Object.keys(val).length:0,
+      forEach(fn){ if(!val||typeof val!=="object") return false; for(const k of Object.keys(val)) if(fn(snap(val[k],ref&&ref.child(k)))===true) return true; return false; }};
+  }
+  const cbMap=new WeakMap();
+  Q.on=function(ev,cb,...rest){
+    watch(); const p=pathOf(this);
+    if(ev!=="value"||typeof cb!=="function"||!okPath(p)||!plain(this)) return oOn.call(this,ev,cb,...rest);
+    let real=false; const ref=this.ref||this;
+    const w=function(s){ real=true; if(conn===true) lsSet(PRE+p,s.val()); return cb.apply(this,arguments); };
+    cbMap.set(cb,w); oOn.call(this,ev,w,...rest);
+    const c=lsGet(PRE+p), ms=wait();
+    if(c!==undefined&&ms!=null) setTimeout(()=>{ if(!real) try{ cb(snap(c,ref)); }catch(e){ console.error(e); } },ms);
+    return cb;
+  };
+  Q.off=function(ev,cb,...rest){ return oOff.call(this,ev,cb&&cbMap.get(cb)||cb,...rest); };
+  Q.once=function(ev,...rest){
+    watch(); const p=pathOf(this);
+    if(ev!=="value"||rest.some(x=>typeof x==="function")||!okPath(p)||!plain(this)) return oOnce.call(this,ev,...rest);
+    const pr=oOnce.call(this,ev,...rest).then(s=>{ if(conn===true) lsSet(PRE+p,s.val()); return s; }), ref=this.ref||this;
+    const c=lsGet(PRE+p), ms=wait();
+    if(c===undefined||ms==null) return pr;
+    return Promise.race([pr,new Promise(res=>setTimeout(()=>res(snap(c,ref)),ms))]);
+  };
+  // Schreiben: Warteschlange + gemerkte Daten sofort anpassen
+  const getIn=(o,ks)=>{ for(const k of ks){ if(o==null||typeof o!=="object") return undefined; o=o[k]; } return o; };
+  function setIn(o,ks,v){ if(!ks.length) return v; o=o&&typeof o==="object"?o:{}; const k=ks[0], r=setIn(o[k],ks.slice(1),v); if(r==null) delete o[k]; else o[k]=r; return o; }
+  function patchCache(path,val){
+    try{ for(let i=0;i<localStorage.length;i++){ const key=localStorage.key(i); if(!key||!key.startsWith(PRE)) continue; const cp=key.slice(PRE.length);
+      if(path===cp) lsSet(key,val);
+      else if(path.startsWith(cp+"/")) lsSet(key,setIn(lsGet(key),path.slice(cp.length+1).split("/"),val));
+      else if(cp.startsWith(path+"/")) lsSet(key,getIn(val,cp.slice(path.length+1).split("/"))??null); } }catch(e){}
+  }
+  const outbox=()=>lsGet(OUT)||[];
+  function track(type,path,data,promise){
+    if(!okPath(path)) return promise;
+    const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6); let ok=true;
+    try{ const ob=outbox(); ob.push({id,type,path,data:data===undefined?null:data,page:PAGE}); if(JSON.stringify(ob).length<1500000) lsSet(OUT,ob); else ok=false; }catch(e){ ok=false; }
+    if(type==="update"&&data&&typeof data==="object") Object.keys(data).forEach(k=>patchCache(path+"/"+k,data[k])); else patchCache(path,type==="remove"?null:data);
+    if(ok) Promise.resolve(promise).then(()=>{ lsSet(OUT,outbox().filter(o=>o.id!==id)); },()=>{});
+    return promise;
+  }
+  R.set=function(v,...rest){ watch(); return track("set",pathOf(this),v,oSet.call(this,v,...rest)); };
+  R.update=function(v,...rest){ watch(); return track("update",pathOf(this),v,oUpdate.call(this,v,...rest)); };
+  R.remove=function(...rest){ watch(); return track("remove",pathOf(this),null,oRemove.call(this,...rest)); };
+  let replaying=false;
+  function replay(){
+    if(replaying) return; const ob=outbox().filter(o=>o.page!==PAGE); if(!ob.length) return;
+    try{ if(!F.auth||!F.auth().currentUser){ setTimeout(replay,2000); return; } }catch(e){ return; }
+    replaying=true; const db=F.database();
+    (async()=>{ for(const o of ob){ const r=db.ref(o.path);
+      try{ await (o.type==="set"?oSet.call(r,o.data):o.type==="update"?oUpdate.call(r,o.data):oRemove.call(r)); }catch(e){ if(!/permission/i.test(String(e&&(e.code||e.message)))) continue; }
+      lsSet(OUT,outbox().filter(x=>x.id!==o.id)); } replaying=false; })();
+  }
+  addEventListener("online",()=>setTimeout(replay,1500));
+  window.OursOffline={get connected(){ return conn; },pending:()=>outbox().length,replay};
+})();
+(function(){
+  // Zukunftsprojekte: stehen im Menü, sind aber noch nicht anklickbar
+  const SOON = [{label:"Kalender",color:"#4f7a5a"},{label:"Smart Home",color:"#5a5f6e"}];
+  const PAGES = [
+    {type:"dates",   file:"index.html",    label:"Dateideen", color:"#8c7559", noun:"Dateideen-Liste",
+     empty:"Noch keine Dateideen-Liste", hint:"Leg eine Liste an und lad danach deine Freundin oder deinen Freund ein. Nur eingeladene Personen sehen sie.",
+     keys:["ideas"]},
+    {type:"recipes", file:"rezepte.html",  label:"Rezepte",   color:"#7a2434", noun:"Rezeptsammlung",
+     empty:"Noch keine Rezeptsammlung", hint:"Leg eine Sammlung an und lad Freunde oder Familie ein. Nur eingeladene Personen sehen sie.",
+     keys:["recipes","people","swipe"]},
+    {type:"chores",  file:"haushalt.html", label:"Haushalt",  color:"#3f6f8c", noun:"Haushalt",
+     empty:"Noch kein Haushalt", hint:"Leg einen Haushalt an und lad deine Mitbewohner ein.",
+     keys:["chores","choreLog","members","rooms","people"]},
+    {type:"budget",  file:"budget.html",   label:"Budget",    color:"#123354", noun:"Budget",
+     empty:"Noch kein Budget", hint:"Dein Budget ist privat. Später kannst du jemanden dazuholen, zum Beispiel deine Freundin oder deinen Freund.",
+     keys:null},
+    {type:"gym",     file:"gym.html",      label:"Gym", color:"#3c4270", noun:"Trainingsplan",
+     empty:"Noch kein Trainingsplan", hint:"Leg deinen Plan an: Übungen nach Muskelgruppen und ein Wochenplan. Später kannst du deinen Trainingspartner dazuholen.",
+     keys:[]},
+    {type:"chat",    file:"chat.html",     label:"Chats", color:"#5f6e54", noSpace:true},
+    {type:"mail",    file:"mail.html",     label:"Mail",  color:"#7a2e2e", noSpace:true, menu:true},
+  ];
+  const CSS = `
+  .auth-screen{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow-y:auto;background:var(--page);
+    padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+  .auth-screen.dim{background:rgba(10,12,14,.55)}
+  .auth-card{width:100%;max-width:390px;background:var(--bg);color:var(--ink);border:1px solid var(--frame-line,var(--line));border-radius:24px;overflow:hidden;
+    box-shadow:0 18px 40px -18px var(--shadow,rgba(0,0,0,.4))}
+  .auth-head{background:var(--band);color:var(--on-band);padding:18px 22px 22px;position:relative}
+  .auth-head::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:14px;background:var(--bg);border-radius:14px 14px 0 0}
+  .auth-head h2{margin:0;font-family:var(--display);font-weight:400;font-size:1.8rem;line-height:1.1}
+  .auth-head p{margin:4px 0 0;font-size:.88rem;opacity:.8}
+  .auth-body{padding:10px 22px 22px;display:flex;flex-direction:column;gap:12px}
+  .auth-tabs{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:2px}
+  .auth-tabs button{flex:1;border:0;background:none;border-radius:8px;padding:7px 10px;font:inherit;font-size:.9rem;font-weight:600;color:var(--muted);cursor:pointer}
+  .auth-tabs button[aria-pressed="true"]{background:var(--band);color:var(--on-band)}
+  .auth-body label{display:flex;flex-direction:column;gap:5px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .auth-body input[type=email],.auth-body input[type=password],.auth-body input[type=text]{font:inherit;font-size:1rem;text-transform:none;letter-spacing:0;padding:11px 12px;
+    border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);min-width:0}
+  .auth-body input:focus{outline:none;border-color:var(--accent)}
+  .auth-btn{border:0;border-radius:10px;padding:12px 16px;font:inherit;font-weight:700;cursor:pointer;background:var(--band);color:var(--on-band)}
+  .auth-btn.alt{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+  .auth-btn:disabled{opacity:.6;cursor:progress}
+  .auth-or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.8rem;margin:2px 0}
+  .auth-or::before,.auth-or::after{content:"";flex:1;height:1px;background:var(--line)}
+  .auth-google{display:flex;align-items:center;justify-content:center;gap:10px}
+  .auth-link{align-self:center;background:none;border:0;padding:4px;font:inherit;font-size:.85rem;color:var(--muted);text-decoration:underline;cursor:pointer}
+  .auth-link.danger{color:#c0533f}
+  .auth-msg{margin:0;font-size:.88rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .auth-msg.err{border-color:#c0533f;color:#c0533f}
+  .auth-note{margin:0;font-size:.88rem;color:var(--muted)}
+  .auth-check{flex-direction:row!important;align-items:center;gap:8px!important;text-transform:none!important;letter-spacing:0!important;font-size:.9rem!important;color:var(--ink)!important;font-weight:500!important}
+  .auth-check input{accent-color:var(--band);width:18px;height:18px}
+  .auth-copy{display:flex;gap:6px}
+  .auth-copy input{flex:1;font-size:.82rem!important;padding:9px 10px!important}
+  .auth-people{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .auth-people li{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+  .auth-people .av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.85rem;background:var(--band);color:var(--on-band);flex:none}
+  .auth-people .nm{flex:1;min-width:0;display:flex;flex-direction:column}
+  .auth-people .nm b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .auth-people .nm small{font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .auth-people .rm{border:1px solid var(--line);background:none;color:var(--muted);border-radius:999px;padding:3px 10px;font:inherit;font-size:.8rem;cursor:pointer}
+  .auth-people .rm.sure{color:#c0533f;border-color:#c0533f;font-weight:600}
+  .auth-sw{display:flex!important;flex-direction:row!important;align-items:center;gap:12px!important;text-transform:none!important;letter-spacing:0!important;color:var(--ink)!important;
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer}
+  .auth-sw span{flex:1;display:flex;flex-direction:column;gap:2px;font-size:.92rem;font-weight:600}
+  .auth-sw small{font-size:.78rem;font-weight:400;color:var(--muted);line-height:1.35}
+  .auth-sw input{position:absolute;opacity:0;width:1px;height:1px}
+  .auth-sw i{flex:none;position:relative;width:42px;height:25px;border-radius:999px;background:var(--line);transition:background .2s}
+  .auth-sw i::after{content:"";position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+  .auth-sw input:checked+i{background:var(--band)}
+  .auth-sw input:checked+i::after{transform:translateX(17px)}
+  .auth-sw input:focus-visible+i{outline:2px solid var(--accent);outline-offset:2px}
+  .auth-sw.row{cursor:default}
+  .auth-mini{flex:none;border:0;border-radius:999px;padding:8px 14px;font:inherit;font-size:.85rem;font-weight:700;cursor:pointer;background:var(--band);color:var(--on-band)}
+  .auth-mini.alt{background:none;border:1px solid var(--line);color:var(--ink)}
+  .auth-mini:disabled{opacity:.5;cursor:default}
+  .auth-sw .sel{user-select:all;word-break:break-all;font-family:ui-monospace,monospace;font-size:.72rem;color:var(--ink)}
+  .auth-sec{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 -4px}
+
+  /* Profilbilder */
+  .ours-av{flex:none;display:inline-grid;place-items:center;border-radius:50%;overflow:hidden;background:var(--band);color:var(--on-band);font-weight:700;line-height:1}
+  .ours-av img{width:100%;height:100%;object-fit:cover;display:block}
+  .pf-btn{padding:0;overflow:visible}
+  #pfInit{position:absolute;inset:0;display:block;border-radius:50%;overflow:hidden}
+  .pf-btn .ours-av{width:100%!important;height:100%!important;font-size:1rem!important;background:none;color:inherit;display:grid}
+  .pf-photo{display:flex;align-items:center;gap:14px}
+  .pf-photo .ours-av{width:72px;height:72px;font-size:1.6rem}
+  .pf-photo div{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+  .auth-card textarea{font:inherit;font-size:1rem;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface,#fff);color:var(--ink);resize:vertical;min-height:64px;width:100%;box-sizing:border-box}
+
+  /* Profil-Knopf und Menü */
+  header{padding-right:64px!important}
+  .pf-btn{position:absolute;top:14px;right:16px;z-index:31;width:40px;height:40px;border-radius:50%;cursor:pointer;
+    border:1.5px solid color-mix(in srgb,var(--on-band) 40%,transparent);background:color-mix(in srgb,var(--on-band) 16%,transparent);
+    color:var(--on-band);font:inherit;font-weight:700;font-size:1rem;display:grid;place-items:center}
+  .pf-btn:focus-visible{outline:2px solid var(--on-band);outline-offset:2px}
+  .pf-menu{position:absolute;top:60px;right:12px;z-index:32;min-width:230px;display:flex;flex-direction:column;gap:2px;padding:6px;
+    background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 36px -14px rgba(0,0,0,.4)}
+  .pf-menu a,.pf-menu button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border:0;border-radius:10px;background:none;
+    color:inherit;font:inherit;font-weight:500;text-decoration:none;cursor:pointer}
+  .pf-menu a:hover,.pf-menu button:hover{background:var(--accent-soft)}
+  .pf-menu a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+  .pf-menu .pg-soon{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:var(--muted);cursor:default;user-select:none}
+  .pf-menu .pg-soon .dot{opacity:.45}
+  .pf-menu .pg-soon small{margin-left:auto;font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:1px 7px}
+  .pf-menu .dot{width:10px;height:10px;border-radius:50%;flex:none;box-shadow:0 0 0 1px rgba(128,128,128,.4) inset}
+  .pf-menu svg{width:17px;height:17px;flex:none;opacity:.75}
+  .pf-sep{height:1px;background:var(--line);margin:4px 6px}
+  .pf-who{padding:6px 12px 4px;display:flex;flex-direction:column}
+  .pf-who b{font-weight:600}
+  .pf-who small{font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pf-menu button:disabled{opacity:.45;cursor:not-allowed}
+
+  /* Freunde */
+  .pf-badge{margin-left:auto;min-width:20px;height:20px;border-radius:10px;padding:0 6px;background:#d9534f;color:#fff;font-size:.72rem;font-weight:700;display:inline-grid;place-items:center}
+  .pf-dot{position:absolute;top:-1px;right:-1px;width:12px;height:12px;border-radius:50%;background:#d9534f;border:2px solid var(--band)}
+  .ours-mark{display:none!important}
+  /* Logo: Hintergrund passt sich der Seitenfarbe an (etwas dunkler als der Kopf) */
+  .ours-logo{position:absolute;left:16px;top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2);z-index:31;width:40px;height:40px;border-radius:11px;overflow:hidden;padding:0;border:0;cursor:pointer;
+    background:var(--logo-bg,color-mix(in srgb,var(--band) 62%,#000));
+    box-shadow:0 0 0 1.5px color-mix(in srgb,var(--on-band) 26%,transparent),0 4px 10px -4px rgba(0,0,0,.4);display:block}
+  .ours-logo img{width:100%;height:100%;display:block}
+  .ours-logo:focus-visible{outline:2px solid var(--on-band);outline-offset:2px}
+  .pf-menu.pg-menu{left:12px;right:auto}
+  /* Chat-Knopf unten links, in der Farbe der Seite */
+  .ours-chat{position:absolute;left:var(--chat-x,16px);bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 22px);z-index:6;width:56px;height:56px;border-radius:50%;
+    background:var(--logo-bg,var(--band));color:var(--on-band);display:grid;place-items:center;text-decoration:none;box-shadow:0 6px 16px -8px var(--shadow,rgba(0,0,0,.5)),0 0 0 1px color-mix(in srgb,var(--on-band) 14%,transparent)}
+  .ours-chat svg{width:26px;height:26px}
+  .ours-chat:active{transform:scale(.94)}
+  .ours-chat .cb{position:absolute;top:-2px;right:-2px;min-width:20px;height:20px;border-radius:999px;background:#e8a33d;color:#2b1e21;font-size:.72rem;font-weight:700;display:grid;place-items:center;padding:0 5px;border:2px solid var(--bg)}
+  .ours-chat .cb[hidden]{display:none}
+  body.has-chat .scroll{padding-bottom:84px!important}
+  .pf-menu.pg-menu .pf-who{flex-direction:row;align-items:center;justify-content:flex-start;gap:10px;text-align:left;padding:8px 10px 6px}
+  .pf-menu.pg-menu .pf-logo{margin:0;background:var(--logo-bg,color-mix(in srgb,var(--band) 62%,#000))}
+  .pf-menu.pg-menu .pf-brand{margin:0}
+  header{padding-left:64px!important}
+  .pf-menu .pf-logo{width:34px;height:34px;border-radius:9px;margin:0 auto 4px;display:block}
+  #pfBig{display:flex;justify-content:center;margin-bottom:4px}
+  .pf-brand{font-family:var(--display);font-size:1.15rem;line-height:1;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+  .fr-code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.5rem;font-weight:700;letter-spacing:.18em;text-align:center;padding:10px;border-radius:12px;
+    background:var(--surface);border:1.5px dashed var(--line);color:var(--ink)}
+  .auth-people .rm.yes{background:var(--band);color:var(--on-band);border-color:var(--band);font-weight:600}
+  .auth-people .rm.done{opacity:.6;cursor:default}
+
+  /* Seite ohne Bereich */
+  .auth-setup{position:absolute;left:0;right:0;bottom:0;z-index:20;background:var(--bg);overflow-y:auto;padding:18px 22px 22px;display:flex;flex-direction:column;align-items:stretch}
+  .auth-setup .box{margin:auto 0;display:flex;flex-direction:column;gap:12px;max-width:420px;align-self:center;width:100%;color:var(--ink)}
+  .auth-setup h3{margin:0;font-family:var(--display);font-weight:400;font-size:1.6rem;line-height:1.15}
+  `;
+  const IC = {
+    people:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M16.5 6.2a2.8 2.8 0 0 1 0 5.4M17 14.3c2 .5 3.2 2 3.5 4.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    gear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    heart:'<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    chat:'<svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4h0A1.5 1.5 0 0 1 4 14.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    out:'<svg viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 16l4-4-4-4M14 12H4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  };
+  const ERR = {
+    "auth/invalid-email":"Die E-Mail-Adresse sieht nicht richtig aus.",
+    "auth/user-not-found":"E-Mail oder Passwort stimmt nicht.",
+    "auth/wrong-password":"E-Mail oder Passwort stimmt nicht.",
+    "auth/invalid-credential":"E-Mail oder Passwort stimmt nicht.",
+    "auth/invalid-login-credentials":"E-Mail oder Passwort stimmt nicht.",
+    "auth/email-already-in-use":"Mit dieser E-Mail gibt es schon ein Konto. Melde dich an.",
+    "auth/weak-password":"Das Passwort ist zu kurz.",
+    "auth/too-many-requests":"Zu viele Versuche. Warte ein paar Minuten und versuch es dann noch einmal.",
+    "auth/network-request-failed":"Keine Verbindung. Prüf dein Internet.",
+    "auth/operation-not-allowed":"Diese Anmeldeart ist in Firebase noch nicht eingeschaltet.",
+    "auth/unauthorized-domain":"Diese Seite ist in Firebase noch nicht als erlaubte Domain eingetragen (Authentication → Einstellungen → Autorisierte Domains).",
+    "auth/account-exists-with-different-credential":"Mit dieser E-Mail gibt es schon ein Konto mit Passwort. Melde dich mit E-Mail und Passwort an.",
+    "auth/popup-blocked":"Das Anmeldefenster wurde blockiert. Erlaube Pop-ups für diese Seite und versuch es noch einmal.",
+  };
+  const errText = e => ERR[e && e.code] || "Das hat nicht geklappt. Versuch es noch einmal.";
+  const rand = n => { const a="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    return [...crypto.getRandomValues(new Uint8Array(n))].map(x=>a[x%a.length]).join(""); };
+  const esc = t => String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const parseJoin = () => { const m=location.hash.match(/^#join-([A-Za-z0-9]{12,40})-([A-Za-z0-9]{12,40})$/); return m?{sid:m[1],code:m[2]}:null; };
+  const clearHash = () => history.replaceState(history.state,"",location.pathname);
+  const initial = n => (String(n||"?").trim()[0]||"?").toUpperCase();
+  // Öffentliches Profil (Name, Bild, Über mich) unter pub/<uid>; Bilder werden nachgeladen und überall ausgetauscht
+  const pubCache = new Map(), pubWait = new Set();
+  let pubDb = null;
+  function loadPub(uid){
+    if(!uid || !pubDb || pubCache.has(uid) || pubWait.has(uid)) return;
+    pubWait.add(uid);
+    pubDb.ref("pub/"+uid).once("value").then(s=>{ pubCache.set(uid,s.val()||{}); paintAv(uid); document.dispatchEvent(new CustomEvent("ours-pub",{detail:uid})); })
+      .catch(()=>pubCache.set(uid,{})).finally(()=>pubWait.delete(uid));
+  }
+  const okPhoto = p => typeof p==="string" && /^data:image\/(jpeg|png|webp);base64,/.test(p);
+  function avInner(uid,name){ const p=pubCache.get(uid), ph=p&&okPhoto(p.photo)?p.photo:null;
+    return ph?`<img src="${ph}" alt="">`:esc(initial((p&&p.name)||name)); }
+  function avatar(uid,name,size,extra){ loadPub(uid); const z=size||32;
+    return `<span class="ours-av${extra?" "+extra:""}" data-av="${esc(uid||"")}" data-avname="${esc(name||"")}" style="width:${z}px;height:${z}px;font-size:${Math.round(z*.42)}px">${avInner(uid,name)}</span>`; }
+  function paintAv(uid){ document.querySelectorAll(`[data-av="${uid}"]`).forEach(el=>{ el.innerHTML=avInner(uid,el.dataset.avname); }); }
+  const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
+
+  // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
+  const APP_VERSION="2026-11-06-205248";
+  function checkVersion(){
+    try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
+      if(!v || !v.v || v.v===APP_VERSION) return;
+      const k="ours.reload."+v.v; try{ if(sessionStorage.getItem(k)) return; sessionStorage.setItem(k,"1"); }catch(e){}
+      location.reload();
+    }).catch(()=>{}); }catch(e){}
+  }
+  checkVersion();
+  addEventListener("pageshow",e=>{ if(e.persisted) checkVersion(); });
+  // Was beim Zusammenlegen und Austreten mitgenommen wird
+  const DATA = {
+    dates:   {keys:["ideas"], word:["Idee","Ideen"]},
+    recipes: {keys:["recipes"], word:["Rezept","Rezepte"]},
+    chores:  {keys:["chores","rooms","choreLog"], word:["Aufgabe","Aufgaben"]},
+    budget:  {keys:["recurring","expenses","cats"], word:["Eintrag","Einträge"]},
+    gym:     {keys:["exercises","templates","workouts","sessions","bw","week","log"], word:["Übung","Übungen"]},
+  };
+  function pgToggle(open){ const m=document.getElementById("pgMenu"), b=document.getElementById("pgBtn"); if(!m||!b) return; m.hidden=!open; b.setAttribute("aria-expanded",open); }
+  // Schalter in den Einstellungen, getrennt pro Seite (standardmäßig aus):
+  // Rezepte → Kalorien & Nährwerte, Gym → Essen-Tagebuch
+  const KC_KEY={recipes:"kcalRecipes",gym:"kcalGym"}, kcalOn={recipes:false,gym:false};
+  try{ Object.keys(KC_KEY).forEach(t=>kcalOn[t]=localStorage.getItem("ours.kcal."+t)==="1"); }catch(e){}
+  function applyKcal(t,on){ on=!!on; if(on===kcalOn[t]) return; kcalOn[t]=on; try{ localStorage.setItem("ours.kcal."+t,on?"1":"0"); }catch(e){}
+    document.dispatchEvent(new CustomEvent("ours-kcal",{detail:{type:t,on}})); }
+  window.Auth = {
+    kcalFor(t){ return !!kcalOn[t]; },
+    pageSettings:[],   // weitere Schalter, die eine Seite in den Einstellungen zeigen will
+    avatar, pub:uid=>{ loadPub(uid); return pubCache.get(uid)||null; },
+    refreshPub(uid){ pubCache.delete(uid); loadPub(uid); },
+    editProfile(){ if(window.Auth._profileView) window.Auth._profileView(); },
+    start(config, type, cb){
+    const PAGE = PAGES.find(p=>p.type===type);
+    const st=document.createElement("style"); st.textContent=CSS; document.head.appendChild(st);
+    // Name der App oben in jeder Seite
+    const hd=document.querySelector("header");
+    if(hd && !hd.querySelector(".ours-logo")){
+      hd.insertAdjacentHTML("afterbegin",'<button type="button" class="ours-logo" id="pgBtn" aria-label="Ours – Seiten" aria-haspopup="true" aria-expanded="false" aria-controls="pgMenu"><img src="ours-mark.png" alt=""></button>');
+      // Seiten-Menü hinter dem Logo: sofort nutzbar, auch bevor die Anmeldung fertig ist
+      hd.insertAdjacentHTML("beforeend",`<nav class="pf-menu pg-menu" id="pgMenu" hidden aria-label="Seiten">
+          <div class="pf-who"><img class="pf-logo" src="ours-mark.png" alt=""><span class="pf-brand">Ours</span></div>
+          <div class="pf-sep"></div>
+          ${PAGES.filter(p=>!p.noSpace||p.menu).map(p=>`<a href="${p.file}" data-page="${p.type}"${p.type===type?' aria-current="page"':""}><span class="dot" style="background:${p.color}"></span>${p.label}</a>`).join("")}
+          ${SOON.map(p=>`<span class="pg-soon" aria-disabled="true" title="Kommt bald"><span class="dot" style="background:${p.color}"></span>${p.label}<small>bald</small></span>`).join("")}
+        </nav>`);
+      const pgBtn=document.getElementById("pgBtn"), pgMenu=document.getElementById("pgMenu");
+      pgBtn.addEventListener("click",e=>{ e.stopPropagation(); if(window.Auth._closePf) window.Auth._closePf(); pgToggle(pgMenu.hidden); });
+      document.addEventListener("click",e=>{ if(!pgMenu.hidden && !pgMenu.contains(e.target)) pgToggle(false); });
+      document.addEventListener("keydown",e=>{ if(e.key==="Escape") pgToggle(false); });
+      pgMenu.addEventListener("click",e=>{ if(e.target.closest("a")) pgToggle(false); });
+      const wrap=document.querySelector(".wrap");
+      if(wrap && type!=="chat" && !document.getElementById("chatBtn")){
+        wrap.insertAdjacentHTML("beforeend",`<a class="ours-chat" id="oursChat" href="chat.html?from=${type}" aria-label="Chats mit Freunden" title="Chats">${IC.chat}<span class="cb" id="oursChatN" hidden></span></a>`);
+        if(getComputedStyle(wrap).position==="static") wrap.style.position="relative";
+        // gleiche Stelle wie bei Rezepte: am Innenrand der Karte
+        const placeChat=()=>wrap.style.setProperty("--chat-x",getComputedStyle(wrap).paddingLeft);
+        placeChat(); addEventListener("resize",placeChat);
+        document.body.classList.add("has-chat");
+      }
+      // Zurück-Geste: Seite kommt aus dem Zwischenspeicher, Menüs dann zu
+      addEventListener("pageshow",()=>{ pgToggle(false); if(window.Auth._closePf) window.Auth._closePf(); });
+    }
+    let auth, db;
+    try{ if(!firebase.apps.length) firebase.initializeApp(config); auth=firebase.auth(); db=firebase.database(); }
+    catch(e){ cb(null); return; }
+    let user=null, profile={}, sid=null, started=false, setupEl=null;
+    const pubSet=v=>{ pubCache.set(user.uid,{...(pubCache.get(user.uid)||{}),...v}); paintAv(user.uid); document.dispatchEvent(new CustomEvent("ours-pub",{detail:user.uid})); };
+
+    /* ---------- Fenster (Anmelden und Pop-ups) ---------- */
+    let screen=null;
+    function show(title,sub,html,dim){
+      if(!screen){ screen=document.createElement("div"); screen.className="auth-screen"; document.body.appendChild(screen);
+        screen.addEventListener("click",e=>{ if(e.target===screen && screen.classList.contains("dim")) hide(); }); }
+      screen.classList.toggle("dim",!!dim);
+      screen.innerHTML=`<div class="auth-card" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="auth-head"><h2>${esc(title)}</h2>${sub?`<p>${esc(sub)}</p>`:""}</div><div class="auth-body">${html}</div></div>`;
+      screen.hidden=false; return screen;
+    }
+    function hide(){ if(screen) screen.hidden=true; }
+    const $a = s => screen.querySelector(s);
+    function msg(t,err,root){ const m=(root||screen).querySelector("#authMsg"); if(!m) return; m.textContent=t||""; m.hidden=!t; m.classList.toggle("err",!!err); }
+    document.addEventListener("keydown",e=>{ if(e.key==="Escape" && screen && !screen.hidden && screen.classList.contains("dim")) hide(); });
+
+    /* ---------- Anmelden / Konto erstellen ---------- */
+    function loginView(mode){
+      const reg=mode==="register", join=parseJoin();
+      show("Ours",
+        join?`Du wurdest zu ${PAGE.label} eingeladen. Melde dich an oder erstell ein Konto.`:/^#friend-/.test(location.hash)?"Du wurdest als Freund eingeladen. Melde dich an oder erstell ein Konto.":reg?"Neues Konto erstellen.":"Bitte melde dich an.",
+        `<div class="auth-tabs" role="group"><button type="button" data-mode="login" aria-pressed="${!reg}">Anmelden</button><button type="button" data-mode="register" aria-pressed="${reg}">Konto erstellen</button></div>
+        <form id="authForm" style="display:flex;flex-direction:column;gap:12px" novalidate>
+          ${reg?`<label>Dein Name<input type="text" id="authName" autocomplete="given-name" maxlength="30" placeholder="So sehen dich die anderen"></label>`:""}
+          <label>E-Mail<input type="email" id="authMail" autocomplete="email"></label>
+          <label>Passwort<input type="password" id="authPw" autocomplete="${reg?"new-password":"current-password"}"></label>
+          ${reg?`<label>Passwort wiederholen<input type="password" id="authPw2" autocomplete="new-password"></label>
+            <p class="auth-note">Mindestens 10 Zeichen. Am besten ein Passwort, das du nirgends sonst benutzt.</p>`:""}
+          <p class="auth-msg" id="authMsg" hidden></p>
+          <button class="auth-btn" type="submit" id="authGo">${reg?"Konto erstellen":"Anmelden"}</button>
+        </form>
+        ${reg?"":`<button class="auth-link" type="button" id="authForgot">Passwort vergessen?</button>`}
+        <div class="auth-or"><span>oder</span></div>
+        <button class="auth-btn alt auth-google" type="button" id="authGoogle">${GOOGLE}Mit Google ${reg?"registrieren":"anmelden"}</button>`);
+      screen.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>loginView(b.dataset.mode));
+      (reg?$a("#authName"):$a("#authMail")).focus();
+      $a("#authForm").onsubmit=async e=>{
+        e.preventDefault();
+        const mail=$a("#authMail").value.trim(), pw=$a("#authPw").value;
+        if(!mail || !pw) return msg("Gib E-Mail und Passwort ein.",true);
+        if(reg){
+          if(pw.length<10) return msg("Das Passwort braucht mindestens 10 Zeichen.",true);
+          if(pw!==$a("#authPw2").value) return msg("Die beiden Passwörter sind nicht gleich.",true);
+          try{ sessionStorage.setItem("auth.newName",$a("#authName").value.trim().slice(0,30)); }catch(err){}
+        }
+        $a("#authGo").disabled=true; msg("");
+        try{ reg ? await auth.createUserWithEmailAndPassword(mail,pw) : await auth.signInWithEmailAndPassword(mail,pw); }
+        catch(err){ msg(errText(err),true); $a("#authGo").disabled=false; }
+      };
+      $a("#authGoogle").onclick=async()=>{
+        msg(""); const prov=new firebase.auth.GoogleAuthProvider(); prov.setCustomParameters({prompt:"select_account"});
+        try{ await auth.signInWithPopup(prov); }
+        catch(err){
+          if(err && (err.code==="auth/popup-closed-by-user"||err.code==="auth/cancelled-popup-request")) return;
+          if(err && err.code==="auth/popup-blocked"){ try{ await auth.signInWithRedirect(prov); return; }catch(e){} }
+          msg(errText(err),true);
+        }
+      };
+      const f=$a("#authForgot");
+      if(f) f.onclick=async()=>{
+        const mail=$a("#authMail").value.trim();
+        if(!mail) return msg("Trag oben deine E-Mail ein, dann schicken wir dir einen Link zum Zurücksetzen.",true);
+        try{ await auth.sendPasswordResetEmail(mail); msg("Wenn es ein Konto mit dieser E-Mail gibt, ist eine Mail zum Zurücksetzen unterwegs. Schau auch im Spam nach."); }
+        catch(err){ msg(errText(err),true); }
+      };
+    }
+
+    /* ---------- Profil-Knopf mit Menü ---------- */
+    function installMenu(){
+      const head=document.querySelector("header"); if(!head || head.querySelector(".pf-btn")) { updateMenu(); return; }
+      head.insertAdjacentHTML("beforeend",`<button class="pf-btn" type="button" id="pfBtn" aria-haspopup="true" aria-expanded="false" aria-controls="pfMenu" aria-label="Profil und Seiten"><span id="pfInit"></span><span class="pf-dot" id="pfDot" hidden></span></button>
+        <nav class="pf-menu" id="pfMenu" hidden aria-label="Profil und Seiten">
+          <div class="pf-who"><span id="pfBig"></span><b id="pfName"></b><small id="pfMail"></small></div>
+          <div class="pf-sep"></div>
+          <button type="button" data-pf="people">${IC.people}Personen bei ${esc(PAGE.label)}</button>
+          <a href="chat.html?from=${type}" class="pf-chat"${type==="chat"?' aria-current="page"':""}>${IC.chat}Chats<span class="pf-badge" id="pfChatBadge" hidden></span></a>
+          <button type="button" data-pf="friends">${IC.heart}Freunde<span class="pf-badge" id="pfFriendBadge" hidden></span></button>
+          <button type="button" data-pf="profile">${IC.user}Mein Profil</button>
+          <button type="button" data-pf="settings">${IC.gear}Einstellungen</button>
+          <button type="button" data-pf="logout">${IC.out}Abmelden</button>
+        </nav>`);
+      const btn=document.getElementById("pfBtn"), menu=document.getElementById("pfMenu");
+      const toggle=open=>{ menu.hidden=!open; btn.setAttribute("aria-expanded",open); };
+      btn.onclick=e=>{ e.stopPropagation(); pgToggle(false); toggle(menu.hidden); };
+      window.Auth._closePf=()=>toggle(false);
+      document.addEventListener("click",e=>{ if(!menu.hidden && !menu.contains(e.target)) toggle(false); });
+      document.addEventListener("keydown",e=>{ if(e.key==="Escape") toggle(false); });
+      menu.querySelectorAll("[data-pf]").forEach(b=>b.onclick=()=>{ toggle(false);
+        ({people:peopleView,friends:()=>friendsView(),profile:()=>window.Auth.profileHandler?window.Auth.profileHandler(user.uid):profileView(),settings:settingsView,logout:()=>auth.signOut()})[b.dataset.pf](); });
+      updateMenu();
+    }
+    function updateMenu(){
+      const name=profile.name||user.email.split("@")[0];
+      const b=document.getElementById("pfBtn"); if(!b) return;
+      document.getElementById("pfInit").innerHTML=avatar(user.uid,name,37); updateFriendBadge();
+      const big=document.getElementById("pfBig"); if(big) big.innerHTML=avatar(user.uid,name,48);
+      document.getElementById("pfName").textContent=name;
+      document.getElementById("pfMail").textContent=user.email;
+      const pp=document.querySelector('[data-pf="people"]'); pp.disabled=!sid; pp.hidden=!!PAGE.noSpace;
+    }
+
+    /* ---------- Profil, Einstellungen ---------- */
+    function profileView(){
+      const pb=pubCache.get(user.uid)||{}; let photo=okPhoto(pb.photo)?pb.photo:null;
+      show("Mein Profil","Name, Bild und ein paar Worte über dich sehen deine Freunde.",`
+        <div class="pf-photo"><span class="ours-av" id="pfPrev">${photo?`<img src="${photo}" alt="">`:esc(initial(profile.name))}</span>
+          <div><button class="auth-btn alt" type="button" id="pfPick">${photo?"Bild ändern":"Profilbild wählen"}</button>
+          <button class="auth-link" type="button" id="pfDrop"${photo?"":" hidden"}>Bild entfernen</button></div></div>
+        <input type="file" id="pfFile" accept="image/*" hidden>
+        <label>Dein Name<input type="text" id="pfIn" maxlength="30" value="${esc(profile.name||"")}"></label>
+        <label>Über mich <small>(optional)</small><textarea id="pfBio" maxlength="140" placeholder="z.B. Koche am liebsten Asiatisch, backe sonntags">${esc(pb.bio||"")}</textarea></label>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <button class="auth-btn" type="button" id="pfSave">Speichern</button>
+        <button class="auth-link" type="button" id="pfClose">Abbrechen</button>`,true);
+      $a("#pfClose").onclick=hide;
+      $a("#pfPick").onclick=()=>$a("#pfFile").click();
+      $a("#pfDrop").onclick=()=>{ photo=null; $a("#pfPrev").textContent=initial($a("#pfIn").value||profile.name); $a("#pfDrop").hidden=true; $a("#pfPick").textContent="Profilbild wählen"; };
+      $a("#pfFile").onchange=async e=>{
+        const f=e.target.files[0]; e.target.value=""; if(!f) return;
+        try{ // quadratisch zuschneiden, klein halten
+          const bmp=await createImageBitmap(f), m=Math.min(bmp.width,bmp.height), c=document.createElement("canvas"); c.width=c.height=256;
+          c.getContext("2d").drawImage(bmp,(bmp.width-m)/2,(bmp.height-m)/2,m,m,0,0,256,256);
+          photo=c.toDataURL("image/jpeg",.82); $a("#pfPrev").innerHTML=`<img src="${photo}" alt="">`; $a("#pfDrop").hidden=false; $a("#pfPick").textContent="Bild ändern";
+        }catch(err){ msg("Das Bild konnte nicht gelesen werden. Nimm ein JPG oder PNG.",true); }
+      };
+      $a("#pfSave").onclick=async()=>{
+        const name=$a("#pfIn").value.trim().slice(0,30), bio=$a("#pfBio").value.trim().slice(0,140); if(!name) return msg("Gib einen Namen ein.",true);
+        $a("#pfSave").disabled=true;
+        try{
+          await db.ref(`pub/${user.uid}`).set({name,bio:bio||null,photo:photo||null,at:Date.now()});
+          pubSet({name,bio:bio||null,photo:photo||null});
+          if(name!==profile.name){
+            await db.ref(`users/${user.uid}/profile/name`).set(name); profile.name=name;
+            const ptr=(await db.ref(`users/${user.uid}/spaces`).once("value")).val()||{};
+            for(const s of Object.values(ptr)) await db.ref(`spaces/${s}/profiles/${user.uid}/name`).set(name).catch(()=>{});
+          }
+          updateMenu(); hide();
+        }catch(err){ $a("#pfSave").disabled=false; msg("Speichern hat nicht geklappt. Prüf die Regeln in Firebase.",true); }
+      };
+    }
+    function settingsView(){
+      show("Einstellungen","",`<p class="auth-sec">Konto</p>
+        <p class="auth-note">Angemeldet als <b>${esc(user.email)}</b></p>
+        <button class="auth-btn alt" type="button" id="stPw">Passwort ändern</button>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        ${KC_KEY[type]?`<p class="auth-sec">Funktionen</p>
+        <label class="auth-sw" for="stKcal"><span>${type==="gym"?"Essen-Tagebuch":"Kalorien & Nährwerte"}<small>${type==="gym"?"Zeigt den Reiter „Essen“: Mahlzeiten eintragen, Kalorien und Nährwerte zählen.":"Zeigt kcal und Nährwerte pro Portion bei deinen Rezepten."}</small></span><input type="checkbox" id="stKcal" role="switch"${kcalOn[type]?" checked":""}><i aria-hidden="true"></i></label>`:""}
+        ${(()=>{ let last=""; return (window.Auth.pageSettings||[]).map((x,i)=>{ const h=x.sec&&x.sec!==last?`<p class="auth-sec">${esc(x.sec)}</p>`:""; last=x.sec||last;
+          if(x.button) return h+`<div class="auth-sw row"><span>${esc(x.label)}<small id="stX${i}n">${x.noteHtml?x.noteHtml():esc(x.note())}</small></span><button type="button" class="auth-mini${x.alt&&x.alt()?" alt":""}" id="stX${i}"${x.disabled&&x.disabled()?" disabled":""}>${esc(x.button())}</button></div>`;
+          return h+`<label class="auth-sw" for="stX${i}"><span>${esc(x.label)}<small id="stX${i}n">${esc(x.note(x.get()))}</small></span><input type="checkbox" id="stX${i}" role="switch"${x.get()?" checked":""}${x.disabled&&x.disabled()?" disabled":""}><i aria-hidden="true"></i></label>`; }).join(""); })()}
+        <p class="auth-sec">Diese Seite</p>
+        <p class="auth-note">${sid?(type==="gym"?`Das ist dein eigener Trainingsplan. Freunde können ihn ansehen, aber nicht ändern.`:`Du bist in ${type==="chores"||type==="budget"?"einem":"einer"} ${esc(PAGE.noun)}. Wer ${type==="chores"?"ihn":type==="budget"?"es":"sie"} sieht, steht unter „Personen bei ${esc(PAGE.label)}“.`):`Für ${esc(PAGE.label)} gibt es noch keine Liste.`}</p>
+        <button class="auth-btn alt" type="button" id="stOut">Abmelden</button>
+        <button class="auth-link" type="button" id="stClose">Schließen</button>`,true);
+      $a("#stClose").onclick=hide;
+      const kc=$a("#stKcal"); if(kc) kc.onchange=()=>{ applyKcal(type,kc.checked); db.ref(`users/${user.uid}/settings/${KC_KEY[type]}`).set(kc.checked).catch(()=>{ msg("Speichern hat nicht geklappt. Prüf die Internetverbindung.",true); }); };
+      (window.Auth.pageSettings||[]).forEach((x,i)=>{ const el=$a("#stX"+i); if(!el) return;
+        if(x.button){ el.onclick=async()=>{ try{ await x.action(); }catch(err){ msg(err&&err.message||"Das hat nicht geklappt.",true); } if($a("#stX"+i)) settingsView(); }; return; }
+        el.onchange=async()=>{ const n=$a("#stX"+i+"n");
+        try{ await x.set(el.checked); }catch(err){ msg("Speichern hat nicht geklappt. Prüf die Internetverbindung.",true); } if(n) n.textContent=x.note(x.get()); }; });
+      $a("#stOut").onclick=()=>auth.signOut();
+      $a("#stPw").onclick=async()=>{
+        try{ await auth.sendPasswordResetEmail(user.email); msg(`Wir haben dir eine Mail an ${user.email} geschickt. Darüber legst du ein neues Passwort fest.`); }
+        catch(err){ msg(errText(err),true); }
+      };
+    }
+
+    /* ---------- Personen und Einladungen für diese Seite ---------- */
+    let rmConfirm=null;
+    async function peopleView(){
+      if(!sid) return;
+      let profiles={}, access={}, meta={}, invites={};
+      try{
+        [profiles,access,meta,invites]=(await Promise.all(["profiles","access","meta","invites"].map(k=>db.ref(`spaces/${sid}/${k}`).once("value")))).map(s=>s.val()||{});
+      }catch(err){ return; }
+      const coOwn=id=>meta.owner===id || (meta.owners&&meta.owners[id]);
+      const owner=!!coOwn(user.uid), ids=Object.keys(access);
+      const list=ids.map(id=>({id,name:(profiles[id]&&profiles[id].name)||"Ohne Namen",mail:profiles[id]&&profiles[id].email||"",own:!!coOwn(id)}))
+        .sort((a,b)=>(b.own-a.own)||(a.id===user.uid?-1:b.id===user.uid?1:0));
+      const nInv=Object.keys(invites).length;
+      show(`Personen bei ${PAGE.label}`,
+        PAGE.type==="gym"?"Nur du kannst deinen Gymplan bearbeiten.":PAGE.type==="budget"&&ids.length<=1?"Im Moment siehst nur du dein Budget.":`${ids.length} ${ids.length===1?"Person sieht":"Personen sehen"} diese ${PAGE.noun}.`,
+        `<ul class="auth-people">${list.map(p=>`<li>${avatar(p.id,p.name,30)}
+            <span class="nm"><b>${esc(p.name)}${p.id===user.uid?" (du)":""}</b><small>${p.own?(type==="recipes"&&ids.length>1?"Besitzer":"Hat die Liste angelegt"):esc(p.mail)}</small></span>
+            ${owner&&p.id!==user.uid?`<button type="button" class="rm${rmConfirm===p.id?" sure":""}" data-rm="${esc(p.id)}">${rmConfirm===p.id?"Entfernen?":"Entfernen"}</button>`:""}</li>`).join("")}</ul>
+        ${type==="gym"?`<p class="auth-note">Dein Gymplan gehört nur dir. Deine Freunde können ihn im Gym unter „Freunde“ ansehen und Workouts kopieren, aber nichts ändern.</p>`:""}
+        <div${type==="gym"?" hidden":""}>
+        ${(()=>{ const fl=Object.entries(friends).filter(([id])=>!access[id]); return fl.length?`<p class="auth-sec">Freunde einladen</p>
+          <ul class="auth-people">${fl.map(([id,f])=>`<li>${avatar(id,f.name,30)}<span class="nm"><b>${esc(f.name||"Freund")}</b><small>bekommt die Einladung unter „Freunde“</small></span>
+          <button type="button" class="rm yes" data-fr-inv="${esc(id)}">Einladen</button></li>`).join("")}</ul>`:""; })()}
+        <p class="auth-sec">Per Link einladen</p>
+        <p class="auth-note">Der Link gilt nur für ${esc(PAGE.label)} und nur für eine Person. Wer ihn öffnet, tritt mit eigenem Konto bei. Deine anderen Seiten sieht die Person nicht.</p>
+        <button class="auth-btn" type="button" id="invNew">Einladungslink erstellen</button>
+        <div class="auth-copy" id="invBox" hidden><input type="text" id="invLink" readonly aria-label="Einladungslink"><button class="auth-btn" type="button" id="invCopy">Kopieren</button></div>
+        </div>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        ${nInv?`<button class="auth-link" type="button" id="invRevoke">${nInv} offene${nInv===1?"r Link":" Links"} · alle zurückziehen</button>`:""}
+        ${ids.length>1&&DATA[type]?`<button class="auth-link danger" type="button" id="leave">Austreten und alles mitnehmen</button>`:""}
+        <button class="auth-btn alt" type="button" id="ppClose">Fertig</button>`,true);
+      $a("#ppClose").onclick=()=>{ rmConfirm=null; hide(); };
+      $a("#invNew").onclick=async()=>{
+        const code=rand(20);
+        try{
+          await db.ref(`spaces/${sid}/invites/${code}`).set({by:user.uid,at:Date.now()});
+          const base=location.href.split("#")[0].replace(/[^/]*$/,"");
+          $a("#invLink").value=`${base}${PAGE.file}#join-${sid}-${code}`; $a("#invBox").hidden=false; msg("");
+        }catch(err){ msg("Der Link konnte nicht erstellt werden.",true); }
+      };
+      $a("#invCopy").onclick=async()=>{
+        try{ await navigator.clipboard.writeText($a("#invLink").value); msg("Kopiert. Jetzt per WhatsApp oder Mail verschicken."); }
+        catch(e){ $a("#invLink").select(); msg("Markiert. Jetzt kopieren und verschicken."); }
+      };
+      screen.querySelectorAll("[data-fr-inv]").forEach(b=>b.onclick=async()=>{
+        b.disabled=true; b.textContent="…";
+        try{ await inviteFriend(b.dataset.frInv); b.textContent="Eingeladen ✓"; b.classList.remove("yes"); b.classList.add("done"); }
+        catch(err){ b.disabled=false; b.textContent="Einladen"; msg("Die Einladung hat nicht geklappt. Prüf die Regeln in Firebase.",true); }
+      });
+      const rv=$a("#invRevoke"); if(rv) rv.onclick=async()=>{ await db.ref(`spaces/${sid}/invites`).remove().catch(()=>{}); peopleView(); };
+      screen.querySelectorAll("[data-rm]").forEach(b=>b.onclick=async()=>{
+        const id=b.dataset.rm;
+        if(rmConfirm!==id){ rmConfirm=id; peopleView(); return; }
+        rmConfirm=null;
+        await db.ref(`spaces/${sid}/access/${id}`).remove().catch(()=>{});
+        await db.ref(`spaces/${sid}/profiles/${id}`).remove().catch(()=>{});
+        peopleView();
+      });
+      const lv=$a("#leave"); if(lv) lv.onclick=async()=>{
+        const w=(DATA[type]||{}).word||["Eintrag","Einträge"];
+        if(lv.dataset.sure!=="1"){ lv.dataset.sure="1"; lv.textContent=`Wirklich austreten? Du nimmst alle ${w[1]} als eigene ${PAGE.noun} mit. Neue teilt ihr dann nicht mehr.`; return; }
+        lv.textContent=`${w[1]} werden mitgenommen …`; lv.disabled=true;
+        const nid=rand(20);
+        try{
+          await db.ref(`spaces/${nid}/access/${user.uid}`).set("owner");
+          await db.ref(`spaces/${nid}/meta`).set({type,owner:user.uid,createdAt:Date.now()});
+          await copyData(sid,nid);
+          await db.ref(`users/${user.uid}/spaces/${type}`).set(nid);
+          if(type==="recipes"){
+            const rd=(await db.ref(`spaces/${sid}/readers`).once("value")).val()||{};
+            for(const [k,v] of Object.entries(rd)) if(v&&v.by===user.uid) await db.ref(`spaces/${sid}/readers/${k}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/share/${user.uid}`).remove().catch(()=>{});
+          }
+          // die anderen behalten die Liste; wer übrig bleibt, darf sie weiter verwalten
+          const acc=(await db.ref(`spaces/${sid}/access`).once("value")).val()||{};
+          for(const id of Object.keys(acc)) if(id!==user.uid) await db.ref(`spaces/${sid}/meta/owners/${id}`).set(true).catch(()=>{});
+          await db.ref(`spaces/${sid}/meta/owners/${user.uid}`).remove().catch(()=>{});
+          await db.ref(`spaces/${sid}/profiles/${user.uid}`).remove().catch(()=>{});
+          await db.ref(`spaces/${sid}/access/${user.uid}`).remove().catch(()=>{});
+        }catch(err){ lv.disabled=false; lv.textContent="Austreten hat nicht geklappt. Versuch es noch einmal."; return; }
+        location.reload();
+      };
+    }
+
+
+    /* ---------- Freunde ---------- */
+    let friends={}, requestsIn={}, inbox={}, friendCode=null, friendsOpen=false, frConfirm=null;
+    const frBadge=()=>Object.keys(requestsIn).length+Object.keys(inbox).length;
+    let chatUnread=0;
+    function updateFriendBadge(){
+      const n=frBadge(), b=document.getElementById("pfFriendBadge"), d=document.getElementById("pfDot"), c=document.getElementById("pfChatBadge");
+      if(b){ b.textContent=n; b.hidden=!n; } if(c){ c.textContent=chatUnread; c.hidden=!chatUnread; } if(d) d.hidden=!(n||chatUnread);
+      const cb=document.getElementById("oursChatN"); if(cb){ cb.textContent=chatUnread>99?"99+":chatUnread; cb.hidden=!chatUnread; }
+    }
+    function watchChats(){
+      db.ref(`chatIndex/${user.uid}`).on("value",s=>{ const v=s.val()||{}; chatUnread=Object.values(v).reduce((a,x)=>a+(x&&+x.unread>0?+x.unread:0),0);
+        updateFriendBadge(); document.dispatchEvent(new CustomEvent("ours-chat",{detail:{unread:chatUnread,index:v}})); },()=>{});
+    }
+    async function ensureFriendCode(){
+      friendCode=(await db.ref(`users/${user.uid}/friendCode`).once("value")).val();
+      if(friendCode) return;
+      for(let i=0;i<5 && !friendCode;i++){
+        const c=rand(8).toUpperCase().replace(/[^A-Z0-9]/g,"X");
+        try{ await db.ref(`friendCodes/${c}`).set(user.uid); await db.ref(`users/${user.uid}/friendCode`).set(c); friendCode=c; }catch(e){}
+      }
+    }
+    function watchFriends(){
+      db.ref(`friends/${user.uid}`).on("value",s=>{ friends=s.val()||{}; if(friendsOpen) friendsView(); },()=>{});
+      db.ref(`requests/${user.uid}`).on("value",s=>{ requestsIn=s.val()||{}; updateFriendBadge(); if(friendsOpen) friendsView(); },()=>{});
+      db.ref(`inbox/${user.uid}`).on("value",s=>{ inbox=s.val()||{}; updateFriendBadge(); if(friendsOpen) friendsView(); },()=>{});
+    }
+    const myName=()=>profile.name||user.email.split("@")[0];
+    async function sendRequest(code){
+      code=String(code||"").trim().toUpperCase().replace(/^.*#FRIEND-/,"").replace(/[^A-Z0-9]/g,"");
+      if(code.length<6) return {err:"Gib einen Freundescode ein. Er hat 8 Zeichen."};
+      const uid=(await db.ref(`friendCodes/${code}`).once("value")).val();
+      if(!uid) return {err:"Zu diesem Code gibt es niemanden. Prüf die Schreibweise."};
+      if(uid===user.uid) return {err:"Das ist dein eigener Code."};
+      if(friends[uid]) return {ok:`${friends[uid].name||"Diese Person"} ist schon dein Freund.`};
+      if(requestsIn[uid]){ await acceptRequest(uid); return {ok:`Ihr seid jetzt befreundet.`}; }
+      await db.ref(`requests/${uid}/${user.uid}`).set({name:myName(),at:Date.now()});
+      return {ok:"Freundschaftsanfrage gesendet. Sobald sie angenommen ist, erscheint die Person hier."};
+    }
+    async function acceptRequest(from){
+      const req=requestsIn[from]||{}, now=Date.now();
+      await db.ref(`friends/${user.uid}/${from}`).set({name:req.name||"Freund",since:now});
+      await db.ref(`friends/${from}/${user.uid}`).set({name:myName(),since:now});
+      await db.ref(`requests/${user.uid}/${from}`).remove();
+    }
+    function friendsView(msgText,isErr){
+      friendsOpen=true;
+      const base=location.href.split("#")[0].replace(/[^/]*$/,"");
+      const link=friendCode?`${base}index.html#friend-${friendCode}`:"";
+      const reqs=Object.entries(requestsIn), inv=Object.entries(inbox), fl=Object.entries(friends).sort((a,b)=>(a[1].name||"").localeCompare(b[1].name||""));
+      const pageOf=t=>PAGES.find(p=>p.type===(t==="swipe"?"recipes":t))||PAGES[0];
+      show("Freunde",fl.length?`${fl.length} ${fl.length===1?"Freund":"Freunde"}`:"Füg Freunde hinzu, um sie schnell zu deinen Listen einzuladen.",`
+        ${inv.length?`<p class="auth-sec">Einladungen</p><ul class="auth-people">${inv.map(([id,x])=>`<li>${avatar(x.from,x.fromName,30)}
+          <span class="nm"><b>${esc(x.fromName||"Jemand")}</b><small>${x.type==="swipe"?"will mit dir Rezepte swipen":`lädt dich zu ${esc(pageOf(x.type).label)} ein`}</small></span>
+          <button type="button" class="rm" data-inv-no="${esc(id)}">Nein</button><button type="button" class="rm yes" data-inv-yes="${esc(id)}">Annehmen</button></li>`).join("")}</ul>`:""}
+        ${reqs.length?`<p class="auth-sec">Anfragen</p><ul class="auth-people">${reqs.map(([id,x])=>`<li>${avatar(id,x.name,30)}
+          <span class="nm"><b>${esc(x.name||"Jemand")}</b><small>möchte mit dir befreundet sein</small></span>
+          <button type="button" class="rm" data-req-no="${esc(id)}">Ablehnen</button><button type="button" class="rm yes" data-req-yes="${esc(id)}">Annehmen</button></li>`).join("")}</ul>`:""}
+        <p class="auth-sec">Deine Freunde</p>
+        ${fl.length?`<ul class="auth-people">${fl.map(([id,f])=>`<li>${avatar(id,f.name,30)}<span class="nm"><b>${esc(f.name||"Freund")}</b><small>befreundet seit ${new Date(f.since||Date.now()).toLocaleDateString("de-DE")}</small></span>
+          <button type="button" class="rm${frConfirm===id?" sure":""}" data-fr-rm="${esc(id)}">${frConfirm===id?"Entfernen?":"Entfernen"}</button></li>`).join("")}</ul>`
+          :`<p class="auth-note">Noch keine Freunde. Schick deinen Code oder Link, oder gib unten einen Code ein.</p>`}
+        <p class="auth-sec">Dein Freundescode</p>
+        <div class="fr-code">${esc(friendCode||"…")}</div>
+        <div class="auth-copy"><input type="text" id="frLink" readonly value="${esc(link)}" aria-label="Dein Freundes-Link"><button class="auth-btn" type="button" id="frCopy">Link kopieren</button></div>
+        <p class="auth-sec">Freund hinzufügen</p>
+        <form class="auth-copy" id="frAdd" autocomplete="off"><input type="text" id="frIn" maxlength="40" placeholder="Code, z.B. K7M2QX9A" aria-label="Freundescode"><button class="auth-btn" type="submit">Senden</button></form>
+        <p class="auth-msg${isErr?" err":""}" id="authMsg"${msgText?"":" hidden"}>${esc(msgText||"")}</p>
+        <button class="auth-btn alt" type="button" id="frClose">Fertig</button>`,true);
+      $a("#frClose").onclick=()=>{ friendsOpen=false; frConfirm=null; hide(); };
+      $a("#frCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText(link); msg("Kopiert. Schick den Link an deine Freunde."); }catch(e){ $a("#frLink").select(); msg("Markiert. Jetzt kopieren und verschicken."); } };
+      $a("#frAdd").onsubmit=async e=>{ e.preventDefault(); try{ const r=await sendRequest($a("#frIn").value); friendsView(r.err||r.ok,!!r.err); }catch(err){ friendsView("Das hat nicht geklappt. Prüf die Regeln in Firebase.",true); } };
+      screen.querySelectorAll("[data-req-yes]").forEach(b=>b.onclick=async()=>{ try{ await acceptRequest(b.dataset.reqYes); }catch(e){ friendsView("Annehmen hat nicht geklappt.",true); } });
+      screen.querySelectorAll("[data-req-no]").forEach(b=>b.onclick=()=>db.ref(`requests/${user.uid}/${b.dataset.reqNo}`).remove().catch(()=>{}));
+      screen.querySelectorAll("[data-inv-no]").forEach(b=>b.onclick=()=>db.ref(`inbox/${user.uid}/${b.dataset.invNo}`).remove().catch(()=>{}));
+      screen.querySelectorAll("[data-inv-yes]").forEach(b=>b.onclick=async()=>{
+        const x=inbox[b.dataset.invYes]; if(!x) return; const p=pageOf(x.type);
+        if(x.type==="swipe"){ friendsOpen=false; hide(); const t=`${p.file}#swipe-${x.sid}`; if(p.type===type){ history.replaceState(null,"",t); location.reload(); } else location.href=t; return; }
+        await db.ref(`inbox/${user.uid}/${b.dataset.invYes}`).remove().catch(()=>{});
+        const target=`${p.file}#join-${x.sid}-${x.code}`;
+        if(p.type===type){ history.replaceState(null,"",target); location.reload(); } else location.href=target;
+      });
+      screen.querySelectorAll("[data-fr-rm]").forEach(b=>b.onclick=async()=>{
+        const id=b.dataset.frRm; if(frConfirm!==id){ frConfirm=id; friendsView(); return; }
+        frConfirm=null;
+        await db.ref(`friends/${user.uid}/${id}`).remove().catch(()=>{});
+        await db.ref(`friends/${id}/${user.uid}`).remove().catch(()=>{});
+      });
+    }
+    // Freund direkt zu dieser Liste einladen (landet bei ihm unter "Freunde")
+    async function inviteFriend(fid){
+      const code=rand(20);
+      await db.ref(`spaces/${sid}/invites/${code}`).set({by:user.uid,at:Date.now(),for:fid});
+      await db.ref(`inbox/${fid}`).push().set({type,sid,code,from:user.uid,fromName:myName(),at:Date.now()});
+    }
+
+    /* ---------- Seite ohne Bereich: neu anlegen ---------- */
+    function setupView(problem){
+      hide();
+      const wrap=document.querySelector(".wrap"), head=document.querySelector("header");
+      if(!setupEl){ setupEl=document.createElement("div"); setupEl.className="auth-setup"; wrap.style.position="relative"; wrap.appendChild(setupEl); }
+      setupEl.style.top=(head.offsetTop+head.offsetHeight)+"px";
+      const cnt=document.getElementById("count"); if(cnt) cnt.textContent="";
+      let oldCode=null; try{ oldCode=localStorage.getItem("dateideen.code"); }catch(e){}
+      setupEl.innerHTML=`<div class="box">
+        <h3>${esc(PAGE.empty)}</h3>
+        ${problem?`<p class="auth-msg err">${esc(problem)}</p>`:""}
+        <p class="auth-note">${esc(PAGE.hint)}</p>
+        ${oldCode?`<label class="auth-check"><input type="checkbox" id="setMig" checked> Bisherige ${esc(PAGE.label)} von diesem Gerät übernehmen</label>`:""}
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <button class="auth-btn" type="button" id="setNew">${PAGE.type==="chores"?"Neuen Haushalt anlegen":PAGE.type==="budget"?"Budget anlegen":`${esc(PAGE.noun)} anlegen`}</button>
+        <p class="auth-note">Hat dich jemand eingeladen? Dann öffne einfach den Einladungslink.</p>
+      </div>`;
+      setupEl.hidden=false;
+      setupEl.querySelector("#setNew").onclick=async()=>{
+        const btn=setupEl.querySelector("#setNew"); btn.disabled=true; msg("Wird angelegt …",false,setupEl);
+        const id=rand(20);
+        try{
+          await db.ref(`spaces/${id}/access/${user.uid}`).set("owner");
+          await db.ref(`spaces/${id}/meta`).set({type,owner:user.uid,createdAt:Date.now()});
+          const mig=setupEl.querySelector("#setMig");
+          if(mig && mig.checked && oldCode){ msg("Bisherige Daten werden übernommen …",false,setupEl); await migrate(oldCode,id); }
+          await db.ref(`users/${user.uid}/spaces/${type}`).set(id);
+          ready(id);
+        }catch(err){ msg("Das Anlegen hat nicht geklappt. Prüf die Internetverbindung und die Regeln in Firebase.",true,setupEl); btn.disabled=false; }
+      };
+    }
+    // alte Daten vom geheimen Link übernehmen, nur was zu dieser Seite gehört
+    async function migrate(code,id){
+      if(type==="budget"){
+        const b=(await db.ref(`lists/${code}/budget`).once("value")).val();
+        if(b) await db.ref(`spaces/${id}`).update(b);
+        return;
+      }
+      const out={};
+      for(const k of PAGE.keys){ const v=(await db.ref(`lists/${code}/${k}`).once("value")).val(); if(v!=null) out[k]=v; }
+      const ids=new Set();
+      if(out.ideas) Object.values(out.ideas).forEach(i=>(Array.isArray(i.photos)?i.photos:[]).forEach(p=>ids.add(p)));
+      if(out.recipes) Object.values(out.recipes).forEach(r=>{ if(r.cover) ids.add(r.cover); });
+      if(ids.size){ out.photos={}; for(const p of ids){ const v=(await db.ref(`lists/${code}/photos/${p}`).once("value")).val(); if(v) out.photos[p]=v; } }
+      if(Object.keys(out).length) await db.ref(`spaces/${id}`).update(out);
+    }
+
+    /* ---------- Einladung annehmen ---------- */
+    // wie viele Einträge eine Liste hat (für die Frage beim Beitreten)
+    async function countData(id){
+      const d=DATA[type]; if(!d) return 0;
+      try{ return Object.keys((await db.ref(`spaces/${id}/${d.keys[0]}`).once("value")).val()||{}).length; }catch(e){ return 0; }
+    }
+    async function join(j,current,mode){
+      if(current && current!==j.sid && !mode){
+        const n=await countData(current), d=DATA[type], w=d?d.word:["Eintrag","Einträge"];
+        if(n>0){
+          show(`Einladung zu ${PAGE.label}`,"",`<p class="auth-note">Du hast schon eine eigene ${esc(PAGE.noun)} mit <b>${n} ${n===1?w[0]:w[1]}</b>. Was soll damit passieren?</p>
+            <button class="auth-btn" type="button" id="jYes">Mitnehmen und zusammenlegen</button>
+            <p class="auth-note">Deine ${w[1]} kommen in die gemeinsame ${esc(PAGE.noun)}. Sie gehört dann euch beiden. Wenn du später austrittst, nimmst du alles mit.</p>
+            <button class="auth-btn alt" type="button" id="jDrop">Nicht mitnehmen und löschen</button>
+            <p class="auth-note">Du trittst ohne deine ${w[1]} bei. Deine bisherige ${esc(PAGE.noun)} wird gelöscht.</p>
+            <button class="auth-link" type="button" id="jNo">Abbrechen, bei meiner bleiben</button>`);
+          $a("#jYes").onclick=()=>{ $a("#jYes").disabled=true; $a("#jYes").textContent="Wird zusammengelegt …"; join(j,current,"merge"); };
+          $a("#jDrop").onclick=()=>{ const b=$a("#jDrop"); if(b.dataset.sure!=="1"){ b.dataset.sure="1"; b.textContent=`Wirklich löschen? ${n} ${n===1?w[0]:w[1]} gehen verloren.`; return; }
+            b.disabled=true; join(j,current,"drop"); };
+          $a("#jNo").onclick=()=>{ clearHash(); hide(); open(current); };
+          return;
+        }
+        mode="drop";   // eigene Liste ist leer: einfach wechseln
+      }
+      try{
+        await db.ref(`spaces/${j.sid}/access/${user.uid}`).set(j.code);
+        await db.ref(`spaces/${j.sid}/meta/owners/${user.uid}`).set(true).catch(()=>{});   // gehört dann allen gemeinsam
+        if(current && current!==j.sid){
+          if(mode==="merge") await copyData(current,j.sid);
+          // alte Liste aufräumen: löschen, wenn sonst niemand drin war, sonst nur selbst austreten
+          try{ const acc=(await db.ref(`spaces/${current}/access`).once("value")).val()||{};
+            if(Object.keys(acc).length<=1) await db.ref(`spaces/${current}`).remove();
+            else { await db.ref(`spaces/${current}/profiles/${user.uid}`).remove(); await db.ref(`spaces/${current}/meta/owners/${user.uid}`).remove().catch(()=>{}); await db.ref(`spaces/${current}/access/${user.uid}`).remove(); } }catch(e){}
+        }
+        await db.ref(`users/${user.uid}/spaces/${type}`).set(j.sid);
+        await db.ref(`spaces/${j.sid}/invites/${j.code}`).remove().catch(()=>{});   // Link gilt nur einmal
+        clearHash(); ready(j.sid);
+      }catch(err){ clearHash(); if(current) open(current); else setupView("Der Einladungslink ist ungültig oder wurde zurückgezogen."); }
+    }
+    let confirm_=false;
+    // Alle Daten dieser Seite samt Fotos von einer Liste in eine andere kopieren (Vorhandenes bleibt)
+    async function copyData(from,to){
+      const d=DATA[type]; if(!d) return;
+      const photos=new Set();
+      for(const key of d.keys){
+        const src=(await db.ref(`spaces/${from}/${key}`).once("value")).val(); if(!src) continue;
+        const dst=(await db.ref(`spaces/${to}/${key}`).once("value")).val()||{};
+        const out={};
+        if(key==="week"){   // Gym-Wochenplan: Übungen je Tag zusammenführen
+          const A=Array.isArray(src)?Object.assign({},src):src, B=Array.isArray(dst)?Object.assign({},dst):dst;
+          for(const [day,v] of Object.entries(A)){ if(!v) continue; const b=B[day];
+            if(!b) out[day]=v; else out[day]={title:b.title||v.title||null,ex:[...new Set([...(b.ex||[]),...(v.ex||[])])]}; }
+        }else if(key==="log"){   // abgehakte Übungen je Datum zusammenführen
+          for(const [day,v] of Object.entries(src)) out[day]={...(v||{}),...(dst[day]||{})};
+        }else if(key==="rooms"||key==="cats"){   // eigene Namen: doppelte weglassen
+          const have=new Set(Object.values(dst));
+          for(const [k,v] of Object.entries(src)) if(!have.has(v) && !dst[k]) out[k]=v;
+        }else{
+          for(const [k,v] of Object.entries(src)){ if(dst[k] || !v) continue; out[k]=v;
+            if(v.cover && /^[0-9a-f]{32}$/.test(v.cover)) photos.add(v.cover);
+            if(Array.isArray(v.photos)) v.photos.forEach(p=>{ if(/^[0-9a-f]{32}$/.test(p)) photos.add(p); }); }
+        }
+        if(Object.keys(out).length) await db.ref(`spaces/${to}/${key}`).update(out);
+      }
+      for(const p of photos){ const ph=(await db.ref(`spaces/${from}/photos/${p}`).once("value")).val(); if(ph) await db.ref(`spaces/${to}/photos/${p}`).set(ph); }
+    }
+
+    async function open(id){
+      try{ await db.ref(`spaces/${id}/meta`).once("value"); ready(id); }
+      catch(err){ await db.ref(`users/${user.uid}/spaces/${type}`).remove().catch(()=>{}); setupView("Du hast keinen Zugriff mehr auf diese Liste. Leg eine neue an oder lass dich wieder einladen."); }
+    }
+    function ready(id){
+      sid=id; hide(); if(setupEl) setupEl.hidden=true; updateMenu();
+      db.ref(`spaces/${id}/profiles/${user.uid}`).update({name:profile.name||user.email.split("@")[0],email:user.email}).catch(()=>{});
+      if(started) return; started=true;
+      cb(db.ref("spaces/"+id),{uid:user.uid,sid:id,email:user.email,name:profile.name});
+    }
+
+    auth.onAuthStateChanged(async u=>{
+      if(!u){ if(user){ location.reload(); return; } loginView(parseJoin()||/^#friend-/.test(location.hash)?"register":"login"); return; }
+      user=u;
+      show(PAGE.label,"",`<p class="auth-note">Lädt …</p>`);
+      try{
+        pubDb=db;
+        profile=(await db.ref(`users/${u.uid}/profile`).once("value")).val()||{};
+        if(!profile.name){
+          let n=""; try{ n=sessionStorage.getItem("auth.newName")||""; sessionStorage.removeItem("auth.newName"); }catch(e){}
+          profile.name=n||u.displayName||u.email.split("@")[0];
+          await db.ref(`users/${u.uid}/profile/name`).set(profile.name);
+        }
+        try{ const pb=(await db.ref(`pub/${u.uid}`).once("value")).val()||{}; pubCache.set(u.uid,pb);
+          if(pb.name!==profile.name) await db.ref(`pub/${u.uid}/name`).set(profile.name); pubCache.get(u.uid).name=profile.name; }catch(e){}
+        window.Auth._profileView=profileView; window.Auth.me=u.uid;
+        installMenu();
+        db.ref(`users/${u.uid}/settings`).on("value",s=>{ const v=s.val()||{};
+          Object.entries(KC_KEY).forEach(([t,k])=>applyKcal(t,typeof v[k]==="boolean"?v[k]:v.kcal===true)); },()=>{});
+        try{ await ensureFriendCode(); watchFriends(); watchChats(); }catch(e){}
+        const fr=location.hash.match(/^#friend-([A-Za-z0-9]{6,12})$/);
+        if(fr){ clearHash(); setTimeout(async()=>{ let r; try{ r=await sendRequest(fr[1]); }catch(e){ r={err:"Die Anfrage hat nicht geklappt."}; } friendsView(r.err||r.ok,!!r.err); },400); }
+        if(PAGE.noSpace){ hide(); updateMenu(); if(!started){ started=true; cb(null,{uid:u.uid,email:u.email,name:profile.name,db}); } return; }
+        const current=(await db.ref(`users/${u.uid}/spaces/${type}`).once("value")).val();
+        const j=parseJoin();
+        if(j){ await join(j,current); return; }
+        if(current){ await open(current); return; }
+        setupView();
+      }catch(err){
+        show(PAGE.label,"",`<p class="auth-msg err">Die Daten konnten nicht geladen werden. Prüf die Internetverbindung und die Regeln in Firebase.</p>
+          <button class="auth-btn" type="button" onclick="location.reload()">Neu laden</button>
+          <button class="auth-link" type="button" id="authOut">Abmelden</button>`);
+        $a("#authOut").onclick=()=>auth.signOut();
+      }
+    });
+  }};
+})();
+
+</script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=t=>String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const firebaseConfig = {
+  apiKey: "AIzaSyD6JNwGczfmHYTqHp9qI5bnutz-JLphgGI",
+  authDomain: "oursapp-ff4cf.firebaseapp.com",
+  databaseURL: "https://oursapp-ff4cf-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "oursapp-ff4cf",
+  storageBucket: "oursapp-ff4cf.firebasestorage.app",
+  messagingSenderId: "509984933255",
+  appId: "1:509984933255:web:1f2e8b0850c94056f87f22"
+};
+// OAuth-Client-ID aus der Google Cloud Console (öffentlich, kein Geheimnis). Anmeldung läuft im Google-Fenster, Ours sieht dein Passwort nie.
+const GMAIL_CLIENT_ID = "";
+const SCOPE="https://www.googleapis.com/auth/gmail.readonly", API="https://gmail.googleapis.com/gmail/v1/users/me";
+const say=(t,ms=4000)=>{ $("#status").textContent=t; clearTimeout(say.t); if(ms) say.t=setTimeout(()=>{ if($("#status").textContent===t) $("#status").textContent=""; },ms); };
+
+/* ---------- Anmeldung bei Google: mehrere Konten, Token nur im Speicher dieses Tabs (max. 1 Stunde) ---------- */
+let tokenClient=null, gisReady=null, me=null, acct=null;   // acct = E-Mail des geöffneten Kontos
+const loadJ=(st,k,d)=>{ try{ return JSON.parse(st.getItem(k)||"null")||d; }catch(e){ return d; } };
+let accounts=loadJ(localStorage,"mail.accounts",[]); try{ const old=localStorage.getItem("mail.email"); if(old&&!accounts.includes(old)){ accounts.push(old); localStorage.removeItem("mail.email"); } }catch(e){}
+let toks=loadJ(sessionStorage,"mail.toks",{});
+const saveAcc=()=>{ try{ localStorage.setItem("mail.accounts",JSON.stringify(accounts)); sessionStorage.setItem("mail.toks",JSON.stringify(toks)); }catch(e){} };
+const tokOf=e=>{ const t=toks[e]; return t&&t.exp>Date.now()+30e3?t.at:null; };
+function loadGis(){
+  if(gisReady) return gisReady;
+  gisReady=new Promise((res,rej)=>{ if(window.google&&google.accounts&&google.accounts.oauth2) return res();
+    const s=document.createElement("script"); s.src="https://accounts.google.com/gsi/client"; s.async=true; s.onload=()=>res(); s.onerror=()=>{ gisReady=null; rej(new Error("Google-Anmeldung konnte nicht geladen werden. Bist du online?")); }; document.head.appendChild(s); });
+  return gisReady;
+}
+// hint = E-Mail eines bekannten Kontos (Neu-Anmeldung) oder leer (weiteres Konto hinzufügen → Kontoauswahl)
+function connect(hint){
+  return new Promise(async(res,rej)=>{
+    try{ await loadGis(); }catch(e){ return rej(e); }
+    tokenClient=google.accounts.oauth2.initTokenClient({client_id:GMAIL_CLIENT_ID,scope:SCOPE,
+      callback:async r=>{ if(r.error) return rej(new Error(r.error==="access_denied"?"Zugriff wurde nicht erlaubt.":"Google-Anmeldung fehlgeschlagen.")); if(!google.accounts.oauth2.hasGrantedAllScopes(r,SCOPE)) return rej(new Error("Bitte erlaube den Lesezugriff auf Gmail."));
+        try{ const p=await fetch(API+"/profile",{headers:{Authorization:"Bearer "+r.access_token}}).then(x=>x.json()); const email=p.emailAddress; if(!email) throw new Error();
+          toks[email]={at:r.access_token,exp:Date.now()+(+r.expires_in||3600)*1000}; if(!accounts.includes(email)) accounts.push(email); saveAcc(); res(email); }catch(e){ rej(new Error("Das Gmail-Konto konnte nicht gelesen werden.")); } },
+      error_callback:e=>rej(new Error(e&&e.type==="popup_closed"?"Anmeldefenster geschlossen.":e&&e.type==="popup_failed_to_open"?"Das Anmeldefenster wurde blockiert. Erlaube Pop-ups für diese Seite.":"Google-Anmeldung fehlgeschlagen."))});
+    tokenClient.requestAccessToken(hint?{prompt:"",login_hint:hint}:{prompt:"select_account consent"});
+  });
+}
+async function gapi(path,opt,email){
+  const e=email||acct, t=tokOf(e);
+  if(!t) throw Object.assign(new Error("Bitte neu verbinden."),{auth:true,email:e});
+  const r=await fetch(API+path,{...(opt||{}),headers:{Authorization:"Bearer "+t}});
+  if(r.status===401){ delete toks[e]; saveAcc(); throw Object.assign(new Error("Die Verbindung ist abgelaufen."),{auth:true,email:e}); }
+  const d=await r.json().catch(()=>({})); if(!r.ok) throw new Error((d.error&&d.error.message)||"Gmail hat nicht geantwortet."); return d;
+}
+
+/* ---------- Posteingang ---------- */
+const TABS=[["inbox","Posteingang","in:inbox"],["unread","Ungelesen","in:inbox is:unread"],["primary","Allgemein","in:inbox category:primary"],["important","Wichtig","is:important"],["starred","Markiert","is:starred"],["att","Mit Anhang","has:attachment"],["sent","Gesendet","in:sent"]];
+let tab="inbox"; try{ const v=localStorage.getItem("mail.tab"); if(TABS.some(t=>t[0]===v)) tab=v; }catch(e){}
+let q="", msgs=[], next=null, loading=false;
+const hdr=(m,n)=>{ const h=(m.payload&&m.payload.headers||[]).find(x=>x.name.toLowerCase()===n.toLowerCase()); return h?h.value:""; };
+function parseFrom(v){ const m=String(v||"").match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>/); return m?{name:m[1].trim()||m[2],mail:m[2]}:{name:String(v||"").trim(),mail:String(v||"").trim()}; }
+const COLORS=["#a13b3b","#2563eb","#16a34a","#ea580c","#9333ea","#0891b2","#ca8a04","#db2777","#4f46e5","#0d9488"];
+const colorOf=s=>{ let h=0; for(const c of String(s)) h=(h*31+c.charCodeAt(0))|0; return COLORS[Math.abs(h)%COLORS.length]; };
+const decodeEntities=t=>{ const d=document.createElement("textarea"); d.innerHTML=t; return d.value; };
+function when(ms){ const d=new Date(ms), n=new Date(); if(d.toDateString()===n.toDateString()) return d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+  const y=new Date(n); y.setDate(n.getDate()-1); if(d.toDateString()===y.toDateString()) return "Gestern";
+  return d.toLocaleDateString("de-DE",d.getFullYear()===n.getFullYear()?{day:"numeric",month:"short"}:{day:"numeric",month:"short",year:"2-digit"}); }
+async function load(more){
+  if(loading) return; loading=true; $("#refresh").classList.add("spin"); if(!more){ next=null; }
+  try{
+    const query=(TABS.find(t=>t[0]===tab)||TABS[0])[2]+(q?" "+q:"");
+    const l=await gapi(`/messages?maxResults=25&q=${encodeURIComponent(query)}${more&&next?"&pageToken="+encodeURIComponent(next):""}`);
+    const ids=(l.messages||[]).map(x=>x.id);
+    const got=await Promise.all(ids.map(id=>gapi(`/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`).catch(()=>null)));
+    const list=got.filter(Boolean); msgs=more?msgs.concat(list):list; next=l.nextPageToken||null; renderList();
+  }catch(e){ if(e.auth){ renderAccounts(); say("Die Verbindung ist abgelaufen. Tippe auf das Konto, um neu zu verbinden.",7000); } else say(e.message,7000); }
+  loading=false; $("#refresh").classList.remove("spin");
+}
+function renderList(){
+  $("#tabs").innerHTML=TABS.map(([k,l])=>`<button type="button" class="tab" data-tab="${k}" aria-pressed="${tab===k}">${l}</button>`).join("");
+  $("#acct").innerHTML=acct?`<button type="button" id="toAccounts">‹ Konten</button><span>📬 ${esc(acct)}</span><button type="button" id="disconnect" style="margin-left:auto">Trennen</button>`:"";
+  const sent=tab==="sent";
+  $("#list").innerHTML=msgs.length?`<ul class="mlist">${msgs.map(m=>{ const f=parseFrom(hdr(m,sent?"To":"From")), unread=(m.labelIds||[]).includes("UNREAD"), att=(m.payload&&m.payload.mimeType||"").includes("mixed");
+      return `<li><button type="button" class="mrow${unread?" unread":""}" data-msg="${esc(m.id)}"><span class="av" style="background:${colorOf(f.mail)}">${esc((f.name||"?").replace(/[^\p{L}\p{N}]/gu,"").slice(0,1).toUpperCase()||"?")}</span>
+        <span class="mmain"><span class="mtop"><b>${sent?"An: ":""}${esc(f.name||f.mail)}</b><time>${when(+m.internalDate)}</time></span><span class="subj">${esc(hdr(m,"Subject")||"(kein Betreff)")}${att?`<span class="clip">📎</span>`:""}</span><span class="snip">${esc(decodeEntities(m.snippet||""))}</span></span></button></li>`; }).join("")}</ul>
+      ${next?`<button class="more" type="button" id="more">Ältere Mails laden</button>`:""}`
+    :`<div class="empty"><p>${loading?"Mails werden geladen …":q?"Keine Mails gefunden.":"Hier ist nichts."}</p></div>`;
+}
+
+/* ---------- Mail lesen ---------- */
+const b64=s=>{ const bin=atob(String(s||"").replace(/-/g,"+").replace(/_/g,"/")); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return u; };
+const decode=(data,charset)=>{ try{ return new TextDecoder(charset||"utf-8").decode(b64(data)); }catch(e){ return new TextDecoder("utf-8").decode(b64(data)); } };
+function walk(p,out){ if(!p) return out; const mt=(p.mimeType||"").toLowerCase(), cs=((p.headers||[]).find(h=>h.name.toLowerCase()==="content-type")||{value:""}).value.match(/charset="?([^";]+)/i);
+  if(p.filename&&p.body&&(p.body.attachmentId||p.body.data)) out.atts.push({name:p.filename,size:p.body.size||0,id:p.body.attachmentId,data:p.body.data,type:mt,cid:((p.headers||[]).find(h=>h.name.toLowerCase()==="content-id")||{value:""}).value.replace(/[<>]/g,"")});
+  else if(mt==="text/html"&&p.body&&p.body.data&&!out.html) out.html=decode(p.body.data,cs&&cs[1]);
+  else if(mt==="text/plain"&&p.body&&p.body.data&&!out.text) out.text=decode(p.body.data,cs&&cs[1]);
+  (p.parts||[]).forEach(c=>walk(c,out)); return out; }
+let cur=null, showImgs=false;
+async function openMsg(id){
+  $("#wrap").classList.add("reading"); $("#listView").hidden=true; $("#readView").hidden=false; $("#readBody").innerHTML=`<p class="snip">Lädt …</p>`; showImgs=false;
+  try{ const m=await gapi(`/messages/${id}?format=full`); cur={m,parts:walk(m.payload,{html:"",text:"",atts:[]})}; renderMsg(); }
+  catch(e){ if(e.auth){ closeMsg(); renderAccounts(); say("Bitte tippe auf das Konto, um neu zu verbinden.",6000); } else $("#readBody").innerHTML=`<p class="snip">${esc(e.message)}</p>`; }
+}
+function renderMsg(){
+  const {m,parts}=cur, f=parseFrom(hdr(m,"From")), to=hdr(m,"To"), fmt=n=>n<1024?n+" B":n<1048576?Math.round(n/1024)+" KB":(n/1048576).toFixed(1)+" MB";
+  const hasRemote=/<img[^>]+src=["']?https?:/i.test(parts.html||"")||/url\(\s*["']?https?:/i.test(parts.html||"");
+  $("#readBody").innerHTML=`<div class="rh"><h2>${esc(hdr(m,"Subject")||"(kein Betreff)")}</h2>
+      <div class="rmeta"><span class="av" style="background:${colorOf(f.mail)}">${esc((f.name||"?").slice(0,1).toUpperCase())}</span><span class="who"><b>${esc(f.name)}</b><small>${esc(f.mail)}${to?` → ${esc(to)}`:""}</small></span><time>${new Date(+m.internalDate).toLocaleString("de-DE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</time></div></div>
+    ${parts.html&&hasRemote&&!showImgs?`<div class="imgnote">🛡️ Externe Bilder sind ausgeblendet (schützt vor Lesebestätigungen).<button type="button" id="imgs">Bilder anzeigen</button></div>`:""}
+    ${parts.html?`<iframe class="body-frame" id="frame" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin" referrerpolicy="no-referrer" title="Inhalt der Mail"></iframe>`:`<div class="body-text">${esc(parts.text||m.snippet||"")}</div>`}
+    ${parts.atts.filter(a=>!a.cid||!(parts.html||"").includes("cid:"+a.cid)).length?`<div class="atts">${parts.atts.filter(a=>!a.cid||!(parts.html||"").includes("cid:"+a.cid)).map((a,i)=>`<button type="button" class="att" data-att="${parts.atts.indexOf(a)}">📎 <span>${esc(a.name)}</span><small>${fmt(a.size)}</small></button>`).join("")}</div>`:""}`;
+  if(parts.html) paintFrame();
+}
+async function paintFrame(){
+  const fr=$("#frame"); if(!fr) return; let html=cur.parts.html;
+  // eingebettete Bilder (cid:) direkt einsetzen
+  for(const a of cur.parts.atts){ if(!a.cid||!html.includes("cid:"+a.cid)) continue; try{ const data=a.data||(await gapi(`/messages/${cur.m.id}/attachments/${a.id}`)).data; html=html.split("cid:"+a.cid).join(`data:${a.type};base64,${data.replace(/-/g,"+").replace(/_/g,"/")}`); }catch(e){} }
+  const csp=`default-src 'none'; style-src 'unsafe-inline'${showImgs?" https:":""}; img-src data:${showImgs?" https: http:":""}; font-src data:${showImgs?" https:":""}`;
+  const dark=matchMedia("(prefers-color-scheme: dark)").matches;
+  fr.srcdoc=`<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${csp}"><base target="_blank"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <style>html,body{margin:0;padding:10px;font-family:-apple-system,system-ui,sans-serif;font-size:15px;color:#1d1a19;background:#fff;overflow-wrap:anywhere}img{max-width:100%;height:auto}table{max-width:100%!important}a{color:#a13b3b}</style></head><body>${html}</body></html>`;
+  fr.onload=()=>{ try{ const h=fr.contentDocument.documentElement.scrollHeight; fr.style.height=Math.min(Math.max(h+10,200),20000)+"px"; }catch(e){ fr.style.height="70vh"; } };
+}
+function closeMsg(){ $("#wrap").classList.remove("reading"); $("#readView").hidden=true; $("#listView").hidden=false; cur=null; }
+async function downloadAtt(i){
+  const a=cur.parts.atts[i]; if(!a) return; say("Anhang wird geladen …",0);
+  try{ const data=a.data||(await gapi(`/messages/${cur.m.id}/attachments/${a.id}`)).data; const blob=new Blob([b64(data)],{type:a.type||"application/octet-stream"}); const url=URL.createObjectURL(blob);
+    const l=document.createElement("a"); l.href=url; l.download=a.name; document.body.appendChild(l); l.click(); l.remove(); setTimeout(()=>URL.revokeObjectURL(url),30000); say(""); }
+  catch(e){ say(e.message,6000); }
+}
+
+/* ---------- Kontenübersicht ---------- */
+const G_ICON='<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
+const SAFE=`<div class="safe"><span>🔒</span><span>Du meldest dich im Fenster von Google an. Ours bekommt nur <b>Lesezugriff</b> – es kann keine Mails senden, löschen oder ändern. Dein Passwort sieht Ours nie, und deine Mails werden nicht gespeichert.</span></div>`;
+let counts={};
+function renderAccounts(){
+  acct=null; $("#mailUi").hidden=true; $("#list").innerHTML="";
+  if(!GMAIL_CLIENT_ID){ $("#setupBox").innerHTML=`<div class="setup"><h2>Gmail ist noch nicht eingerichtet</h2><p>Für die Verbindung braucht Ours eine Client-ID aus der Google Cloud Console. Als „Autorisierter JavaScript-Ursprung“ trägst du dort ein:</p><span class="code">${esc(location.origin)}</span></div>`; return; }
+  if(!accounts.length){ $("#setupBox").innerHTML=`<div class="setup"><h2>Gmail verbinden</h2><p>Lies deine Gmail-Mails direkt in Ours. Du kannst mehrere Konten hinzufügen.</p><button class="gbtn" type="button" data-addacc>${G_ICON}Mit Google anmelden</button>${SAFE}</div>`; return; }
+  $("#setupBox").innerHTML=`<div class="accs-h"><h2>Deine Konten</h2><span>${accounts.length} ${accounts.length===1?"Konto":"Konten"}</span></div>
+    <ul class="accs">${accounts.map(e=>{ const c=counts[e], on=!!tokOf(e);
+      return `<li><button type="button" class="accrow" data-acc="${esc(e)}"><span class="av" style="background:${colorOf(e)}">${esc(e[0].toUpperCase())}</span>
+        <span class="mmain"><b>${esc(e)}</b><small>${on?(c?`${c.unread?`<b class="un">${c.unread} ungelesen</b> · `:"Alles gelesen · "}${c.total.toLocaleString("de-DE")} im Posteingang`:"lädt …"):"Tippen zum Verbinden"}</small></span>
+        ${on&&c&&c.unread?`<span class="badge">${c.unread>99?"99+":c.unread}</span>`:""}<span class="chev">›</span></button></li>`; }).join("")}</ul>
+    <button class="gbtn" type="button" data-addacc>${G_ICON}Weiteres Konto hinzufügen</button>${SAFE}`;
+  accounts.filter(e=>tokOf(e)&&!counts[e]).forEach(async e=>{ try{ const l=await gapi("/labels/INBOX",null,e); counts[e]={unread:l.messagesUnread||0,total:l.messagesTotal||0}; if(!acct) renderAccounts(); }catch(err){ if(err.auth&&!acct) renderAccounts(); } });
+}
+async function openAccount(email){
+  try{ if(!tokOf(email)){ say("Verbinde mit "+email+" …",0); const got=await connect(email); email=got; say(""); }
+    acct=email; me={emailAddress:email}; $("#setupBox").innerHTML=""; $("#mailUi").hidden=false; msgs=[]; q=""; $("#q").value=""; renderList(); load(); }
+  catch(e){ say(e.message,7000); renderAccounts(); }
+}
+async function addAccount(){ try{ const e=await connect(""); counts[e]=null; delete counts[e]; renderAccounts(); openAccount(e); }catch(err){ say(err.message,7000); } }
+function removeAccount(e){
+  const t=tokOf(e); if(t){ loadGis().then(()=>{ try{ google.accounts.oauth2.revoke(t,()=>{}); }catch(err){} }).catch(()=>{}); }
+  accounts=accounts.filter(x=>x!==e); delete toks[e]; delete counts[e]; saveAcc(); say(e+" getrennt."); renderAccounts();
+}
+const renderSetup=renderAccounts;
+
+/* ---------- Klicks ---------- */
+document.addEventListener("click",e=>{
+  const t=e.target;
+  if(t.closest("[data-addacc]")) return addAccount();
+  const ac=t.closest("[data-acc]"); if(ac) return openAccount(ac.dataset.acc);
+  if(t.closest("#toAccounts")){ counts={}; return renderAccounts(); }
+  const tb=t.closest("[data-tab]"); if(tb){ tab=tb.dataset.tab; try{ localStorage.setItem("mail.tab",tab); }catch(err){} msgs=[]; renderList(); load(); return; }
+  const m=t.closest("[data-msg]"); if(m) return openMsg(m.dataset.msg);
+  if(t.closest("#more")) return load(true);
+  if(t.closest("#refresh")) return load();
+  if(t.closest("#readBack")) return closeMsg();
+  if(t.closest("#imgs")){ showImgs=true; return renderMsg(); }
+  const at=t.closest("[data-att]"); if(at) return downloadAtt(+at.dataset.att);
+  if(t.closest("#disconnect")){ const b=t.closest("#disconnect"); if(b.dataset.sure!=="1"){ b.dataset.sure="1"; b.textContent="Wirklich trennen?"; return; } removeAccount(acct); }
+});
+$("#q").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); q=e.target.value.trim(); load(); } });
+$("#q").addEventListener("search",e=>{ q=e.target.value.trim(); load(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&cur) closeMsg(); });
+
+/* ---------- Start ---------- */
+Auth.start(firebaseConfig,"mail",()=>{ renderAccounts(); if(GMAIL_CLIENT_ID&&accounts.length) loadGis().catch(()=>{}); });
+</script>
+</body>
+</html>
