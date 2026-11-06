@@ -654,7 +654,7 @@ header{border-bottom:0!important}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-06-202153";
+  const APP_VERSION="2026-11-06-203147";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1284,7 +1284,7 @@ function nextDate(r){ const t=new Date(); t.setHours(0,0,0,0);
 
 /* ---------- Zustand ---------- */
 let rec={}, exp={}, customCats={};                    // gemeinsamer Bereich (manuelle Einträge)
-let fin={accounts:{},tx:{},rules:{},budgets:{},contracts:{},eb:{},meta:{},alias:{}};   // privat: users/<uid>/fin
+let fin={accounts:{},tx:{},rules:{},budgets:{},contracts:{},eb:{},meta:{},alias:{},aicat:{}};   // privat: users/<uid>/fin
 const now=new Date(); let vy=now.getFullYear(), vm=now.getMonth();
 let view="home"; try{ const v=localStorage.getItem("budget.view"); if(["home","tx","con","stats"].includes(v)) view=v; }catch(e){}
 let q="", txFilter="all";
@@ -1350,6 +1350,7 @@ function autoCat(t){
   const m=merchant(t); if(m.cat) return m.cat;
   for(const [re,c] of KEYS) if(re.test(m.proc?(t.text||""):s)) return c;
   if(/\bumbuchung\b|\bübertrag\b|eigene[sn]? konto/i.test(s)) return "Umbuchung";
+  const ai=fin.aicat&&fin.aicat[k]; if(ai&&ai!=="Sonstiges") return ai;   // von Claude, nur wenn es sich sicher war
   return null;
 }
 const catOf=t=>(t.cat&&t.catSrc!=="ai")?t.cat:(autoCat(t)||"Sonstiges");
@@ -1361,8 +1362,13 @@ function allTx(){
   return out;
 }
 const hasBank=()=>Object.keys(fin.tx||{}).length>0;
+// Gehalt, das ab dem 20. eingeht, ist schon für den nächsten Monat gedacht (abschaltbar in der Auswertung)
+const SALARY_DAY=20;
+const salaryShift=()=>!(fin.meta&&fin.meta.salaryShift===false);
+function effKey(t){ const k=t.date.slice(0,7); if(!salaryShift()||t.amount<=0||+t.date.slice(8,10)<SALARY_DAY||catOf(t)!=="Gehalt") return k;
+  const [y,m]=k.split("-").map(Number); return m===12?`${y+1}-01`:`${y}-${pad(m+1)}`; }
 function monthTx(y,m){
-  const key=`${y}-${pad(m+1)}`; const list=allTx().filter(t=>t.date.slice(0,7)===key);
+  const key=`${y}-${pad(m+1)}`; const list=allTx().filter(t=>effKey(t)===key);
   if(!hasBank()) Object.entries(rec).forEach(([id,r])=>{ if(!r||!r.amount) return; occurrences(r,y,m).forEach(d=>list.push({id:"r_"+id+"_"+d,rid:id,date:`${key}-${pad(d)}`,amount:r.kind==="income"?r.amount:-r.amount,name:r.name,cat:r.cat||(r.kind==="income"?"Gehalt":null),src:"rec"})); });
   return list.sort((a,b)=>b.date.localeCompare(a.date)||Math.abs(b.amount)-Math.abs(a.amount));
 }
@@ -1417,7 +1423,7 @@ function txRow(t,showDate){
   const c=catOf(t), pos=t.amount>0, acc=fin.accounts[t.acc];
   return `<li><button type="button" class="row${t.ex?" ex":""}" data-tx="${esc(t.id)}">
     <span class="ico" style="background:${catColor(c)}">${esc((displayName(t)||c||"?").slice(0,1).toUpperCase())}</span>
-    <span class="main"><b>${esc(displayName(t)||c)}${t.pending?`<span class="tag">vorgemerkt</span>`:""}${t.src==="manual"?`<span class="tag">manuell</span>`:""}</b><small>${esc(c)}${showDate?` · ${fromIso(t.date).toLocaleDateString("de-DE",{day:"numeric",month:"short"})}`:""}</small></span>
+    <span class="main"><b>${esc(displayName(t)||c)}${t.pending?`<span class="tag">vorgemerkt</span>`:""}${t.src==="manual"?`<span class="tag">manuell</span>`:""}</b><small>${esc(c)}${showDate?` · ${fromIso(t.date).toLocaleDateString("de-DE",{day:"numeric",month:"short"})}`:""}${t.date&&effKey(t)!==t.date.slice(0,7)?` · zählt für ${MONTHS[+effKey(t).slice(5,7)-1]}`:""}</small></span>
     <span class="amt${pos?" plus":" minus"}">${pos?"+":""}${money(t.amount)}</span></button></li>`;
 }
 // Datum freundlich: heute, morgen, in 3 Tagen
@@ -1476,6 +1482,8 @@ function averages(){
   const firstTx=allTx().reduce((a,t)=>!a||t.date<a?t.date:a,null); if(!firstTx) return null;
   const list=[]; for(let i=1;i<=12&&list.length<6;i++){ const d=new Date(now.getFullYear(),now.getMonth()-i,1); if(iso(new Date(d.getFullYear(),d.getMonth()+1,0))<firstTx) break;
     const tt=totals(d.getFullYear(),d.getMonth()); if(tt.inc||tt.out) list.push(tt); }
+  // nur Monate mit Einnahmen (sonst zieht z.B. der erste Monat ohne Gehalt den Schnitt runter)
+  const withInc=list.filter(x=>x.inc>0); if(withInc.length) list.splice(0,list.length,...withInc);
   if(!list.length) return null; const n=list.length, sum=k=>Math.round(list.reduce((a,x)=>a+x[k],0)/n);
   return {n,inc:sum("inc"),out:sum("out"),left:sum("left")};
 }
@@ -1517,7 +1525,8 @@ function renderStats(){
   h+=`<div class="chart-card"><div class="sec-head"><h2>Rein und raus</h2><span class="sum">letzte 6 Monate</span></div>${barsChart(months)}
     <div class="chart-leg"><span><i style="background:var(--plus)"></i>Einnahmen</span><span><i style="background:var(--minus)"></i>Ausgaben</span><span>Werte in €</span></div></div>`;
   h+=avgHtml();
-  h+=`<p class="note">Umbuchungen zwischen eigenen Konten zählen nicht mit. Sparpläne und Depot-Überweisungen gelten als gespart, nicht als ausgegeben.</p>`;
+  h+=`<p class="note">Umbuchungen zwischen eigenen Konten zählen nicht mit. Sparpläne und Depot-Überweisungen gelten als gespart, nicht als ausgegeben.</p>
+    <label class="chk" style="font-size:.86rem"><input type="checkbox" id="salaryShift"${salaryShift()?" checked":""}> Gehalt ab dem ${SALARY_DAY}. zählt für den nächsten Monat</label>`;
   return h;
 }
 let txShown=100;
@@ -1529,7 +1538,7 @@ function renderTx(){
     <div class="fchips">${[["all","Alle"],["out","Ausgaben"],["back","Rückzahlungen"],["in","Einnahmen"]].map(([k,l])=>`<button type="button" class="chip" data-txf="${k}" aria-pressed="${txFilter===k}">${l}</button>`).join("")}<span class="sum num" style="margin-left:auto;color:var(--muted);font-size:.82rem">${list.length} Umsätze</span></div>`;
   if(!list.length) return h+`<div class="empty">${ql?"Nichts gefunden.":"Noch keine Umsätze."}</div>`;
   // nach Monat gruppiert, mit Summe pro Monat
-  const shown=list.slice(0,txShown), sums={}; list.forEach(t=>{ if(t.ex) return; const c=catOf(t); if(NO_SPEND.has(c)) return; const k=t.date.slice(0,7); sums[k]=sums[k]||{in:0,out:0,back:0}; if(t.amount>0){ if(c===BACK_CAT) sums[k].back+=t.amount; else sums[k].in+=t.amount; } else sums[k].out+=t.amount; });
+  const shown=list.slice(0,txShown), sums={}; list.forEach(t=>{ if(t.ex) return; const c=catOf(t); if(NO_SPEND.has(c)) return; const k=effKey(t); sums[k]=sums[k]||{in:0,out:0,back:0}; if(t.amount>0){ if(c===BACK_CAT) sums[k].back+=t.amount; else sums[k].in+=t.amount; } else sums[k].out+=t.amount; });
   let lastM="", lastD=""; h+="<ul>";
   shown.forEach(t=>{ const m=t.date.slice(0,7);
     if(m!==lastM){ lastM=m; lastD=""; const [y,mm]=m.split("-").map(Number), sm=sums[m]||{in:0,out:0};
@@ -1740,15 +1749,19 @@ async function syncAll(manual){
 const hashTx=t=>{ const s=[t.date,t.amount,t.name,t.text].join("|"); let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0; return "h"+(h>>>0).toString(36); };
 // unbekannte Umsätze von Claude zuordnen lassen (nur die, die keine Regel und kein Stichwort treffen)
 let categorizing=false;
+// Händler, die keine Regel und kein Stichwort treffen, einmal von Claude zuordnen lassen – nur sichere Antworten zählen
 async function categorizeNew(){
-  return;   // vorerst aus: lieber „Sonstiges“ und selbst sortieren als falsch zugeordnet
-  if(categorizing||!WORKER_URL) return; const todo=Object.entries(fin.tx).filter(([,t])=>t&&!t.cat&&!autoCat(t)&&!t.catTried).slice(0,80); if(!todo.length) return;
-  categorizing=true;
-  try{ const d=await api({mode:"fin-cat",cats:catList(),items:todo.map(([,t])=>({name:t.name,text:t.text,amount:t.amount}))}); const upd={};
-    todo.forEach(([id,t],i)=>{ const c=(d.cats||[])[i]; t.catTried=true; upd[id+"/catTried"]=true; if(c&&c!=="Sonstiges"){ t.cat=c; t.catSrc="ai"; upd[id+"/cat"]=c; upd[id+"/catSrc"]="ai"; } });
-    await finRef("tx").update(upd).catch(()=>{}); render();
-  }catch(e){}
-  categorizing=false; if(Object.values(fin.tx).some(t=>t&&!t.cat&&!autoCat(t)&&!t.catTried)) setTimeout(categorizeNew,1500);
+  if(categorizing||!WORKER_URL||categorizeNew.off) return;
+  const seen=new Set(), todo=[];
+  for(const t of allTx()){ if(t.amount>=0||t.ex||t.src==="manual"||t.src==="rec"||(t.cat&&t.catSrc!=="ai")) continue; const k=merchKey(t); if(!k||seen.has(k)||(fin.aicat&&k in fin.aicat)) continue;
+    seen.add(k); fin.rules[k]=fin.rules[k]; const tmp=fin.aicat[k]; if(autoCat(t)) continue; todo.push([k,t]); if(todo.length>=60) break; }
+  if(!todo.length) return; categorizing=true;
+  try{ const d=await api({mode:"fin-cat",cats:catList().filter(c=>!INCOME_CATS.has(c)&&c!=="Umbuchung"),items:todo.map(([,t])=>({name:displayName(t),orig:t.name,text:cleanText(t.text,fin.accounts[t.acc]),amount:t.amount}))});
+    if(!Array.isArray(d.sure)){ categorizeNew.off=true; categorizing=false; return; }   // alter Helfer ohne „sicher“-Angabe: nichts übernehmen
+    const upd={}; todo.forEach(([k],i)=>{ const c=(d.cats||[])[i], ok=d.sure[i]&&c&&c!=="Sonstiges"; fin.aicat[k]=ok?c:"Sonstiges"; upd[k]=fin.aicat[k]; });
+    await finRef("aicat").update(upd).catch(()=>{}); render();
+  }catch(e){ categorizing=false; return; }
+  categorizing=false; setTimeout(categorizeNew,1200);
 }
 
 /* ---------- CSV-Import (Bank, PayPal, Trade Republic …) ---------- */
@@ -1915,6 +1928,7 @@ $("#sheetModal").addEventListener("click",e=>{
     fin.accounts[id]=a; finRef("accounts/"+id).set(a).catch(showErr); closeSheet(); render(); return; }
   if(t.closest("#csvGo")) return importCsv();
 });
+document.addEventListener("change",e=>{ if(e.target.id!=="salaryShift") return; fin.meta=fin.meta||{}; fin.meta.salaryShift=e.target.checked; finRef("meta/salaryShift").set(e.target.checked).catch(showErr); render(); });
 $("#sheetModal").addEventListener("change",e=>{ const m=e.target.closest("[data-map]"); if(m&&csv){ csv.map[m.dataset.map]=+m.value; csvSheet(); } });
 $("#csvFile").addEventListener("change",async e=>{
   const f=e.target.files[0]; e.target.value=""; if(!f) return;
@@ -1940,11 +1954,11 @@ Auth.start(firebaseConfig,"budget",(r,info)=>{
   root.child("expenses").on("value",s=>{ exp=s.val()||{}; render(); });
   root.child("cats").on("value",s=>{ customCats=s.val()||{}; render(); if(form) renderFormChips(); });
   if(myUid){ let first=true;
-    finRef().on("value",s=>{ const v=s.val()||{}; fin={accounts:v.accounts||{},tx:v.tx||{},rules:v.rules||{},budgets:v.budgets||{},contracts:v.contracts||{},eb:v.eb||{},meta:v.meta||{},alias:v.alias||{}};
+    finRef().on("value",s=>{ const v=s.val()||{}; fin={accounts:v.accounts||{},tx:v.tx||{},rules:v.rules||{},budgets:v.budgets||{},contracts:v.contracts||{},eb:v.eb||{},meta:v.meta||{},alias:v.alias||{},aicat:v.aicat||{}};
       if(!document.querySelector("#sheetModal:not([hidden]) input:focus")) render();
       if(first){ first=false; if(ebBack) finishBank();
         const last=Math.max(0,...Object.values(fin.accounts).filter(a=>a&&a.src==="eb").map(a=>a.syncAt||0));
-        if(Object.keys(fin.eb).length&&Date.now()-last>10*60e3) setTimeout(()=>syncAll(false),600); } },()=>{});
+        if(Object.keys(fin.eb).length&&Date.now()-last>10*60e3) setTimeout(()=>syncAll(false),600); else setTimeout(categorizeNew,800); } },()=>{});
   }
 });
 </script>
