@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ours · Datenschutz & Nutzung</title>
+<link rel="icon" href="ours-logo.png">
+<style>
+:root{--ink:#1d1d22;--muted:#5d5d66;--bg:#f6f3ee;--line:#e2ddd4}
+@media (prefers-color-scheme:dark){:root{--ink:#f1f0f4;--muted:#a3a3ad;--bg:#16161a;--line:#2c2c33}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,sans-serif;line-height:1.6;padding:24px 16px}
+main{max-width:680px;margin:0 auto}
+h1{font-family:Georgia,serif;font-weight:400;font-size:2rem;margin:0 0 4px}
+h2{font-size:1.1rem;margin:28px 0 6px;padding-top:16px;border-top:1px solid var(--line)}
+p,li{color:var(--muted)}
+a{color:var(--ink)}
+</style>
+</head>
+<body>
+<main>
+<h1>Datenschutz & Nutzung</h1>
+<p>Ours ist ein privates, nicht-kommerzielles Projekt für den persönlichen Gebrauch.</p>
+
+<h2 id="datenschutz">Datenschutz</h2>
+<ul>
+<li><b>Konto:</b> Für die Anmeldung werden E-Mail-Adresse und Name über Firebase Authentication (Google) gespeichert.</li>
+<li><b>Deine Daten</b> (z.B. Rezepte, Trainings, Budget) liegen in der Firebase Realtime Database. Private Daten sind durch Zugriffsregeln nur für dich lesbar; gemeinsame Bereiche nur für eingeladene Personen.</li>
+<li><b>Bankkonten (Budget):</b> Die Verbindung läuft über den lizenzierten Kontoinformationsdienst Enable Banking (PSD2). Deine Bank-Zugangsdaten gibst du ausschließlich auf der Seite deiner Bank ein – Ours sieht und speichert sie nie. Ours erhält nur Lesezugriff auf Kontostand und Umsätze; Zahlungen sind nicht möglich. Die Freigabe kannst du jederzeit in der App trennen; sie endet spätestens nach 180 Tagen.</li>
+<li><b>Automatische Kategorien und Rezept-Funktionen:</b> Dafür werden einzelne Texte (z.B. Empfängername und Verwendungszweck) an einen Hilfsdienst (Cloudflare Worker) und an Claude (Anthropic) übermittelt und nicht dauerhaft gespeichert.</li>
+<li><b>Auf deinem Gerät</b> werden für die Offline-Nutzung Seiten und zuletzt geladene Daten zwischengespeichert.</li>
+<li><b>Löschen:</b> Du kannst Einträge, Konten und Bankverbindungen in der App löschen. Für die vollständige Löschung deines Kontos wende dich an den Betreiber.</li>
+</ul>
+
+<h2 id="nutzung">Nutzungsbedingungen</h2>
+<ul>
+<li>Ours wird ohne Gewähr bereitgestellt. Angaben wie Kategorien, erkannte Verträge, Kalorien oder Budgets sind Schätzungen und keine Finanz-, Ernährungs- oder Trainingsberatung.</li>
+<li>Die Nutzung ist nur für den privaten Gebrauch gedacht.</li>
+</ul>
+<p><a href="index.html">Zurück zu Ours</a></p>
+</main>
+</body>
+</html>
