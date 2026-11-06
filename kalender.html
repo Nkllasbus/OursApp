@@ -115,7 +115,7 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
 .dayhead button{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:36px;height:36px;font-size:1.1rem;color:var(--ink)}
 .dayhead b{font-size:1rem}
 .allday{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}
-.timeline{position:relative;height:1152px;border-top:1px solid var(--line)}
+.timeline{position:relative;height:calc(var(--hpx,48px) * 24);border-top:1px solid var(--line)}
 .hr{position:absolute;left:0;right:0;border-top:1px solid var(--line);font-size:.68rem;color:var(--muted)}
 .hr span{position:absolute;top:-8px;left:0;background:var(--bg);padding-right:6px}
 .tev{position:absolute;left:46px;right:4px;border-radius:8px;border-left:4px solid var(--c);background:color-mix(in srgb,var(--c) 18%,var(--surface));padding:4px 8px;font-size:.8rem;overflow:hidden;color:var(--ink);text-align:left;border-top:0;border-right:0;border-bottom:0}
@@ -144,6 +144,11 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
 .ymg{display:grid;grid-template-columns:repeat(7,1fr);gap:0 1px;font-size:var(--ymF,.55rem);line-height:1.5;text-align:center;color:var(--ink)}
 .ymg span.t{background:#e5483d;color:#fff;border-radius:50%}
 .ymg span.o{visibility:hidden}
+#list.zin{animation:zin .24s ease}
+#list.zout{animation:zout .24s ease}
+@keyframes zin{from{opacity:.25;transform:scale(.92)}to{opacity:1;transform:none}}
+@keyframes zout{from{opacity:.25;transform:scale(1.08)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){#list.zin,#list.zout{animation:none}}
 .hint{position:absolute;left:50%;transform:translateX(-50%);top:150px;z-index:9;background:var(--ink);color:var(--bg);border-radius:12px;padding:8px 12px;font-size:.8rem;box-shadow:0 8px 20px rgba(0,0,0,.3);max-width:280px;text-align:center}
 .fab{position:absolute;z-index:6;width:56px;height:56px;border-radius:50%;border:0;background:var(--accent);color:#fff;display:grid;place-items:center;box-shadow:0 8px 20px -8px rgba(0,0,0,.5);
   right:var(--chat-x,16px);bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 22px)}
@@ -495,7 +500,7 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-06-232551";
+  const APP_VERSION="2026-11-06-233033";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1160,10 +1165,14 @@ const mondayOf=di=>{ const d=fromIso(di); d.setDate(d.getDate()-((d.getDay()+6)%
 const addDays=(d,n)=>{ const x=new Date(d); x.setDate(x.getDate()+n); return x; };
 let wkFrom=null, wkTo=null;   // geladene Wochen (Montage)
 // Größen wie beim iPhone: 2 Wochen, gut ein Monat oder ein ganzes Jahr pro Bildschirm
+// Zoomstufe innerhalb einer Ansicht (1 = Standard: 2 Wochen, gut ein Monat, 48 px pro Stunde)
+let zf={week:1,month:1,day:1}; try{ Object.assign(zf,JSON.parse(sessionStorage.getItem("cal.zf")||"{}")); }catch(e){}
+const LIM={week:[.5,2],month:[.62,1.6],day:[.5,2.6]};
 function sizeVars(){
   const h=Math.max(300,$("#list").clientHeight), r=document.documentElement.style;
-  r.setProperty("--wkH",Math.floor(h/2)+"px");
-  r.setProperty("--mdH",Math.round((h-60)/6.4)+"px");
+  r.setProperty("--wkH",Math.floor(h/2*zf.week)+"px");
+  r.setProperty("--mdH",Math.round((h-60)/6.4*zf.month)+"px");
+  r.setProperty("--hpx",(HPX*zf.day).toFixed(1)+"px");
   r.setProperty("--yrH",Math.round(h-8)+"px");
   const ymRow=((h-60)/4-26)/7; r.setProperty("--ymF",Math.max(7,Math.min(12,ymRow/1.5)).toFixed(1)+"px");
 }
@@ -1182,7 +1191,7 @@ function render(){
   if(listMode){ $("#title").textContent="Nächste Termine"; sc.innerHTML=renderList(); return; }
   $("#budNote").hidden=!!bud||!budChecked;
   if(level==="week") return renderWeeks(true);
-  if(level==="day"){ $("#title").textContent=f.toLocaleDateString("de-DE",{weekday:"long"}); sc.innerHTML=renderDay(); const n=new Date(), y=(focus===iso(n)?n.getHours()-1:7)*HPX; sc.scrollTop=Math.max(0,y+($("#allday")?$("#allday").offsetHeight:0)); return; }
+  if(level==="day"){ $("#title").textContent=f.toLocaleDateString("de-DE",{weekday:"long"}); sc.innerHTML=renderDay(); const n=new Date(), y=(focus===iso(n)?n.getHours()-1:7)*HPX*zf.day; sc.scrollTop=Math.max(0,y+($("#allday")?$("#allday").offsetHeight:0)); return; }
   if(level==="month"){ sc.innerHTML=renderMonths(); scrollTo(`[data-mon="${focus.slice(0,7)}"]`); updTitle(); return; }
   if(level==="year"){ sc.innerHTML=renderYears(); scrollTo(`[data-year="${focus.slice(0,4)}"]`); $("#title").textContent=""; return; }
 }
@@ -1230,11 +1239,11 @@ function renderDay(){
   const out=-it.filter(x=>x.src==="buy").reduce((a,x)=>a+x.amt,0), inn=it.filter(x=>x.src==="inc").reduce((a,x)=>a+x.amt,0), fut=it.filter(x=>x.src==="con"||x.src==="sal");
   if(out||inn||fut.length) h+=`<div class="daysum">${out?`<span>Ausgegeben<b class="o">−${EUR(out)}</b></span>`:""}${inn?`<span>Eingenommen<b class="i">+${EUR(inn)}</b></span>`:""}${fut.length?`<span>Erwartet<b>${fut.map(x=>x.r).join(" · ")}</b></span>`:""}</div>`;
   h+=`<div class="allday" id="allday">${all.map(itemRow).join("")}</div><div class="timeline">`;
-  for(let i=0;i<24;i++) h+=`<div class="hr" style="top:${i*HPX}px"><span>${pad(i)}:00</span></div>`;
-  timed.forEach(x=>{ const st=toMin(x.t), en=x.end?toMin(x.end):st+(x.dur||60), top=st/60*HPX, hh=Math.max(24,(en-st)/60*HPX);
+  for(let i=0;i<24;i++) h+=`<div class="hr" style="top:calc(var(--hpx) * ${i})"><span>${pad(i)}:00</span></div>`;
+  timed.forEach(x=>{ const st=toMin(x.t), en=x.end?toMin(x.end):st+(x.dur||60), top=`calc(var(--hpx) * ${(st/60).toFixed(3)})`, hh=`max(24px, calc(var(--hpx) * ${((en-st)/60).toFixed(3)}))`;
     const tag=x.href?`a href="${x.href}"`:`button type="button"${x.id?` data-ev="${esc(x.id)}"`:""}`;
-    h+=`<${tag} class="tev" style="top:${top}px;height:${hh}px;--c:${x.c}"><b>${esc(x.title)}</b><small>${esc(x.t)}${x.end?"–"+esc(x.end):""}${x.sub?" · "+esc(x.sub):""}</small></${x.href?"a":"button"}>`; });
-  if(focus===iso(new Date())){ const n=new Date(); h+=`<div class="nowline" style="top:${(n.getHours()*60+n.getMinutes())/60*HPX}px"></div>`; }
+    h+=`<${tag} class="tev" style="top:${top};height:${hh};--c:${x.c}"><b>${esc(x.title)}</b><small>${esc(x.t)}${x.end?"–"+esc(x.end):""}${x.sub?" · "+esc(x.sub):""}</small></${x.href?"a":"button"}>`; });
+  if(focus===iso(new Date())){ const n=new Date(); h+=`<div class="nowline" style="top:calc(var(--hpx) * ${((n.getHours()*60+n.getMinutes())/60).toFixed(3)})"></div>`; }
   return h+`</div>`;
 }
 // Monat (rausgezoomt): Monate untereinander
@@ -1267,16 +1276,49 @@ function renderList(){
   return `<div class="agenda">${any?h:`<div class="empty">In den nächsten 30 Tagen steht nichts an.</div>`}</div>`;
 }
 function setLevel(l,at){ if(at) focus=at; level=l; listMode=false; try{ localStorage.setItem("cal.level",l); }catch(e){} render(); }
-const zoomIn=()=>{ const i=LEVELS.indexOf(level); if(i<3) setLevel(LEVELS[i+1],level==="week"?(focus<=iso(now)&&iso(addDays(fromIso(focus),6))>=iso(now)?iso(now):focus):null); };
-const zoomOut=()=>{ const i=LEVELS.indexOf(level); if(i>0) setLevel(LEVELS[i-1]); };
-// Zoomen mit zwei Fingern (und Strg/Trackpad am Computer)
-(()=>{ const sc=$("#list"); let d0=0, fired=false;
-  const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
-  sc.addEventListener("touchstart",e=>{ if(e.touches.length===2){ d0=dist(e.touches); fired=false; } },{passive:true});
-  sc.addEventListener("touchmove",e=>{ if(e.touches.length!==2||!d0) return; e.preventDefault(); if(fired) return; const r=dist(e.touches)/d0; if(r>1.3){ fired=true; zoomIn(); } else if(r<.75){ fired=true; zoomOut(); } },{passive:false});
-  sc.addEventListener("touchend",()=>{ d0=0; });
+const zoomIn=()=>{ const i=LEVELS.indexOf(level); if(i<3){ zf[LEVELS[i+1]]=1; setLevel(LEVELS[i+1],level==="week"?(focus<=iso(now)&&iso(addDays(fromIso(focus),6))>=iso(now)?iso(now):focus):null); anim("in"); } };
+const zoomOut=()=>{ const i=LEVELS.indexOf(level); if(i>0){ if(LEVELS[i-1]!=="year") zf[LEVELS[i-1]]=1; setLevel(LEVELS[i-1]); anim("out"); } };
+// Fließendes Zoomen mit zwei Fingern (und Strg + Scrollen / Trackpad am Computer):
+// innerhalb einer Ansicht stufenlos größer/kleiner, am Ende geht es in die nächste Ansicht über
+function anim(dir){ const sc=$("#list"); sc.classList.remove("zin","zout"); void sc.offsetWidth; sc.classList.add(dir==="in"?"zin":"zout"); setTimeout(()=>sc.classList.remove("zin","zout"),300); }
+function dateAt(x,y){
+  const el=document.elementFromPoint(x,y); if(!el) return null; const t=el.closest("[data-goday],[data-goweek],[data-gomonth],[data-wk],[data-mon],[data-year]"); if(!t) return null;
+  if(t.dataset.goday) return t.dataset.goday; if(t.dataset.goweek) return t.dataset.goweek; if(t.dataset.gomonth) return t.dataset.gomonth+"-01";
+  if(t.dataset.wk){ const r=t.getBoundingClientRect(), i=Math.max(0,Math.min(6,Math.floor((x-r.left)/r.width*7))); return iso(addDays(fromIso(t.dataset.wk),i)); }
+  if(t.dataset.mon) return t.dataset.mon+"-01"; if(t.dataset.year) return t.dataset.year+"-"+focus.slice(5); return null;
+}
+function switchLevel(dir,x,y){
+  const i=LEVELS.indexOf(level), j=dir==="in"?i+1:i-1; if(j<0||j>3) return false;
+  const at=dateAt(x,y)||focus, nl=LEVELS[j];
+  if(nl!=="year") zf[nl]=dir==="in"?LIM[nl][0]:LIM[nl][1];   // nahtlos weiterzoomen: neue Ansicht beginnt am passenden Ende
+  focus=at; level=nl; listMode=false; try{ localStorage.setItem("cal.level",nl); sessionStorage.setItem("cal.zf",JSON.stringify(zf)); }catch(e){}
+  render(); anim(dir); return true;
+}
+let push=1;   // wie weit über den Rand der Zoomstufe hinaus gezogen wurde
+function zoomBy(k,x,y){   // k > 1 = detaillierter, k < 1 = weniger detailliert
+  if(listMode||Math.abs(k-1)<.001) return; const sc=$("#list");
+  if(level==="year"){ push*=k; if(push>1.3){ push=1; switchLevel("in",x,y); } else if(push<1) push=1; return; }
+  const [lo,hi]=LIM[level], cur=zf[level], want=cur*k;
+  if(want>hi||want<lo){ push*=want>hi?Math.max(k,1):Math.min(k,1);
+    if(push>1.22&&level!=="day"){ push=1; switchLevel("in",x,y); return; }
+    if(push<.8){ push=1; switchLevel("out",x,y); return; }
+    if(cur===(want>hi?hi:lo)) return; }
+  else push=1;
+  const z=Math.max(lo,Math.min(hi,want)), f=z/cur; if(Math.abs(f-1)<.002) return;
+  const fy=y-sc.getBoundingClientRect().top, before=sc.scrollTop;
+  zf[level]=z; sizeVars(); sc.scrollTop=(before+fy)*f-fy;   // Stelle unter den Fingern bleibt stehen
+  if(level==="week"||level==="month"){ clearTimeout(scrollT); scrollT=setTimeout(updTitle,60); }
+}
+(()=>{ const sc=$("#list"); let g=null;
+  const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY), mid=t=>[(t[0].clientX+t[1].clientX)/2,(t[0].clientY+t[1].clientY)/2];
+  sc.addEventListener("touchstart",e=>{ if(e.touches.length===2){ g={d:dist(e.touches),lvl:level}; push=1; } },{passive:true});
+  sc.addEventListener("touchmove",e=>{ if(e.touches.length!==2||!g) return; e.preventDefault(); const d=dist(e.touches), [x,y]=mid(e.touches), k=d/g.d;
+    if(level==="year"&&k<1.25&&k<1){ sc.style.transformOrigin=`${x-sc.getBoundingClientRect().left}px ${y-sc.getBoundingClientRect().top+sc.scrollTop}px`; sc.style.transform=`scale(${Math.max(.9,k)})`; return; }
+    sc.style.transform=""; const lv=level; zoomBy(k,x,y); g.d=d; if(level!==lv) g.lvl=level; },{passive:false});
+  const end=()=>{ if(!g) return; g=null; sc.style.transform=""; try{ sessionStorage.setItem("cal.zf",JSON.stringify(zf)); }catch(e){} if(level==="week"&&!listMode) renderWeeks(false); };
+  sc.addEventListener("touchend",end); sc.addEventListener("touchcancel",end);
   ["gesturestart","gesturechange"].forEach(n=>document.addEventListener(n,e=>e.preventDefault()));
-  let wheelAcc=0, wheelT=null; sc.addEventListener("wheel",e=>{ if(!e.ctrlKey) return; e.preventDefault(); wheelAcc+=e.deltaY; clearTimeout(wheelT); wheelT=setTimeout(()=>{ if(wheelAcc<-20) zoomIn(); else if(wheelAcc>20) zoomOut(); wheelAcc=0; },120); },{passive:false});
+  let wT=null; sc.addEventListener("wheel",e=>{ if(!e.ctrlKey) return; e.preventDefault(); zoomBy(Math.exp(-e.deltaY/250),e.clientX,e.clientY); clearTimeout(wT); wT=setTimeout(end.bind(null),250); g=g||{}; },{passive:false});
   sc.addEventListener("scroll",onScroll,{passive:true});
 })();
 /* ---------- Termin anlegen / ändern ---------- */
