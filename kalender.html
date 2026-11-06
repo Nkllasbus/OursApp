@@ -88,10 +88,11 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
 .scroll{touch-action:pan-y}
 .todaypill{position:absolute;left:var(--chat-x,16px);bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 88px);z-index:6;padding:9px 18px;font-weight:600;font-size:.95rem}
 /* Woche: Wochen untereinander */
-.wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-bottom:1px solid var(--line);min-height:110px;padding:6px 0 8px}
-.mlabel{font-size:1.15rem;font-weight:800;margin:16px 2px 4px;color:var(--ink)}
+.wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-bottom:1px solid var(--line);height:var(--wkH,300px);padding:6px 0 8px;box-sizing:border-box;overflow:hidden}
+.wd{overflow:hidden}
+.mlabel{font-size:1rem;font-weight:800;margin:0;padding:8px 2px 0;height:0;overflow:visible;position:relative;top:-2px;color:var(--accent);pointer-events:none}
 .wd{display:flex;flex-direction:column;align-items:stretch;gap:3px;min-width:0;padding:0 2px;border:0;background:none;color:var(--ink);text-align:left;cursor:pointer}
-.wd .dn{align-self:center;font-size:1.15rem;font-weight:600;width:34px;height:34px;display:grid;place-items:center;border-radius:50%;margin-bottom:2px}
+.wd .dn{align-self:center;font-size:1.3rem;font-weight:600;width:38px;height:38px;display:grid;place-items:center;border-radius:50%;margin:4px 0 6px}
 .wd.we .dn{color:var(--muted)}
 .wd.today .dn{background:#e5483d;color:#fff}
 .wd.past{opacity:.8}
@@ -123,22 +124,24 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
 .nowline{position:absolute;left:40px;right:0;border-top:2px solid #e5483d}
 .nowline::before{content:"";position:absolute;left:-5px;top:-6px;width:10px;height:10px;border-radius:50%;background:#e5483d}
 /* Monat (rausgezoomt) */
-.mon{margin-bottom:14px}
-.mon h3{margin:10px 2px 6px;font-size:1.25rem;font-weight:800}
+.mon{margin-bottom:6px}
+.mon h3{margin:8px 2px 4px;font-size:1.15rem;font-weight:800;color:var(--accent)}
 .mgrid{display:grid;grid-template-columns:repeat(7,1fr);row-gap:4px}
-.md{border:0;background:none;color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;min-height:46px;border-top:1px solid var(--line)}
+.md{border:0;background:none;color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;height:var(--mdH,64px);border-top:1px solid var(--line);overflow:hidden}
 .md .n{font-size:.95rem;font-weight:600;width:28px;height:28px;display:grid;place-items:center;border-radius:50%}
 .md.today .n{background:#e5483d;color:#fff}
 .md .dots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:34px}
 .md .dots i{width:5px;height:5px;border-radius:50%;background:var(--c)}
 .md.blank{border-top:0}
 /* Jahr */
-.yr h3{margin:12px 2px 8px;font-size:1.6rem;font-weight:800;color:#e5483d}
-.ygrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 10px;margin-bottom:12px}
+.yr{height:var(--yrH,auto);display:flex;flex-direction:column}
+.yr h3{margin:6px 2px 4px;font-size:1.5rem;font-weight:800;color:#e5483d;flex:none}
+.ygrid{flex:1;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);gap:6px 10px;margin-bottom:8px;min-height:0}
 .ym{border:0;background:none;color:var(--ink);text-align:left;padding:0}
-.ym b{display:block;font-size:.9rem;font-weight:700;margin-bottom:4px}
+.ym{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.ym b{display:block;font-size:.9rem;font-weight:700;margin-bottom:2px}
 .ym b.cur{color:#e5483d}
-.ymg{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;font-size:.52rem;text-align:center;color:var(--ink)}
+.ymg{display:grid;grid-template-columns:repeat(7,1fr);gap:0 1px;font-size:var(--ymF,.55rem);line-height:1.5;text-align:center;color:var(--ink)}
 .ymg span.t{background:#e5483d;color:#fff;border-radius:50%}
 .ymg span.o{visibility:hidden}
 .hint{position:absolute;left:50%;transform:translateX(-50%);top:150px;z-index:9;background:var(--ink);color:var(--bg);border-radius:12px;padding:8px 12px;font-size:.8rem;box-shadow:0 8px 20px rgba(0,0,0,.3);max-width:280px;text-align:center}
@@ -492,7 +495,7 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-06-231857";
+  const APP_VERSION="2026-11-06-232551";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1156,6 +1159,15 @@ const items=di=>{ if(!dayCache.has(di)) dayCache.set(di,itemsOn(di)); return day
 const mondayOf=di=>{ const d=fromIso(di); d.setDate(d.getDate()-((d.getDay()+6)%7)); return d; };
 const addDays=(d,n)=>{ const x=new Date(d); x.setDate(x.getDate()+n); return x; };
 let wkFrom=null, wkTo=null;   // geladene Wochen (Montage)
+// Größen wie beim iPhone: 2 Wochen, gut ein Monat oder ein ganzes Jahr pro Bildschirm
+function sizeVars(){
+  const h=Math.max(300,$("#list").clientHeight), r=document.documentElement.style;
+  r.setProperty("--wkH",Math.floor(h/2)+"px");
+  r.setProperty("--mdH",Math.round((h-60)/6.4)+"px");
+  r.setProperty("--yrH",Math.round(h-8)+"px");
+  const ymRow=((h-60)/4-26)/7; r.setProperty("--ymF",Math.max(7,Math.min(12,ymRow/1.5)).toFixed(1)+"px");
+}
+addEventListener("resize",()=>{ sizeVars(); if(level==="week"&&!listMode) renderWeeks(false); });
 function render(){
   dayCache=new Map();
   paintFilters();
@@ -1165,6 +1177,7 @@ function render(){
   $("#backBtn").hidden=listMode||level==="year"; $("#backLbl").textContent=listMode?"":back;
   $("#zoomIn").disabled=listMode||level==="day"; $("#zoomOut").disabled=listMode||level==="year";
   $("#dowrow").innerHTML=!listMode&&(level==="week"||level==="month")?DOW.map(d=>`<span>${d[0]}</span>`).join(""):"";
+  sizeVars();
   const sc=$("#list");
   if(listMode){ $("#title").textContent="Nächste Termine"; sc.innerHTML=renderList(); return; }
   $("#budNote").hidden=!!bud||!budChecked;
@@ -1180,7 +1193,7 @@ function scrollTo(sel){ const sc=$("#list"), el=sc.querySelector(sel); if(el) sc
 function weekHtml(mon){
   const today=iso(now); let lab="";
   for(let i=0;i<7;i++){ const d=addDays(mon,i); if(d.getDate()===1) lab=`<div class="mlabel" data-ml="${iso(d).slice(0,7)}">${MONTHS[d.getMonth()]}${d.getMonth()===0?" "+d.getFullYear():""}</div>`; }
-  return lab+`<div class="wk" data-wk="${iso(mon)}">${[0,1,2,3,4,5,6].map(i=>{ const d=addDays(mon,i), di=iso(d), it=items(di), max=4;
+  return lab+`<div class="wk" data-wk="${iso(mon)}">${[0,1,2,3,4,5,6].map(i=>{ const d=addDays(mon,i), di=iso(d), it=items(di), max=Math.max(3,Math.floor((parseInt(getComputedStyle(document.documentElement).getPropertyValue("--wkH"))||300)/52));
     const money=it.filter(x=>x.src==="buy"||x.src==="inc"), rest=it.filter(x=>x.src!=="buy"&&x.src!=="inc"), out=-money.filter(x=>x.amt<0).reduce((a,x)=>a+x.amt,0), inn=money.filter(x=>x.amt>0).reduce((a,x)=>a+x.amt,0);
     return `<div class="wd${i>4?" we":""}${di===today?" today":""}${di<today?" past":""}" data-goday="${di}"><span class="dn">${d.getDate()}</span>${rest.slice(0,max).map(chip).join("")}${rest.length>max?`<span class="more">+${rest.length-max}</span>`:""}${inn?`<span class="msum in">+${short(inn)}</span>`:""}${out?`<span class="msum out">−${short(out)}</span>`:""}</div>`; }).join("")}</div>`;
 }
