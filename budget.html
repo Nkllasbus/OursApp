@@ -320,6 +320,19 @@ header{border-bottom:0!important}
 .sortbar span:last-child{margin-left:auto;font-weight:700;color:var(--accent)}
 .orig{background:var(--surface2);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
 .orig .kv{font-size:.82rem}
+.alert{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 8px 10px 12px;box-shadow:0 1px 2px var(--shadow)}
+.alert .ai{font-size:1.1rem;flex:none}
+.alert .at{flex:1;border:0;background:none;color:var(--ink);text-align:left;font-size:.86rem;padding:0;line-height:1.35}
+.alert .ax{flex:none;border:0;background:none;color:var(--muted);font-size:1.2rem;padding:2px 6px}
+.fc{display:flex;align-items:baseline;justify-content:space-between}
+.fc span{font-size:.82rem;color:var(--muted)}
+.fc b{font-size:1.5rem;font-weight:700}
+.line{width:100%;height:90px;display:block}
+.chart-card .sec-head{flex-wrap:wrap;align-items:center}
+.chart-card .sec-head .fchips{flex-wrap:nowrap;gap:4px}
+.chart-card .sec-head .chip{padding:3px 9px;font-size:.76rem}
+.rev{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:.88rem}
+.rev li{display:flex;gap:10px;align-items:flex-start}
 .sorter-h{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;color:var(--muted)}
 </style>
 </head>
@@ -654,7 +667,7 @@ header{border-bottom:0!important}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-06-203147";
+  const APP_VERSION="2026-11-06-204406";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1263,7 +1276,7 @@ const short=d=>`${d.getDate()}.${d.getMonth()+1}.`;
 const EVERY=[["week","Wöchentlich"],["month","Monatlich"],["quarter","Vierteljährlich"],["year","Jährlich"]];
 const PER_MONTH={week:52/12,month:1,quarter:1/3,half:1/6,year:1/12};
 const KINDS=[["abo","Abo"],["fix","Fixkosten"],["income","Einnahme"]];
-const CATS=["Lebensmittel","Essen gehen","Wohnen","Mobilität","Shopping","Freizeit","Medien & Abos","Versicherung","Gesundheit","Bildung","Bargeld","Sparen & Investieren","Umbuchung","Gehalt","Sonstige Einnahmen","Rückzahlung","Sonstiges"];
+const CATS=["Lebensmittel","Essen gehen","Wohnen","Mobilität","Shopping","Freizeit","Medien & Abos","Versicherung","Gesundheit","Bildung","Bargeld","Sparen & Investieren","Gebühren & Zinsen","Umbuchung","Gehalt","Sonstige Einnahmen","Rückzahlung","Sonstiges"];
 const NO_SPEND=new Set(["Umbuchung"]), SAVE_CAT="Sparen & Investieren", BACK_CAT="Rückzahlung", INCOME_CATS=new Set(["Gehalt","Sonstige Einnahmen","Rückzahlung"]);
 const PALETTE=["#2563eb","#16a34a","#ea580c","#9333ea","#0891b2","#dc2626","#ca8a04","#db2777","#4f46e5","#0d9488","#65a30d","#7c3aed","#c2410c","#0284c7","#94a3b8","#a16207"];
 const ago=t=>{ if(!t) return "noch nie"; const m=Math.round((Date.now()-t)/60000); return m<1?"gerade eben":m<60?`vor ${m} Min.`:m<1440?`vor ${Math.round(m/60)} Std.`:`vor ${Math.round(m/1440)} Tagen`; };
@@ -1284,7 +1297,7 @@ function nextDate(r){ const t=new Date(); t.setHours(0,0,0,0);
 
 /* ---------- Zustand ---------- */
 let rec={}, exp={}, customCats={};                    // gemeinsamer Bereich (manuelle Einträge)
-let fin={accounts:{},tx:{},rules:{},budgets:{},contracts:{},eb:{},meta:{},alias:{},aicat:{}};   // privat: users/<uid>/fin
+let fin={accounts:{},tx:{},rules:{},budgets:{},contracts:{},eb:{},meta:{},alias:{},aicat:{},goals:{}};   // privat: users/<uid>/fin
 const now=new Date(); let vy=now.getFullYear(), vm=now.getMonth();
 let view="home"; try{ const v=localStorage.getItem("budget.view"); if(["home","tx","con","stats"].includes(v)) view=v; }catch(e){}
 let q="", txFilter="all";
@@ -1311,6 +1324,7 @@ const BRANDS=[[/\brewe\b/i,"REWE","Lebensmittel"],[/\bedeka\b/i,"EDEKA","Lebensm
   [/\bmcfit\b/i,"McFIT","Freizeit"],[/\bfitx\b/i,"FitX","Freizeit"],[/urban ?sports/i,"Urban Sports Club","Freizeit"],[/cinemaxx/i,"CinemaxX","Freizeit"],[/\bfielmann\b/i,"Fielmann","Gesundheit"],
   [/trade republic/i,"Trade Republic","Sparen & Investieren"],[/scalable capital/i,"Scalable Capital","Sparen & Investieren"]];
 // allgemeine Stichwörter, nur ganze Wörter – lieber „Sonstiges“ als falsch einsortiert
+const FEE_RE=/entgelt|kontoführung|kontofuehrung|kontopreis|kartengebühr|kartenpreis|jahresgebühr karte|auslandseinsatz|fremdwährung|fremdwaehrung|sollzins|dispozins|überziehungszins|rechnungsabschluss|abschlussposten|bankgebühr|buchungsposten|gebühr|gebuehr|zinsen/i;
 const KEYS=[[/\b(parkhaus|parkplatz|parkgebühr|parkgebuehr|parkschein|parkticket|parken)\b/i,"Mobilität"],[/\btankstelle\b/i,"Mobilität"],
   [/\bversicherung\b|\bhaftpflicht\b|\bkrankenkasse\b/i,"Versicherung"],[/\bapotheke\b/i,"Gesundheit"],[/\bzahnarzt\b|\barztpraxis\b/i,"Gesundheit"],
   [/\bmiete\b|\bhausverwaltung\b|\bvermieter\b|\bnebenkosten\b/i,"Wohnen"],[/\bstadtwerke\b|\bstromrechnung\b|rundfunkbeitrag|\bard zdf\b/i,"Wohnen"],
@@ -1347,6 +1361,7 @@ function autoCat(t){
     if(/(rück|rueck)erstatt|erstattung|refund|retoure|storno|(rück|rueck)buchung|(rück|rueck)zahlung|gutschrift/i.test(s)) return BACK_CAT;
     const mb=merchant(t); if(mb.cat&&mb.cat!=="Sparen & Investieren") return BACK_CAT;
     return "Sonstige Einnahmen"; }
+  if(FEE_RE.test(s)&&(PROC.test(t.name||"")===false)&&(!t.name||/bank|sparkasse|volksbank|raiffeisen|ing\b|dkb|comdirect|commerzbank|postbank|n26|abschluss|entgelt|zins/i.test(s))) return "Gebühren & Zinsen";
   const m=merchant(t); if(m.cat) return m.cat;
   for(const [re,c] of KEYS) if(re.test(m.proc?(t.text||""):s)) return c;
   if(/\bumbuchung\b|\bübertrag\b|eigene[sn]? konto/i.test(s)) return "Umbuchung";
@@ -1402,7 +1417,11 @@ function contracts(){
     const kk=k.replace(/[.#$\[\]\/]/g,"_"), meta=fin.contracts[kk]||{};
     if(meta.hidden) return; if((today-last)/864e5>g*1.8) return;   // nicht mehr aktiv
     const avg=Math.round(same.slice(-3).reduce((a,t)=>a-t.amount,0)/Math.min(3,same.length));
-    out.push({key:kk,name:displayName(same[same.length-1]),cat:catOf(same[same.length-1]),rhythm:r[0],rlabel:r[3],avg,perMonth:Math.round(avg*PER_MONTH[r[0]]),last,next,n:same.length,txs:same.slice().reverse(),meta,auto:true});
+    // Preiserhöhung: letzte Zahlung höher als die davor
+    const a1=-same[same.length-1].amount, a0=same.length>1?-same[same.length-2].amount:a1;
+    const raise=a1-a0>=50&&a1>a0*1.02?{from:a0,to:a1,date:same[same.length-1].date}:null;
+    const first=fromIso(same[0].date), isNew=(today-first)/864e5<=g*2.2&&same.length<=3;
+    out.push({key:kk,name:displayName(same[same.length-1]),cat:catOf(same[same.length-1]),rhythm:r[0],rlabel:r[3],avg:raise?a1:avg,perMonth:Math.round((raise?a1:avg)*PER_MONTH[r[0]]),last,next,n:same.length,txs:same.slice().reverse(),meta,auto:true,raise,isNew,first});
   });
   Object.entries(rec).forEach(([id,r])=>{ if(!r||r.kind==="income") return; const nd=nextDate(r); out.push({key:"rec_"+id,rid:id,name:r.name,cat:r.cat,rhythm:r.every,rlabel:(EVERY.find(e=>e[0]===r.every)||[0,""])[1].toLowerCase(),avg:r.amount,perMonth:Math.round(r.amount*PER_MONTH[r.every]),next:nd,n:0,txs:[],meta:fin.contracts["rec_"+id]||{},auto:false}); });
   return out.sort((a,b)=>b.perMonth-a.perMonth);
@@ -1435,7 +1454,7 @@ function upcoming(days){
 }
 function conRow(c){
   return `<li><button type="button" class="row" data-con="${esc(c.key)}"><span class="ico" style="background:${catColor(c.cat)};font-size:1.05rem">${conIcon(c.name)}</span>
-    <span class="main"><b>${esc(c.name)}</b><small>${c.next?`${dateLong(c.next)} · ${until(c.next)}`:"–"} · ${esc(c.rlabel)}</small></span>
+    <span class="main"><b>${esc(c.name)}${c.raise?`<span class="tag" style="color:var(--minus);border-color:var(--minus)">+${money(c.raise.to-c.raise.from)}</span>`:""}${c.meta&&c.meta.cancelled?`<span class="tag">gekündigt</span>`:""}${c.isNew?`<span class="tag" style="color:var(--accent);border-color:var(--accent)">neu</span>`:""}</b><small>${c.next?`${dateLong(c.next)} · ${until(c.next)}`:"–"} · ${esc(c.rlabel)}</small></span>
     <span class="amt">${money(c.avg)}</span></button></li>`;
 }
 function renderHome(){
@@ -1457,7 +1476,11 @@ function renderHome(){
   const tm=totals(now.getFullYear(),now.getMonth());
   if(hasBank()||Object.keys(exp).length) h+=`<div class="sec"><div class="sec-head"><h2>${MONTHS[now.getMonth()]} bisher</h2><button class="note" type="button" data-view="stats" style="border:0;background:none;color:var(--accent);font-weight:600;cursor:pointer">Auswertung ›</button></div>
     <div class="avg"><div><span>Rein</span><b style="color:var(--plus)">${money(tm.inc)}</b></div><div><span>Raus</span><b>${money(tm.out)}</b></div><div><span>Übrig</span><b style="color:${tm.left>=0?"var(--accent)":"var(--minus)"}">${money(tm.left)}</b></div></div></div>`;
+  h+=alertsHtml();
+  h+=forecastHtml();
+  if(now.getDate()<=10) h+=reviewHtml();
   h+=avgHtml();
+  h+=goalsHtml();
   const uns=unsortedGroups(); if(uns.length) h+=`<button type="button" class="sortbar" data-sorter="1">🗂️ <span><b>${uns.reduce((a,g)=>a+g.txs.length,0)} Ausgaben</b> sind noch in „Sonstiges“</span><span>Sortieren ›</span></button>`;
   // nächste Zahlungen (30 Tage)
   const up=upcoming(30), upSum=up.reduce((a,c)=>a+c.avg,0);
@@ -1468,6 +1491,114 @@ function renderHome(){
   h+=`<div class="sec"><div class="sec-head"><h2>Letzte Umsätze</h2></div>
     ${list.length?`<ul>${list.map(txRow).join("")}</ul><button class="add" type="button" data-view="tx">Alle Umsätze anzeigen</button>`:`<div class="empty">Noch keine Umsätze.</div>`}</div>`;
   return h;
+}
+/* ---------- Hinweise (wegklickbar) ---------- */
+function alerts(){
+  const out=[], today=new Date(); today.setHours(0,0,0,0), dis=(fin.meta&&fin.meta.dismiss)||{}, cons=contracts();
+  cons.forEach(c=>{ if(c.raise&&(today-fromIso(c.raise.date))/864e5<=45) out.push({id:"raise_"+c.key+"_"+c.raise.date,ic:"📈",t:`<b>${esc(c.name)}</b> ist teurer geworden: ${money(c.raise.from)} → ${money(c.raise.to)}`,con:c.key});
+    if(c.isNew&&c.auto) out.push({id:"new_"+c.key,ic:"🆕",t:`Neuer Vertrag erkannt: <b>${esc(c.name)}</b> · ${money(c.avg)} ${esc(c.rlabel)}`,con:c.key});
+    if(c.meta&&c.meta.cancelBy){ const d=(fromIso(c.meta.cancelBy)-today)/864e5; if(d>=0&&d<=30) out.push({id:"cb_"+c.key+"_"+c.meta.cancelBy,ic:"✂️",t:`<b>${esc(c.name)}</b> kündigen bis ${fromIso(c.meta.cancelBy).toLocaleDateString("de-DE")} (${d===0?"heute":`noch ${Math.round(d)} Tage`})`,con:c.key}); } });
+  const recent=allTx().filter(t=>t.amount<0&&!t.ex&&t.src!=="manual"&&(today-fromIso(t.date))/864e5<=30);
+  const seen={}; recent.forEach(t=>{ const k=merchKey(t)+"|"+t.amount+"|"+t.date; if(seen[k]&&!t.pending&&!seen[k].pending) out.push({id:"dup_"+t.id,ic:"⚠️",t:`Doppelt abgebucht? <b>${esc(displayName(t))}</b> ${money(-t.amount)} zweimal am ${fromIso(t.date).toLocaleDateString("de-DE")}`,tx:t.id}); seen[k]=t; });
+  const byCat={}; allTx().forEach(t=>{ if(t.amount<0&&!t.ex) (byCat[catOf(t)]=byCat[catOf(t)]||[]).push(-t.amount); });
+  recent.filter(t=>(today-fromIso(t.date))/864e5<=14).forEach(t=>{ const c=catOf(t); if(NO_SPEND.has(c)||c===SAVE_CAT||c==="Wohnen") return; const l=(byCat[c]||[]).slice().sort((a,b)=>a-b); if(l.length<6) return; const med=l[Math.floor(l.length/2)];
+    if(-t.amount>=10000&&-t.amount>med*4) out.push({id:"big_"+t.id,ic:"💸",t:`Ungewöhnlich hoch: <b>${esc(displayName(t))}</b> ${money(-t.amount)} (sonst ca. ${money(med)} bei ${esc(c)})`,tx:t.id}); });
+  const tm=totals(now.getFullYear(),now.getMonth()); Object.entries(fin.budgets||{}).forEach(([c,b])=>{ const v=tm.byCat[c]||0; if(v>b) out.push({id:"bud_"+c+"_"+now.getMonth(),ic:"🎯",t:`Budget überschritten: <b>${esc(c)}</b> ${money(v)} von ${money(b)}`,cat:c}); else if(v>b*.85) out.push({id:"budn_"+c+"_"+now.getMonth(),ic:"🎯",t:`Budget fast aufgebraucht: <b>${esc(c)}</b> ${money(v)} von ${money(b)}`,cat:c}); });
+  return out.filter(a=>!dis[a.id.replace(/[.#$\[\]\/]/g,"_")]);
+}
+function alertsHtml(){ const a=alerts(); if(!a.length) return "";
+  return `<div class="sec"><div class="sec-head"><h2>Hinweise</h2></div>${a.slice(0,6).map(x=>`<div class="alert"><span class="ai">${x.ic}</span><button type="button" class="at" ${x.con?`data-con="${esc(x.con)}"`:x.tx?`data-tx="${esc(x.tx)}"`:x.cat?`data-bud="${esc(x.cat)}"`:""}>${x.t}</button><button type="button" class="ax" data-dismiss="${esc(x.id)}" aria-label="Ausblenden">×</button></div>`).join("")}</div>`; }
+/* ---------- Vorschau bis zum nächsten Gehalt ---------- */
+function nextPayday(){
+  const sal=allTx().filter(t=>t.amount>0&&catOf(t)==="Gehalt").sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4); if(!sal.length) return null;
+  const days=sal.map(t=>+t.date.slice(8,10)).sort((a,b)=>a-b), day=days[Math.floor(days.length/2)], t=new Date(); t.setHours(0,0,0,0);
+  let d=new Date(t.getFullYear(),t.getMonth(),Math.min(day,daysIn(t.getFullYear(),t.getMonth())));
+  if(d<=t||sal[0].date.slice(0,7)===iso(t).slice(0,7)&&+sal[0].date.slice(8,10)>=day-3) d=new Date(t.getFullYear(),t.getMonth()+1,Math.min(day,daysIn(t.getFullYear(),t.getMonth()+1)));
+  return {date:d,amount:Math.round(sal.slice(0,3).reduce((a,x)=>a+x.amount,0)/Math.min(3,sal.length))};
+}
+function forecast(){
+  const accs=Object.values(fin.accounts||{}).filter(a=>a&&a.kind!=="depot"&&a.balance!=null); if(!accs.length) return null;
+  const pay=nextPayday(), t=new Date(); t.setHours(0,0,0,0); const end=pay?pay.date:new Date(t.getFullYear(),t.getMonth()+1,0);
+  const bal=accs.reduce((a,x)=>a+x.balance,0), cons=contracts(), conKeys=new Set(cons.filter(c=>c.auto).map(c=>c.key));
+  const due=cons.filter(c=>c.next&&c.next>=t&&c.next<end);
+  // übliche Ausgaben pro Tag (ohne Verträge, Umbuchungen, Sparen) aus den letzten 60 Tagen
+  const from=new Date(t); from.setDate(from.getDate()-60); let varSum=0;
+  allTx().forEach(t2=>{ if(t2.amount>=0||t2.ex) return; const d=fromIso(t2.date); if(d<from||d>=t) return; const c=catOf(t2); if(NO_SPEND.has(c)||c===SAVE_CAT||c==="Wohnen") return; if(conKeys.has(merchKey(t2))) return; varSum+=-t2.amount; });
+  const perDay=varSum/60, days=Math.max(0,Math.round((end-t)/864e5)), dueSum=due.reduce((a,c)=>a+c.avg,0), rest=Math.round(bal-dueSum-perDay*days);
+  const pts=[]; let cur=bal; for(let i=0;i<=days;i++){ const d=new Date(t); d.setDate(d.getDate()+i); due.forEach(c=>{ if(iso(c.next)===iso(d)) cur-=c.avg; }); if(i>0) cur-=perDay; pts.push(Math.round(cur)); }
+  return {bal,end,pay,days,due,dueSum,perDay:Math.round(perDay),rest,pts};
+}
+function forecastHtml(){
+  const f=forecast(); if(!f) return "";
+  return `<div class="chart-card"><div class="sec-head"><h2>${f.pay?"Bis zum nächsten Gehalt":"Bis Monatsende"}</h2><span class="sum">${dateLong(f.end)} · ${until(f.end)}</span></div>
+    <div class="fc"><span>Voraussichtlich übrig</span><b style="color:${f.rest>=0?"var(--accent)":"var(--minus)"}">${money(f.rest)}</b></div>
+    ${f.pts.length>1?lineChart(f.pts,{zero:true,h:90}):""}
+    <p class="note">Kontostand ${money(f.bal)} − ${f.due.length} ${f.due.length===1?"Vertrag":"Verträge"} (${money(f.dueSum)}) − übliche Ausgaben ca. ${money(f.perDay)} pro Tag.</p></div>`;
+}
+function lineChart(vals,opt={}){
+  const W=320,H=opt.h||110,p=8, mn=Math.min(...vals,opt.zero?0:Infinity), mx=Math.max(...vals,opt.zero?0:-Infinity), y=v=>H-p-(mx===mn?.5:(v-mn)/(mx-mn))*(H-2*p);
+  const xs=vals.map((_,i)=>vals.length===1?W/2:p+i*(W-2*p)/(vals.length-1)), pts=xs.map((x,i)=>x.toFixed(1)+","+y(vals[i]).toFixed(1)).join(" ");
+  const neg=vals.some(v=>v<0);
+  return `<svg class="line" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${mn<0&&mx>0?`<line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="var(--minus)" stroke-dasharray="4 4" stroke-width="1"/>`:""}
+    <polygon points="${xs[0]},${H-p} ${pts} ${xs[xs.length-1]},${H-p}" fill="var(--accent)" opacity=".1"/><polyline points="${pts}" fill="none" stroke="${neg&&vals[vals.length-1]<0?"var(--minus)":"var(--accent)"}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`;
+}
+/* ---------- Kontostand-Verlauf: aus heutigem Stand und den Umsätzen zurückgerechnet ---------- */
+let histDays=90;
+function balanceHistory(days){
+  const accs=Object.entries(fin.accounts||{}).filter(([,a])=>a&&a.balance!=null&&a.kind!=="depot"); if(!accs.length) return null;
+  const ids=new Set(accs.map(([id])=>id)), tot=accs.reduce((a,[,x])=>a+x.balance,0), byDay={};
+  Object.values(fin.tx||{}).forEach(t=>{ if(t&&ids.has(t.acc)&&!t.pending) byDay[t.date]=(byDay[t.date]||0)+t.amount; });
+  const out=[]; let cur=tot; const t=new Date(); t.setHours(0,0,0,0);
+  for(let i=0;i<days;i++){ const d=new Date(t); d.setDate(d.getDate()-i); out.unshift({d,v:cur}); cur-=byDay[iso(d)]||0; }
+  return out;
+}
+function historyHtml(){
+  const h=balanceHistory(histDays); if(!h||h.length<2) return "";
+  const vals=h.map(x=>x.v), mn=Math.min(...vals), mx=Math.max(...vals), d0=vals[0], d1=vals[vals.length-1];
+  return `<div class="chart-card"><div class="sec-head"><h2>Kontostand-Verlauf</h2><div class="fchips">${[30,90,365].map(n=>`<button type="button" class="chip" data-hist="${n}" aria-pressed="${histDays===n}">${n===365?"1 Jahr":n+" T."}</button>`).join("")}</div></div>
+    ${lineChart(vals,{h:110})}
+    <div class="chart-leg"><span>Tief ${money(mn)}</span><span>Hoch ${money(mx)}</span><span style="margin-left:auto;color:${d1>=d0?"var(--plus)":"var(--minus)"}">${d1>=d0?"+":""}${money(d1-d0)}</span></div></div>`;
+}
+/* ---------- Sparziele ---------- */
+function goalsHtml(){
+  const g=Object.entries(fin.goals||{}).map(([id,x])=>({id,...x})).filter(x=>x&&x.name);
+  return `<div class="sec"><div class="sec-head"><h2>Sparziele</h2><button class="note" type="button" data-goal="" style="border:0;background:none;color:var(--accent);font-weight:600;cursor:pointer">+ Neues Ziel</button></div>
+    ${g.length?g.map(x=>{ const pc=x.target?Math.min(100,(x.saved||0)/x.target*100):0, left=Math.max(0,(x.target||0)-(x.saved||0)); let per="";
+      if(x.by&&left){ const m=Math.max(1,(fromIso(x.by).getFullYear()-now.getFullYear())*12+fromIso(x.by).getMonth()-now.getMonth()); per=` · noch ${money(Math.ceil(left/m))} pro Monat bis ${fromIso(x.by).toLocaleDateString("de-DE",{month:"short",year:"numeric"})}`; }
+      return `<button type="button" class="bud" data-goal="${esc(x.id)}"><span class="cat-name">${esc(x.emoji||"🎯")} ${esc(x.name)}</span><b class="num">${money(x.saved||0)} / ${money(x.target||0)}</b><span class="track"><span style="width:${pc}%;background:var(--accent)"></span></span><small>${left?`noch ${money(left)}${per}`:"Ziel erreicht! 🎉"}</small></button>`; }).join("")
+      :`<div class="empty">Leg ein Sparziel an, z.B. Urlaub, neues Handy oder Notgroschen.</div>`}</div>`;
+}
+function goalSheet(id){
+  const x=id?fin.goals[id]:null; sheetCtx={type:"goal",id:id||null};
+  openSheet(`<h3>${x?esc(x.name):"Neues Sparziel"}</h3>
+    <div class="field"><span class="flabel">Wofür?</span><input type="text" id="gName" maxlength="40" placeholder="z.B. Urlaub" value="${esc(x?x.name:"")}"></div>
+    <div class="field"><span class="flabel">Symbol</span><div class="chips">${["🎯","🏖️","📱","🚗","🏠","🎓","💍","🛟"].map(e=>`<button type="button" class="chip" data-gemo="${e}" aria-pressed="${(x?x.emoji:"🎯")===e}">${e}</button>`).join("")}</div></div>
+    <div class="field"><span class="flabel">Zielbetrag</span><label class="amount"><input id="gTarget" inputmode="decimal" placeholder="1.500" value="${x&&x.target?(x.target/100).toFixed(2).replace(".",","):""}"><span>€</span></label></div>
+    <div class="field"><span class="flabel">Schon gespart</span><label class="amount"><input id="gSaved" inputmode="decimal" placeholder="0" value="${x&&x.saved?(x.saved/100).toFixed(2).replace(".",","):""}"><span>€</span></label></div>
+    ${x?`<div class="fchips"><button class="btn" type="button" data-gadd="5000">+50 €</button><button class="btn" type="button" data-gadd="10000">+100 €</button><button class="btn" type="button" data-gadd="-5000">−50 €</button></div>`:""}
+    <div class="field"><span class="flabel">Bis wann? (optional)</span><input type="date" id="gBy" value="${esc(x&&x.by||"")}"></div>
+    <div class="sheet-actions">${x?`<button class="del" type="button" id="gDel">Löschen</button>`:"<span></span>"}<div class="right"><button class="ghost" type="button" data-close>Abbrechen</button><button class="btn primary" type="button" id="gSave">Speichern</button></div></div>`);
+  sheetCtx.emoji=x?x.emoji||"🎯":"🎯";
+}
+/* ---------- Monatsrückblick ---------- */
+function reviewHtml(){
+  const d=new Date(now.getFullYear(),now.getMonth()-1,1), tt=totals(d.getFullYear(),d.getMonth()); if(!tt.out&&!tt.inc) return "";
+  const prev=[]; for(let i=2;i<=4;i++){ const x=new Date(now.getFullYear(),now.getMonth()-i,1), t2=totals(x.getFullYear(),x.getMonth()); if(t2.out) prev.push(t2.out); }
+  const avg=prev.length?prev.reduce((a,v)=>a+v,0)/prev.length:0, diff=avg?Math.round((tt.out-avg)/avg*100):null;
+  const top=Object.entries(tt.byCat).filter(([c])=>c!=="Sonstiges").sort((a,b)=>b[1]-a[1])[0], biggest=Object.values(tt.txByCat).flat().sort((a,b)=>a.amount-b.amount)[0];
+  const fees=Object.values(tt.txByCat["Gebühren & Zinsen"]||[]).reduce((a,t)=>a-t.amount,0);
+  return `<div class="chart-card"><div class="sec-head"><h2>Rückblick ${MONTHS[d.getMonth()]}</h2></div><ul class="rev">
+    <li>💶 <span><b>${money(tt.out)}</b> ausgegeben${diff!=null?` – <b style="color:${diff<=0?"var(--plus)":"var(--minus)"}">${Math.abs(diff)} % ${diff<=0?"weniger":"mehr"}</b> als in den Monaten davor`:""}</span></li>
+    <li>${tt.left>=0?"🐷":"📉"} <span>${tt.left>=0?`<b>${money(tt.left)}</b> übrig behalten`:`<b>${money(-tt.left)}</b> mehr ausgegeben als eingenommen`}</span></li>
+    ${top?`<li>📊 <span>Größte Kategorie: <b>${esc(top[0])}</b> mit ${money(top[1])}</span></li>`:""}
+    ${biggest?`<li>🧾 <span>Größte Einzelausgabe: <b>${esc(displayName(biggest))}</b> ${money(-biggest.amount)}</span></li>`:""}
+    ${fees?`<li>🏦 <span>Bankgebühren und Zinsen: <b>${money(fees)}</b></span></li>`:""}</ul></div>`;
+}
+function feesHtml(){
+  const y=now.getFullYear(), list=allTx().filter(t=>t.amount<0&&!t.ex&&t.date.startsWith(String(y))&&catOf(t)==="Gebühren & Zinsen"); if(!list.length) return "";
+  const sum=list.reduce((a,t)=>a-t.amount,0);
+  return `<div class="chart-card"><div class="sec-head"><h2>Bankgebühren & Zinsen ${y}</h2><span class="sum" style="color:var(--minus)">${money(sum)}</span></div><ul>${list.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6).map(t=>txRow(t,true)).join("")}</ul>
+    ${sum>3000?`<p class="note">Das sind ${money(sum)} im Jahr. Viele Banken bieten ein kostenloses Girokonto – ein Wechsel kann sich lohnen.</p>`:""}</div>`;
 }
 /* ---------- Auswertung: Monatssummen, Durchschnitt, Diagramme ---------- */
 let smOff=0, openCat=null;
@@ -1513,8 +1644,8 @@ function renderStats(){
   let h=`<div class="chart-card"><div class="mnav"><button type="button" data-sm="-1" aria-label="Monat zurück">‹</button><b>${MONTHS[m]} ${y}</b><button type="button" data-sm="1" aria-label="Monat vor"${smOff>=0?" disabled":""}>›</button></div>
     <div class="avg"><div><span>Rein</span><b style="color:var(--plus)">${money(tt.inc)}</b></div><div><span>Raus</span><b>${money(tt.out)}</b></div><div><span>Übrig</span><b style="color:${tt.left>=0?"var(--accent)":"var(--minus)"}">${money(tt.left)}</b></div></div>
     ${tt.back?`<p class="note">Davon zurückbekommen (Rückzahlungen): <b style="color:var(--plus)">+${money(tt.back)}</b></p>`:""}
-    ${cats.length?`<div class="donut-wrap">${donut(parts,tt.out,"Ausgaben nach Kategorie")}<div class="legend">${cats.map(([c,v])=>`<button type="button" class="lg" data-scat="${esc(c)}" aria-expanded="${openCat===c}"><i style="background:${catColor(c)}"></i><span>${esc(c)}</span><b><small>${Math.round(v/tt.out*100)} %</small>${money(v)}</b></button>
-      ${openCat===c?`<ul class="cat-tx">${(tt.txByCat[c]||[]).map(t=>txRow(t,true)).join("")}</ul>`:""}`).join("")}</div></div>`:`<div class="empty">In diesem Monat keine Ausgaben.</div>`}
+    ${cats.length?`<div class="donut-wrap">${donut(parts,tt.out,"Ausgaben nach Kategorie")}<div class="legend">${cats.map(([c,v])=>`<button type="button" class="lg" data-scat="${esc(c)}" aria-expanded="${openCat===c}"><i style="background:${catColor(c)}"></i><span>${esc(c)}${fin.budgets[c]?`<small style="margin-left:6px;color:${v>fin.budgets[c]?"var(--minus)":"var(--muted)"}">/ ${money(fin.budgets[c])}</small>`:""}</span><b><small>${Math.round(v/tt.out*100)} %</small>${money(v)}</b></button>
+      ${openCat===c?`<div class="cat-tx"><button class="add" type="button" data-bud="${esc(c)}" style="margin-bottom:6px">🎯 ${fin.budgets[c]?`Budget ändern (${money(fin.budgets[c])})`:"Monatsbudget festlegen"}</button><ul>${(tt.txByCat[c]||[]).map(t=>txRow(t,true)).join("")}</ul></div>`:""}`).join("")}</div></div>`:`<div class="empty">In diesem Monat keine Ausgaben.</div>`}
   </div>`;
   if(unsorted.length) h+=`<button type="button" class="sortbar" data-sorter="1">🗂️ <span><b>${unsorted.reduce((a,g)=>a+g.txs.length,0)} Ausgaben</b> in „Sonstiges“ von ${unsorted.length} Händlern</span><span>Sortieren ›</span></button>`;
   if(tt.backs.length){ const by={}; tt.backs.forEach(t=>{ const k=merchKey(t); (by[k]=by[k]||{n:displayName(t),back:0,out:0}).back+=t.amount; });
@@ -1525,6 +1656,9 @@ function renderStats(){
   h+=`<div class="chart-card"><div class="sec-head"><h2>Rein und raus</h2><span class="sum">letzte 6 Monate</span></div>${barsChart(months)}
     <div class="chart-leg"><span><i style="background:var(--plus)"></i>Einnahmen</span><span><i style="background:var(--minus)"></i>Ausgaben</span><span>Werte in €</span></div></div>`;
   h+=avgHtml();
+  h+=historyHtml();
+  if(smOff===0) h+=reviewHtml();
+  h+=feesHtml();
   h+=`<p class="note">Umbuchungen zwischen eigenen Konten zählen nicht mit. Sparpläne und Depot-Überweisungen gelten als gespart, nicht als ausgegeben.</p>
     <label class="chk" style="font-size:.86rem"><input type="checkbox" id="salaryShift"${salaryShift()?" checked":""}> Gehalt ab dem ${SALARY_DAY}. zählt für den nächsten Monat</label>`;
   return h;
@@ -1627,11 +1761,41 @@ function conSheet(key){
     <div class="kv"><span>Pro Jahr</span><b>${money(c.perMonth*12)}</b><span>Nächste Zahlung</span><b>${c.next?c.next.toLocaleDateString("de-DE"):"–"}</b><span>Kategorie</span><b>${esc(c.cat)}</b></div>
     <div class="pays"><span class="flabel">Letzte Zahlungen</span>${c.txs.slice(0,6).map(t=>`<div><span>${fromIso(t.date).toLocaleDateString("de-DE")}</span><b>${money(-t.amount)}</b></div>`).join("")}</div>
     <div class="field"><span class="flabel">Kündigen bis (Erinnerung)</span><input type="date" id="conCancel" value="${esc(c.meta.cancelBy||"")}"><p class="note">Ours erinnert dich in der Übersicht 30 Tage vorher. Die Kündigungsfrist steht in deinem Vertrag.</p></div>
-    <div class="sheet-actions"><button class="del" type="button" id="conHide">Ist kein Vertrag</button><div class="right"><button class="ghost" type="button" data-close>Schließen</button><button class="btn primary" type="button" id="conSave">Speichern</button></div></div>`);
+    ${c.raise?`<p class="note" style="color:var(--minus)">Preiserhöhung am ${fromIso(c.raise.date).toLocaleDateString("de-DE")}: ${money(c.raise.from)} → ${money(c.raise.to)}</p>`:""}
+    ${c.meta.cancelled?`<p class="note">✂️ Kündigung verschickt am ${new Date(c.meta.cancelled).toLocaleDateString("de-DE")}.${c.last>new Date(c.meta.cancelled+40*864e5)?" <b style='color:var(--minus)'>Es wird aber weiter abgebucht – frag beim Anbieter nach.</b>":""}</p>`:""}
+    <button class="btn primary" type="button" id="conKill">✂️ Kündigen</button>
+    <div class="sheet-actions"><button class="del" type="button" id="conHide">Ist kein Vertrag</button><div class="right"><button class="ghost" type="button" data-close>Schließen</button><button class="btn" type="button" id="conSave">Speichern</button></div></div>`);
+}
+/* ---------- Kündigen: Schreiben erstellen, per Mail senden, drucken ---------- */
+let myName="";
+function killSheet(key){
+  const c=contracts().find(x=>x.key===key); if(!c) return; const me=fin.meta||{};
+  sheetCtx={type:"kill",key,name:c.name};
+  openSheet(`<h3>${esc(c.name)} kündigen</h3><p class="note">Ours schreibt dir die Kündigung. Du verschickst sie selbst per Mail oder Post – so hast du alles in der Hand.</p>
+    <div class="field"><span class="flabel">Dein Name</span><input type="text" id="kName" maxlength="60" value="${esc(me.fullName||myName||"")}"></div>
+    <div class="field"><span class="flabel">Deine Adresse</span><input type="text" id="kAddr" maxlength="120" placeholder="Straße Nr., PLZ Ort" value="${esc(me.address||"")}"></div>
+    <div class="field"><span class="flabel">Kunden- oder Vertragsnummer (falls bekannt)</span><input type="text" id="kNo" maxlength="60" placeholder="steht oft im Verwendungszweck" value="${esc((fin.contracts[key]||{}).customerNo||"")}"></div>
+    <div class="field"><span class="flabel">E-Mail des Anbieters (optional)</span><input type="text" id="kMail" maxlength="80" placeholder="z.B. kuendigung@anbieter.de" value="${esc((fin.contracts[key]||{}).mail||"")}"></div>
+    <div class="orig"><span class="flabel">Letzte Abbuchung</span><div class="kv"><span>Empfänger</span><b>${esc(c.txs[0]&&c.txs[0].name||"–")}</b><span>Zweck</span><b>${esc(c.txs[0]&&c.txs[0].text||"–")}</b></div></div>
+    <div class="fchips"><button class="btn primary" type="button" id="kSend">✉️ Per Mail senden</button><button class="btn" type="button" id="kPrint">🖨️ Drucken / PDF</button><button class="btn" type="button" id="kCopy">Text kopieren</button></div>
+    <a class="note" href="https://www.google.com/search?q=${encodeURIComponent(c.name+" kündigen")}" target="_blank" rel="noopener">🔎 Kündigungsseite von ${esc(c.name)} suchen (viele Anbieter haben einen „Verträge hier kündigen“-Knopf)</a>
+    <label class="chk"><input type="checkbox" id="kDone"${(fin.contracts[key]||{}).cancelled?" checked":""}> Kündigung ist verschickt</label>
+    <div class="sheet-actions"><span></span><div class="right"><button class="ghost" type="button" data-close>Fertig</button></div></div>`);
+}
+function killText(){
+  const c=contracts().find(x=>x.key===sheetCtx.key)||{name:sheetCtx.name}, name=$("#kName").value.trim(), addr=$("#kAddr").value.trim(), no=$("#kNo").value.trim();
+  const today=new Date().toLocaleDateString("de-DE");
+  return {subject:`Kündigung${no?` – Kunden-/Vertragsnr. ${no}`:""}`,
+    body:`${name}${addr?"\n"+addr:""}\n\n${today}\n\nKündigung meines Vertrags${no?` (Kunden-/Vertragsnummer: ${no})`:""}\n\nSehr geehrte Damen und Herren,\n\nhiermit kündige ich meinen Vertrag bei ${c.name} fristgerecht zum nächstmöglichen Zeitpunkt.\n\nBitte bestätigen Sie mir den Eingang dieser Kündigung sowie das genaue Vertragsende schriftlich.\nZum Vertragsende widerrufe ich außerdem das erteilte SEPA-Lastschriftmandat.\n\nMit freundlichen Grüßen\n${name}`};
+}
+function saveKillMeta(){
+  const k=sheetCtx.key, name=$("#kName").value.trim(), addr=$("#kAddr").value.trim(), no=$("#kNo").value.trim(), mail=$("#kMail").value.trim();
+  fin.meta=fin.meta||{}; fin.meta.fullName=name; fin.meta.address=addr; finRef("meta").update({fullName:name||null,address:addr||null}).catch(()=>{});
+  fin.contracts[k]={...(fin.contracts[k]||{}),customerNo:no||null,mail:mail||null}; finRef("contracts/"+k).update({customerNo:no||null,mail:mail||null}).catch(()=>{});
 }
 function budSheet(cat){
   sheetCtx={type:"bud",cat:cat||null};
-  const cur=cat?fin.budgets[cat]:null, avg=(()=>{ if(!cat) return 0; let s=0; for(let i=1;i<=3;i++){ const d=new Date(vy,vm-i,1); s+=(monthStats(d.getFullYear(),d.getMonth()).byCat[cat]||0)/3; } return Math.round(s/100)*100; })();
+  const cur=cat?fin.budgets[cat]:null, avg=(()=>{ if(!cat) return 0; let s=0; for(let i=1;i<=3;i++){ const d=new Date(now.getFullYear(),now.getMonth()-i,1); s+=(totals(d.getFullYear(),d.getMonth()).byCat[cat]||0)/3; } return Math.round(s/100)*100; })();
   openSheet(`<h3>${cat?esc(cat):"Budget festlegen"}</h3>
     ${cat?"":`<div class="field"><span class="flabel">Kategorie</span><div class="chips" id="budCats">${catList().filter(c=>!INCOME_CATS.has(c)&&!NO_SPEND.has(c)).map(c=>`<button type="button" class="chip" data-bcat="${esc(c)}" aria-pressed="false"><span class="dot" style="background:${catColor(c)}"></span>${esc(c)}</button>`).join("")}</div></div>`}
     <label class="amount"><input id="budAmt" inputmode="decimal" placeholder="${avg?(avg/100).toFixed(0):"0"}" value="${cur?(cur/100).toFixed(2).replace(".",","):""}" aria-label="Monatsbudget"><span>€</span></label>
@@ -1894,6 +2058,9 @@ document.addEventListener("click",e=>{
   const tf=t.closest("[data-txf]"); if(tf){ txFilter=tf.dataset.txf; txShown=100; render(); return; }
   if(t.closest("#syncBtn")) return syncAll(true);
   if(t.closest("#txMore")){ txShown+=100; render(); return; }
+  const dm=t.closest("[data-dismiss]"); if(dm){ const k=dm.dataset.dismiss.replace(/[.#$\[\]\/]/g,"_"); fin.meta=fin.meta||{}; fin.meta.dismiss=fin.meta.dismiss||{}; fin.meta.dismiss[k]=true; finRef("meta/dismiss/"+k).set(true).catch(()=>{}); render(); return; }
+  const hd=t.closest("[data-hist]"); if(hd){ histDays=+hd.dataset.hist; render(); return; }
+  const gl=t.closest("[data-goal]"); if(gl) return goalSheet(gl.dataset.goal);
   if(t.closest("[data-sorter]")){ sortSkip=new Set(); return sorterSheet(); }
   const scat=t.closest("[data-scat]"); if(scat){ openCat=openCat===scat.dataset.scat?null:scat.dataset.scat; render(); return; }
   const smn=t.closest("[data-sm]"); if(smn){ smOff=Math.min(0,smOff+(+smn.dataset.sm)); openCat=null; render(); return; }
@@ -1906,9 +2073,21 @@ $("#sheetModal").addEventListener("click",e=>{
   const b=t.closest("[data-bank]"); if(b) return startBank(b.dataset.bank);
   const pc=t.closest("[data-pcat]"); if(pc&&sheetCtx){ sheetCtx.cat=pc.dataset.pcat; $("#txCats").innerHTML=catChips(sheetCtx.cat); return; }
   if(t.closest("#txSave")) return saveTx();
+  const ge=t.closest("[data-gemo]"); if(ge){ sheetCtx.emoji=ge.dataset.gemo; document.querySelectorAll("[data-gemo]").forEach(x=>x.setAttribute("aria-pressed",x===ge)); return; }
+  const ga=t.closest("[data-gadd]"); if(ga){ const i=$("#gSaved"); const v=Math.max(0,(parseMoney(i.value)||0)+(+ga.dataset.gadd)); i.value=(v/100).toFixed(2).replace(".",","); return; }
+  if(t.closest("#gSave")){ const name=($("#gName").value||"").trim(), target=parseMoney($("#gTarget").value); if(!name||!target){ say("Gib einen Namen und einen Zielbetrag ein."); return; }
+    const id=sheetCtx.id||("g"+Date.now().toString(36)), g={name,emoji:sheetCtx.emoji||"🎯",target,saved:parseMoney($("#gSaved").value)||0,by:$("#gBy").value||null};
+    fin.goals[id]=g; finRef("goals/"+id).set(g).catch(showErr); closeSheet(); render(); return; }
+  if(t.closest("#gDel")){ const id=sheetCtx.id; delete fin.goals[id]; finRef("goals/"+id).remove().catch(showErr); closeSheet(); render(); return; }
   const sc=t.closest("[data-sortcat]"); if(sc&&sheetCtx&&sheetCtx.type==="sort"){ rememberMerchant(sheetCtx.key,sc.dataset.sortcat,($("#sortName").value||"").trim()||null); return sorterSheet(); }
   if(t.closest("#sortSkip")&&sheetCtx){ sortSkip.add(sheetCtx.key); return sorterSheet(); }
   if(t.closest("#pickSave")) return savePicked();
+  if(t.closest("#conKill")) return killSheet(sheetCtx.key);
+  if(t.closest("#kSend")){ saveKillMeta(); const x=killText(), to=$("#kMail").value.trim(); location.href=`mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(x.subject)}&body=${encodeURIComponent(x.body)}`; return; }
+  if(t.closest("#kCopy")){ saveKillMeta(); const x=killText(); navigator.clipboard&&navigator.clipboard.writeText(x.subject+"\n\n"+x.body).then(()=>say("Kündigung kopiert."),()=>say("Kopieren hat nicht geklappt.")); return; }
+  if(t.closest("#kPrint")){ saveKillMeta(); const x=killText(), w=window.open("","_blank"); if(!w){ say("Bitte Pop-ups erlauben, um zu drucken."); return; }
+    w.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${esc(x.subject)}</title><style>body{font-family:Arial,sans-serif;font-size:12pt;line-height:1.5;max-width:17cm;margin:2.5cm auto;white-space:pre-wrap}</style></head><body>${esc(x.body)}</body></html>`); w.document.close(); setTimeout(()=>{ try{ w.print(); }catch(e){} },300); return; }
+  if(t.id==="kDone"){ const k=sheetCtx.key, v=t.checked?Date.now():null; fin.contracts[k]={...(fin.contracts[k]||{}),cancelled:v}; finRef("contracts/"+k+"/cancelled").set(v).catch(showErr); render(); return; }
   if(t.closest("#conSave")){ const k=sheetCtx.key, v=$("#conCancel").value||null; fin.contracts[k]={...(fin.contracts[k]||{}),cancelBy:v}; finRef("contracts/"+k+"/cancelBy").set(v).catch(showErr); closeSheet(); render(); return; }
   if(t.closest("#conHide")){ const k=sheetCtx.key; fin.contracts[k]={...(fin.contracts[k]||{}),hidden:true}; finRef("contracts/"+k+"/hidden").set(true).catch(showErr); closeSheet(); render(); say("Wird nicht mehr als Vertrag angezeigt."); return; }
   const bc=t.closest("[data-bcat]"); if(bc){ sheetCtx.cat=bc.dataset.bcat; document.querySelectorAll("[data-bcat]").forEach(x=>x.setAttribute("aria-pressed",x===bc)); return; }
@@ -1948,13 +2127,13 @@ document.addEventListener("visibilitychange",()=>{ if(document.hidden||!myUid||!
   const last=Math.max(0,...Object.values(fin.accounts).filter(a=>a&&a.src==="eb").map(a=>a.syncAt||0)); if(Date.now()-last>10*60e3) syncAll(false); });
 /* ---------- Start ---------- */
 Auth.start(firebaseConfig,"budget",(r,info)=>{
-  root=r; if(info) myUid=info.uid; render();
+  root=r; if(info){ myUid=info.uid; myName=info.name||""; } render();
   if(!root){ $("#count").textContent="Keine Verbindung"; $("#status").textContent="Die Datenbank konnte nicht geladen werden. Prüf die Internetverbindung und lade die Seite neu."; return; }
   root.child("recurring").on("value",s=>{ rec=s.val()||{}; render(); },err=>{ $("#count").textContent="Keine Verbindung"; showErr(err); });
   root.child("expenses").on("value",s=>{ exp=s.val()||{}; render(); });
   root.child("cats").on("value",s=>{ customCats=s.val()||{}; render(); if(form) renderFormChips(); });
   if(myUid){ let first=true;
-    finRef().on("value",s=>{ const v=s.val()||{}; fin={accounts:v.accounts||{},tx:v.tx||{},rules:v.rules||{},budgets:v.budgets||{},contracts:v.contracts||{},eb:v.eb||{},meta:v.meta||{},alias:v.alias||{},aicat:v.aicat||{}};
+    finRef().on("value",s=>{ const v=s.val()||{}; fin={accounts:v.accounts||{},tx:v.tx||{},rules:v.rules||{},budgets:v.budgets||{},contracts:v.contracts||{},eb:v.eb||{},meta:v.meta||{},alias:v.alias||{},aicat:v.aicat||{},goals:v.goals||{}};
       if(!document.querySelector("#sheetModal:not([hidden]) input:focus")) render();
       if(first){ first=false; if(ebBack) finishBank();
         const last=Math.max(0,...Object.values(fin.accounts).filter(a=>a&&a.src==="eb").map(a=>a.syncAt||0));
