@@ -155,6 +155,32 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
    - Jede Seite hat ihren eigenen Bereich unter spaces/<id> mit eigenen Personen (access/<uid>)
    - users/<uid>/spaces/<typ> merkt sich, welcher Bereich zu welcher Seite gehört
    Seiten rufen Auth.start(firebaseConfig, "dates" | "recipes" | "chores" | "budget" | "gym", (ref, info) => { ... }) auf. */
+/* ---------- Darstellung: Automatisch / Hell / Dunkel – gilt für alle Seiten ----------
+   Seiten mit eigenem Dunkel-Design (@media prefers-color-scheme) werden umgeschaltet,
+   alle anderen bekommen ein allgemeines dunkles Farbschema. */
+(function(){
+  const KEY="ours.theme", mq=matchMedia("(prefers-color-scheme: dark)");
+  let pref="auto"; try{ pref=localStorage.getItem(KEY)||"auto"; }catch(e){}
+  let rules=null;
+  const find=()=>{ if(rules) return rules; rules=[]; for(const ss of document.styleSheets){ let rs; try{ rs=ss.cssRules; }catch(e){ continue; }
+    for(const r of rs){ if(r.media&&/prefers-color-scheme:\s*dark/.test(r.media.mediaText)) rules.push({r,orig:r.media.mediaText}); } } return rules; };
+  const css=document.createElement("style"); css.id="ours-theme-css";
+  css.textContent=`html.ours-dark{color-scheme:dark;--page:#000;--bg:#121214;--surface:#1c1c1f;--surface2:#26262b;--ink:#ececf1;--muted:#9b9ba5;--line:#2f2f35;--btn:#2a2a30;--frame-line:#1a1a1e;--dots:rgba(255,255,255,.03);
+      --accent:color-mix(in srgb,var(--band) 45%,#fff);--accent-soft:color-mix(in srgb,var(--band) 38%,#1c1c1f);--theirs:#26262b;--mine:color-mix(in srgb,var(--band) 45%,#1c1c1f);--shadow:rgba(0,0,0,.6)}
+    html.ours-dark body{background-color:#000!important;background-image:none!important}
+    html.ours-dark input,html.ours-dark textarea,html.ours-dark select{color-scheme:dark}`;
+  function apply(){
+    const dark=pref==="dark"||(pref==="auto"&&mq.matches), list=find(), root=document.documentElement;
+    list.forEach(x=>{ try{ x.r.media.mediaText=pref==="auto"?x.orig:pref==="dark"?"all":"not all"; }catch(e){} });
+    if(!css.isConnected) document.head.appendChild(css);
+    root.classList.toggle("ours-dark",dark&&!list.some(x=>/--(bg|surface)\s*:/.test(x.r.cssText))); root.dataset.theme=dark?"dark":"light"; root.style.colorScheme=dark?"dark":"light";
+    document.dispatchEvent(new CustomEvent("ours-theme",{detail:{pref,dark}}));
+  }
+  mq.addEventListener?mq.addEventListener("change",apply):mq.addListener(apply);
+  window.OursTheme={get pref(){ return pref; },set(v,save){ if(!["auto","light","dark"].includes(v)) return; pref=v; try{ localStorage.setItem(KEY,v); }catch(e){} apply();
+    if(save!==false) try{ const u=firebase.auth().currentUser; if(u) firebase.database().ref(`users/${u.uid}/settings/theme`).set(v).catch(()=>{}); }catch(e){} },apply};
+  apply();
+})();
 /* ---------- Offline: Seiten über den Service Worker, Daten über einen Zwischenspeicher ----------
    Gelesene Daten (on/once "value") werden im localStorage gemerkt und ohne Netz von dort geliefert.
    Schreibvorgänge kommen in eine Warteschlange und werden nachgereicht, sobald wieder Netz da ist. */
@@ -315,6 +341,9 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
   .auth-mini.alt{background:none;border:1px solid var(--line);color:var(--ink)}
   .auth-mini:disabled{opacity:.5;cursor:default}
   .auth-sw .sel{user-select:all;word-break:break-all;font-family:ui-monospace,monospace;font-size:.72rem;color:var(--ink)}
+  .auth-theme{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:3px}
+  .auth-theme button{border:0;background:none;border-radius:9px;padding:8px 4px;font:inherit;font-size:.86rem;font-weight:600;color:var(--muted);cursor:pointer}
+  .auth-theme button[aria-pressed="true"]{background:var(--band);color:var(--on-band)}
   .auth-sec{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 -4px}
 
   /* Profilbilder */
@@ -439,7 +468,7 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-06-233033";
+  const APP_VERSION="2026-11-07-124133";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -661,6 +690,8 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
         ${(()=>{ let last=""; return (window.Auth.pageSettings||[]).map((x,i)=>{ const h=x.sec&&x.sec!==last?`<p class="auth-sec">${esc(x.sec)}</p>`:""; last=x.sec||last;
           if(x.button) return h+`<div class="auth-sw row"><span>${esc(x.label)}<small id="stX${i}n">${x.noteHtml?x.noteHtml():esc(x.note())}</small></span><button type="button" class="auth-mini${x.alt&&x.alt()?" alt":""}" id="stX${i}"${x.disabled&&x.disabled()?" disabled":""}>${esc(x.button())}</button></div>`;
           return h+`<label class="auth-sw" for="stX${i}"><span>${esc(x.label)}<small id="stX${i}n">${esc(x.note(x.get()))}</small></span><input type="checkbox" id="stX${i}" role="switch"${x.get()?" checked":""}${x.disabled&&x.disabled()?" disabled":""}><i aria-hidden="true"></i></label>`; }).join(""); })()}
+        <p class="auth-sec">Darstellung</p>
+        <div class="auth-theme" role="group" aria-label="Darstellung">${[["auto","Automatisch"],["light","Hell"],["dark","Dunkel"]].map(([k,l])=>`<button type="button" data-theme="${k}" aria-pressed="${(window.OursTheme&&OursTheme.pref||"auto")===k}">${l}</button>`).join("")}</div>
         <p class="auth-sec">Diese Seite</p>
         <p class="auth-note">${sid?(type==="gym"?`Das ist dein eigener Trainingsplan. Freunde können ihn ansehen, aber nicht ändern.`:`Du bist in ${type==="chores"||type==="budget"?"einem":"einer"} ${esc(PAGE.noun)}. Wer ${type==="chores"?"ihn":type==="budget"?"es":"sie"} sieht, steht unter „Personen bei ${esc(PAGE.label)}“.`):`Für ${esc(PAGE.label)} gibt es noch keine Liste.`}</p>
         <button class="auth-btn alt" type="button" id="stOut">Abmelden</button>
@@ -672,6 +703,7 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
         el.onchange=async()=>{ const n=$a("#stX"+i+"n");
         try{ await x.set(el.checked); }catch(err){ msg("Speichern hat nicht geklappt. Prüf die Internetverbindung.",true); } if(n) n.textContent=x.note(x.get()); }; });
       $a("#stOut").onclick=()=>auth.signOut();
+      screen.querySelectorAll("[data-theme]").forEach(b=>b.onclick=()=>{ if(window.OursTheme) OursTheme.set(b.dataset.theme); screen.querySelectorAll("[data-theme]").forEach(x=>x.setAttribute("aria-pressed",x===b)); });
       $a("#stPw").onclick=async()=>{
         try{ await auth.sendPasswordResetEmail(user.email); msg(`Wir haben dir eine Mail an ${user.email} geschickt. Darüber legst du ein neues Passwort fest.`); }
         catch(err){ msg(errText(err),true); }
@@ -1001,7 +1033,8 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
         window.Auth._profileView=profileView; window.Auth.me=u.uid;
         installMenu();
         db.ref(`users/${u.uid}/settings`).on("value",s=>{ const v=s.val()||{};
-          Object.entries(KC_KEY).forEach(([t,k])=>applyKcal(t,typeof v[k]==="boolean"?v[k]:v.kcal===true)); },()=>{});
+          Object.entries(KC_KEY).forEach(([t,k])=>applyKcal(t,typeof v[k]==="boolean"?v[k]:v.kcal===true));
+          if(v.theme&&window.OursTheme&&v.theme!==OursTheme.pref) OursTheme.set(v.theme,false); },()=>{});
         try{ await ensureFriendCode(); watchFriends(); watchChats(); }catch(e){}
         const fr=location.hash.match(/^#friend-([A-Za-z0-9]{6,12})$/);
         if(fr){ clearHash(); setTimeout(async()=>{ let r; try{ r=await sendRequest(fr[1]); }catch(e){ r={err:"Die Anfrage hat nicht geklappt."}; } friendsView(r.err||r.ok,!!r.err); },400); }
