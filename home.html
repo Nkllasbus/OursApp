@@ -55,6 +55,20 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
 .one .tx b{font-weight:600}
 .one .r{flex:none;font-weight:700;font-variant-numeric:tabular-nums}
 .one .chev{flex:none;color:var(--muted);font-size:1.2rem}
+.more{display:flex;align-items:center;justify-content:center;gap:6px;margin:4px auto 0!important;border:0;background:none;color:var(--muted);font-size:.84rem;font-weight:600;padding:6px;margin-top:-2px}
+.more i{font-style:normal;transition:transform .2s}
+.more[aria-expanded="true"] i{transform:rotate(90deg)}
+.day{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 1px 2px var(--shadow)}
+.drow{display:flex;align-items:flex-start;gap:12px;padding:11px 14px;color:var(--ink);text-decoration:none;position:relative}
+.drow+.drow::before{content:"";position:absolute;left:52px;right:0;top:0;border-top:1px solid var(--line)}
+.drow .e{flex:none;width:26px;text-align:center;font-size:1.15rem;line-height:1.3}
+.drow .tx{flex:1;min-width:0;font-size:.9rem;line-height:1.4}
+.drow .tx small{display:block;color:var(--muted);font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.drow .tx span{display:block}
+.drow .tx .m{color:var(--muted)}
+.drow .chev{flex:none;color:var(--muted);align-self:center}
+.pushcta{display:flex;align-items:center;gap:10px;border:1px dashed var(--line);border-radius:14px;padding:10px 12px;font-size:.84rem;color:var(--muted);background:none;width:100%;text-align:left}
+.pushcta b{color:var(--ink)}
 .news-h{display:flex;justify-content:space-between;align-items:baseline;margin:0 2px}
 .news-h b{font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
 .news-h small{font-size:.72rem;color:var(--muted)}
@@ -83,6 +97,8 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
     <div class="hello"><h2 id="hello">Hallo!</h2><p id="today"></p></div>
     <nav class="grid" id="tiles" aria-label="Bereiche"></nav>
     <section id="news" hidden></section>
+    <button class="more" type="button" id="moreBtn" aria-expanded="false" aria-controls="dayBox" hidden>Alles für heute <i>›</i></button>
+    <section class="day" id="dayBox" hidden aria-label="Heute"></section>
     <p class="sec-l">Bald</p>
     <div class="grid" id="soon"></div>
     <div class="tip" id="tip"><span>📱</span><span><b>Tipp:</b> Leg diese Seite auf deinen Home-Bildschirm: in Safari auf <b>Teilen → „Zum Home-Bildschirm“</b>. Dann öffnet sich Ours wie eine App.</span></div>
@@ -123,6 +139,37 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
   window.OursTheme={get pref(){ return pref; },set(v,save){ if(!["auto","light","dark"].includes(v)) return; pref=v; try{ localStorage.setItem(KEY,v); }catch(e){} apply();
     if(save!==false) try{ const u=firebase.auth().currentUser; if(u) firebase.database().ref(`users/${u.uid}/settings/theme`).set(v).catch(()=>{}); }catch(e){} },apply};
   apply();
+})();
+/* ---------- Mitteilungen aufs Handy (Web Push über den Helfer in Cloudflare) ----------
+   Auf dem iPhone nur, wenn Ours vom Home-Bildschirm geöffnet wird (ab iOS 16.4). */
+window.OursPush=(function(){
+  const W="https://oursapp.niklasbergnerbus.workers.dev", CATS=[["ev","Termine","Erinnerung vor deinen Terminen"],["pay","Zahlungen","Am Vortag, wenn Miete, Verträge oder Abbuchungen fällig sind"],["gym","Training","Am Morgen eines Trainingstags"],["chore","Haushalt","Wenn eine Aufgabe für dich fällig ist"],["trip","Reisen","Packliste, Abreise und Tagesplan"],["partner","Änderungen von anderen","Wenn jemand einen Termin oder eine Reise einträgt"]];
+  const u8=s=>Uint8Array.from(atob(s.replace(/-/g,"+").replace(/_/g,"/")+"===".slice((s.length+3)%4)),c=>c.charCodeAt(0));
+  const ls=(k,v)=>{ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){ return null; } };
+  const supported=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;
+  const standaloneNeeded=()=>/iPhone|iPad|iPod/.test(navigator.userAgent)&&!(navigator.standalone||matchMedia("(display-mode: standalone)").matches);
+  async function call(body){ const u=window.firebase&&firebase.auth&&firebase.auth().currentUser; const token=u?await u.getIdToken():null;
+    const r=await fetch(W,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...body,token})}); const d=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(d.error||"Der Helfer antwortet nicht."); return d; }
+  const reg=()=>Promise.race([navigator.serviceWorker.ready,new Promise((_,rej)=>setTimeout(()=>rej(new Error("Der Hintergrunddienst läuft noch nicht. Lade die Seite einmal neu.")),6000))]);
+  let cats={}; const catsOut=()=>Object.fromEntries(CATS.map(([k])=>[k,cats[k]!==false]));
+  async function state(){ if(!supported()) return standaloneNeeded()?"homescreen":"na"; if(Notification.permission==="denied") return "denied";
+    try{ const r=await reg(), s=await r.pushManager.getSubscription(); return s&&ls("ours.push")==="1"?"on":"off"; }catch(e){ return "off"; } }
+  async function enable(){
+    if(!supported()) throw new Error(standaloneNeeded()?"Öffne Ours vom Home-Bildschirm, dann geht es.":"Dieser Browser kann keine Mitteilungen.");
+    const p=await Notification.requestPermission(); if(p!=="granted") throw new Error("Mitteilungen wurden nicht erlaubt. Du kannst sie in den iPhone-Einstellungen bei Ours einschalten.");
+    const {key}=await call({mode:"push-key"}), r=await reg();
+    let s=await r.pushManager.getSubscription(); if(!s) s=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(key)});
+    await call({mode:"push-sub",sub:s.toJSON(),cats:catsOut()}); ls("ours.push","1"); Object.keys(localStorage).filter(k=>k.startsWith("ours.pplan.")).forEach(k=>ls(k,null));
+    document.dispatchEvent(new CustomEvent("ours-push",{detail:{on:true}}));
+  }
+  async function disable(){ try{ const r=await reg(), s=await r.pushManager.getSubscription(); if(s){ await call({mode:"push-sub",off:true,sub:s.toJSON()}).catch(()=>{}); await s.unsubscribe(); } }finally{ ls("ours.push",null); } }
+  // Erinnerungen der nächsten Tage an den Helfer geben (nur wenn sich etwas geändert hat)
+  async function plan(kind,items){ if(ls("ours.push")!=="1") return; items=(items||[]).filter(x=>x&&x.at>Date.now()).sort((a,b)=>a.at-b.at).slice(0,80);
+    const h=JSON.stringify(items); if(ls("ours.pplan."+kind)===h) return; try{ await call({mode:"push-plan",kind,items}); ls("ours.pplan."+kind,h); }catch(e){} }
+  function notify(sid,title,body,url){ if(!sid) return; call({mode:"push-notify",sid,title,body,url}).catch(()=>{}); }
+  async function setCat(k,on,db,uid){ cats[k]=on; if(db&&uid) await db.ref(`users/${uid}/settings/push/${k}`).set(on); if(ls("ours.push")==="1") await call({mode:"push-sub",cats:catsOut()}).catch(()=>{}); }
+  return {CATS,supported,state,enable,disable,plan,notify,setCat,test:()=>call({mode:"push-test"}),get cats(){ return catsOut(); },_load(v){ cats=v||{}; }};
 })();
 /* ---------- Offline: Seiten über den Service Worker, Daten über einen Zwischenspeicher ----------
    Gelesene Daten (on/once "value") werden im localStorage gemerkt und ohne Netz von dort geliefert.
@@ -225,6 +272,9 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
     {type:"calendar",file:"kalender.html", label:"Kalender", color:"#2f6b4f", noun:"Kalender",
      empty:"Noch kein Kalender", hint:"Leg einen Kalender an und lad deine Freundin oder deinen Freund ein. Ihr seht und bearbeitet dieselben Termine. Gym, Dateideen und Budget kommen automatisch dazu – die siehst nur du.",
      keys:["events"]},
+    {type:"trips",   file:"reise.html",    label:"Reisen", color:"#1d6a7a", noun:"Reiseplanung",
+     empty:"Noch keine Reiseplanung", hint:"Leg eine Reiseplanung an und lad deine Freundin oder deinen Freund ein. Ihr plant zusammen: Packliste, Ablauf, Buchungen und Kosten.",
+     keys:["trips"]},
     {type:"chat",    file:"chat.html",     label:"Chats", color:"#5f6e54", noSpace:true},
     {type:"mail",    file:"mail.html",     label:"Mail",  color:"#7a2e2e", noSpace:true, menu:true},
   ];
@@ -411,7 +461,7 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-07-124133";
+  const APP_VERSION="2026-11-08-102639";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -429,6 +479,7 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
     budget:  {keys:["recurring","expenses","cats"], word:["Eintrag","Einträge"]},
     gym:     {keys:["exercises","templates","workouts","sessions","bw","week","log"], word:["Übung","Übungen"]},
     calendar:{keys:["events"], word:["Termin","Termine"]},
+    trips:   {keys:["trips"], word:["Reise","Reisen"]},
   };
   function pgToggle(open){ const m=document.getElementById("pgMenu"), b=document.querySelector("header .wordmark.pg-title")||document.getElementById("pgBtn"); if(!m||!b) return; m.hidden=!open; b.setAttribute("aria-expanded",open); }
   // Schalter in den Einstellungen, getrennt pro Seite (standardmäßig aus):
@@ -623,6 +674,18 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
         }catch(err){ $a("#pfSave").disabled=false; msg("Speichern hat nicht geklappt. Prüf die Regeln in Firebase.",true); }
       };
     }
+    // Direkt-Links für Kurzbefehle und Siri
+    function linksView(){
+      const base=location.href.replace(/[#?].*$/,"").replace(/[^/]*$/,"");
+      const L=[["☀️","Heute","home.html#heute"],["📅","Neuer Termin","kalender.html?neu=1"],["✈️","Aktuelle Reise","reise.html?jetzt=1"],["🧳","Neue Reise","reise.html?neu=1"],["🏋️","Training","gym.html"],["💶","Budget","budget.html"],["🧹","Haushalt","haushalt.html"]];
+      show("Kurzbefehle & Siri","",`<p class="auth-note">So legst du einen Kurzbefehl an:<br>1. App <b>Kurzbefehle</b> öffnen → <b>+</b><br>2. Aktion <b>„URL öffnen“</b> wählen und einen Link unten einfügen<br>3. Oben einen Namen geben, z. B. „Neuer Termin“<br>Dann reicht „Hey Siri, Neuer Termin“. Über <b>Teilen → Zum Home-Bildschirm</b> oder als Widget hast du ihn mit einem Tipp.</p>
+        ${L.map(([e,l,p],i)=>`<div class="auth-sw row"><span>${e} ${l}<small style="word-break:break-all">${esc(base+p)}</small></span><button type="button" class="auth-mini alt" data-copy="${esc(base+p)}">Kopieren</button></div>`).join("")}
+        <p class="auth-note">Profi-Tipp: <b>kalender.html?neu=1&amp;titel=Zahnarzt&amp;datum=2026-12-01</b> füllt Titel und Datum schon aus. Mit „Nach Eingabe fragen“ in Kurzbefehle kann Siri dich nach dem Titel fragen.<br>Hinweis: Kurzbefehle öffnen Links in Safari. Dort musst du dich einmal anmelden.</p>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <button class="auth-link" type="button" id="lkBack">Zurück</button>`,true);
+      $a("#lkBack").onclick=settingsView;
+      screen.querySelectorAll("[data-copy]").forEach(b=>b.onclick=async()=>{ try{ await navigator.clipboard.writeText(b.dataset.copy); b.textContent="Kopiert ✓"; }catch(e){ msg("Kopieren ging nicht. Halte den Link gedrückt.",true); } });
+    }
     function settingsView(){
       show("Einstellungen","",`<p class="auth-sec">Konto</p>
         <p class="auth-note">Angemeldet als <b>${esc(user.email)}</b></p>
@@ -635,6 +698,12 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
           return h+`<label class="auth-sw" for="stX${i}"><span>${esc(x.label)}<small id="stX${i}n">${esc(x.note(x.get()))}</small></span><input type="checkbox" id="stX${i}" role="switch"${x.get()?" checked":""}${x.disabled&&x.disabled()?" disabled":""}><i aria-hidden="true"></i></label>`; }).join(""); })()}
         <p class="auth-sec">Darstellung</p>
         <div class="auth-theme" role="group" aria-label="Darstellung">${[["auto","Automatisch"],["light","Hell"],["dark","Dunkel"]].map(([k,l])=>`<button type="button" data-theme="${k}" aria-pressed="${(window.OursTheme&&OursTheme.pref||"auto")===k}">${l}</button>`).join("")}</div>
+        <p class="auth-sec">Mitteilungen</p>
+        <div class="auth-sw row"><span>Mitteilungen aufs Handy<small id="psNote">Wird geprüft …</small></span><button type="button" class="auth-mini" id="psBtn" hidden></button></div>
+        <div id="psCats" hidden>${OursPush.CATS.map(([k,l,n])=>`<label class="auth-sw" for="ps_${k}"><span>${l}<small>${n}</small></span><input type="checkbox" id="ps_${k}" data-pcat="${k}" role="switch"${OursPush.cats[k]?" checked":""}><i aria-hidden="true"></i></label>`).join("")}
+          <button class="auth-link" type="button" id="psTest">Test-Mitteilung schicken</button></div>
+        <p class="auth-sec">Kurzbefehle &amp; Siri</p>
+        <div class="auth-sw row"><span>Direkt-Links<small>Für die Kurzbefehle-App, Siri oder ein Widget auf dem Home-Bildschirm.</small></span><button type="button" class="auth-mini alt" id="stLinks">Ansehen</button></div>
         <p class="auth-sec">Diese Seite</p>
         <p class="auth-note">${sid?(type==="gym"?`Das ist dein eigener Trainingsplan. Freunde können ihn ansehen, aber nicht ändern.`:`Du bist in ${type==="chores"||type==="budget"?"einem":"einer"} ${esc(PAGE.noun)}. Wer ${type==="chores"?"ihn":type==="budget"?"es":"sie"} sieht, steht unter „Personen bei ${esc(PAGE.label)}“.`):`Für ${esc(PAGE.label)} gibt es noch keine Liste.`}</p>
         <button class="auth-btn alt" type="button" id="stOut">Abmelden</button>
@@ -646,6 +715,14 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
         el.onchange=async()=>{ const n=$a("#stX"+i+"n");
         try{ await x.set(el.checked); }catch(err){ msg("Speichern hat nicht geklappt. Prüf die Internetverbindung.",true); } if(n) n.textContent=x.note(x.get()); }; });
       $a("#stOut").onclick=()=>auth.signOut();
+      $a("#stLinks").onclick=linksView;
+      const paintPush=async()=>{ const st=await OursPush.state(), b=$a("#psBtn"), n=$a("#psNote"), c=$a("#psCats"); if(!b) return;
+        n.textContent={on:"Auf diesem Gerät eingeschaltet.",off:"Erinnerungen zu Terminen, Zahlungen, Training, Haushalt und Reisen.",denied:"Blockiert. Erlaube Mitteilungen für Ours in den Einstellungen deines Handys.",homescreen:"Auf dem iPhone: Ours über Teilen → „Zum Home-Bildschirm“ hinzufügen und von dort öffnen. Dann kannst du sie hier einschalten.",na:"Dieser Browser kann keine Mitteilungen."}[st];
+        b.hidden=!(st==="on"||st==="off"); b.textContent=st==="on"?"Ausschalten":"Einschalten"; b.classList.toggle("alt",st==="on"); c.hidden=st!=="on"; b.dataset.st=st; };
+      paintPush();
+      $a("#psBtn").onclick=async()=>{ const b=$a("#psBtn"); b.disabled=true; try{ if(b.dataset.st==="on") await OursPush.disable(); else{ await OursPush.enable(); msg("Mitteilungen sind an. Deine Erinnerungen werden beim nächsten Öffnen der Startseite geplant."); } }catch(err){ msg(err&&err.message||"Das hat nicht geklappt.",true); } b.disabled=false; paintPush(); };
+      screen.querySelectorAll("[data-pcat]").forEach(el=>el.onchange=()=>OursPush.setCat(el.dataset.pcat,el.checked,db,user.uid).catch(()=>msg("Speichern hat nicht geklappt.",true)));
+      $a("#psTest").onclick=async()=>{ try{ const r=await OursPush.test(); msg(r.sent?"Gesendet. Sie sollte gleich ankommen.":"Kein Gerät hat die Mitteilung angenommen. Schalte sie einmal aus und wieder ein."); }catch(err){ msg(err.message,true); } };
       screen.querySelectorAll("[data-theme]").forEach(b=>b.onclick=()=>{ if(window.OursTheme) OursTheme.set(b.dataset.theme); screen.querySelectorAll("[data-theme]").forEach(x=>x.setAttribute("aria-pressed",x===b)); });
       $a("#stPw").onclick=async()=>{
         try{ await auth.sendPasswordResetEmail(user.email); msg(`Wir haben dir eine Mail an ${user.email} geschickt. Darüber legst du ein neues Passwort fest.`); }
@@ -977,7 +1054,7 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
         installMenu();
         db.ref(`users/${u.uid}/settings`).on("value",s=>{ const v=s.val()||{};
           Object.entries(KC_KEY).forEach(([t,k])=>applyKcal(t,typeof v[k]==="boolean"?v[k]:v.kcal===true));
-          if(v.theme&&window.OursTheme&&v.theme!==OursTheme.pref) OursTheme.set(v.theme,false); },()=>{});
+          if(v.theme&&window.OursTheme&&v.theme!==OursTheme.pref) OursTheme.set(v.theme,false); OursPush._load(v.push); },()=>{});
         try{ await ensureFriendCode(); watchFriends(); watchChats(); }catch(e){}
         const fr=location.hash.match(/^#friend-([A-Za-z0-9]{6,12})$/);
         if(fr){ clearHash(); setTimeout(async()=>{ let r; try{ r=await sendRequest(fr[1]); }catch(e){ r={err:"Die Anfrage hat nicht geklappt."}; } friendsView(r.err||r.ok,!!r.err); },400); }
@@ -1018,6 +1095,7 @@ const TILES=[
   {file:"gym.html",    label:"Gym",       sub:"Plan & Training",     ic:"🏋️", c:"#3c4270"},
   {file:"kalender.html",label:"Kalender", sub:"Gemeinsame Termine",  ic:"📅", c:"#2f6b4f"},
   {file:"mail.html",   label:"Mail",      sub:"Gmail lesen",         ic:"✉️", c:"#7a2e2e"},
+  {file:"reise.html",  label:"Reisen",    sub:"Packliste & Plan",    ic:"✈️", c:"#1d6a7a", id:"trips"},
   {file:"chat.html?from=home", label:"Chats", sub:"Mit Freunden schreiben", ic:"💬", c:"#5f6e54", id:"chat"},
 ];
 const SOON=[{label:"Smart Home",sub:"Licht & Heizung",ic:"🏠"}];
@@ -1040,6 +1118,7 @@ const isoD=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${St
 const dayName=di=>{ const t=new Date(); t.setHours(12,0,0,0); const d=new Date(di+"T12:00"); const n=Math.round((d-t)/864e5); return n===0?"heute":n===1?"morgen":d.toLocaleDateString("de-DE",{weekday:"long"}); };
 const ago=ms=>{ const m=Math.round((Date.now()-ms)/60000); return m<60?"gerade aktuell":m<1440?`Stand vor ${Math.round(m/60)} Std.`:`Stand vor ${Math.round(m/1440)} Tagen`; };
 let homeData={};
+function extraTrip(){ const nt=nextTrip(); if(!nt){ extra.trips=null; return paint(); } const dd=dayNum(nt[1].from)-dayNum(isoD(new Date())); extra.trips={sub:dd>0?`${nt[1].dest} in ${dd} ${dd===1?"Tag":"Tagen"}`:`Unterwegs: ${nt[1].dest}`}; paint(); }
 // genau eine Nachricht: die wichtigste aus Gym und Budget (nach Priorität)
 function paintNews(){
   const g=homeData.gym, bu=homeData.budget, c=[], today=isoD(new Date());
@@ -1062,10 +1141,78 @@ function paintNews(){
   $("#news").hidden=false;
   $("#news").innerHTML=`<a class="one" href="${gym?"gym.html":"budget.html"}" style="--c:${gym?"#3c4270":"#123354"}"><span class="e">${x.e}</span><span class="tx"><small>${gym?"Gym":"Budget"}</small>${x.t}</span>${x.r?`<span class="r"${/^-/.test(x.r)?' style="color:#d92d20"':""}>${x.r}</span>`:""}<span class="chev">›</span></a>`;
 }
+/* ---------- Heute: alles auf einen Blick (Termine, Training, Haushalt, Budget, Reise) ---------- */
+let spaces={}, events={}, chores={}, trips={}, me=null, dayOpen=/^#heute/.test(location.hash);
+const fromIso=s=>{ const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d,12); };
+const dayNum=s=>Math.round(fromIso(s).getTime()/864e5), addD=(s,n)=>isoD(new Date(fromIso(s).getTime()+n*864e5)), dowOf=s=>(fromIso(s).getDay()+6)%7;
+const at=(di,hm)=>{ const [h,m]=(hm||"08:00").split(":").map(Number), d=fromIso(di); d.setHours(h,m||0,0,0); return d.getTime(); };
+function repOf(e){ const r=e&&e.rep; if(!r||r==="none") return null; if(typeof r==="string") return {f:r,n:1}; return r; }
+const wkIdx=di=>Math.floor((dayNum(di)-dowOf(di))/7);
+function startsOn(e,r,di){ const a=fromIso(e.date), d=fromIso(di), n=Math.max(1,+r.n||1);
+  if(r.f==="day") return (dayNum(di)-dayNum(e.date))%n===0;
+  if(r.f==="week"){ const ds=r.days&&r.days.length?r.days:[dowOf(e.date)]; return ds.includes(dowOf(di))&&(wkIdx(di)-wkIdx(e.date))%n===0; }
+  if(r.f==="month") return ((d.getFullYear()-a.getFullYear())*12+d.getMonth()-a.getMonth())%n===0&&d.getDate()===a.getDate();
+  if(r.f==="year") return (d.getFullYear()-a.getFullYear())%n===0&&d.getMonth()===a.getMonth()&&d.getDate()===a.getDate(); return false; }
+function evOn(e,di){ if(!e||!e.date||di<e.date) return false; const r=repOf(e), u=(r&&r.until)||e.until; if(u&&di>u) return false; if(e.skip&&e.skip[di]) return false;
+  const span=e.end&&e.end>e.date?dayNum(e.end)-dayNum(e.date):0; if(!r) return dayNum(di)-dayNum(e.date)<=span;
+  for(let k=0;k<=span;k++){ const st=addD(di,-k); if(st<e.date) break; if(!(e.skip&&e.skip[st])&&startsOn(e,r,st)) return true; } return false; }
+const evsOn=di=>Object.values(events).filter(e=>evOn(e,di)).sort((a,b)=>(a.allDay?"":a.start||"").localeCompare(b.allDay?"":b.start||""));
+const DAY=864e5, sod=ms=>{ const d=new Date(ms); d.setHours(0,0,0,0); return d.getTime(); };
+const choreDue=c=>c.lastDone?sod(c.lastDone)+(c.every||7)*DAY:sod(c.createdAt||Date.now());
+const choreMine=c=>!c.who||c.who==="all"||(Array.isArray(c.who)&&c.who.includes(me));
+const packLeft=tr=>{ let n=0; Object.values(tr.pack||{}).forEach(p=>{ if(p.each?!(p.done&&p.done[me]):p.done!==true) n++; }); return n; };
+function nextTrip(){ const t=isoD(new Date()); return Object.entries(trips).filter(([,x])=>x&&x.from&&(x.to||x.from)>=t).sort((a,b)=>a[1].from.localeCompare(b[1].from))[0]||null; }
+function paintDay(){
+  const t=isoD(new Date()), rows=[], row=(e,href,lab,html)=>rows.push(`<a class="drow" href="${href}"><span class="e">${e}</span><span class="tx"><small>${lab}</small>${html}</span><span class="chev">›</span></a>`);
+  if(spaces.calendar){ const L=evsOn(t); if(L.length) row("📅","kalender.html","Termine heute",L.slice(0,4).map(e=>`<span>${e.allDay||!e.start?"ganztägig":`<b>${esc(e.start)}</b>`} ${esc(e.title)}</span>`).join("")+(L.length>4?`<span class="m">+${L.length-4} weitere</span>`:""));
+    else { let nx=null; for(let i=1;i<=14&&!nx;i++){ const d=addD(t,i), l=evsOn(d); if(l.length) nx={d,e:l[0]}; } row("📅","kalender.html","Termine",nx?`<span class="m">Heute frei. Nächster: <b>${esc(nx.e.title)}</b> ${dayName(nx.d)}${nx.e.start&&!nx.e.allDay?" um "+esc(nx.e.start):""}</span>`:`<span class="m">Keine Termine in den nächsten 2 Wochen</span>`); } }
+  const g=homeData.gym; if(g&&g.days){ const td=(g.days.find(x=>x.d===t)||{items:[]}).items;
+    if(td.length) row("🏋️","gym.html","Training",td.map(x=>`<span>${x.done?"✅":esc(x.emo||"🏋️")} ${esc(x.t)}${x.time?` · ${esc(x.time)} Uhr`:""}${x.done?' <span class="m">erledigt</span>':""}</span>`).join(""));
+    else row("🧘","gym.html","Training",`<span class="m">Heute Ruhetag${g.streak>=2?` · 🔥 ${g.streak} in Folge`:""}</span>`); }
+  if(spaces.chores){ const end=sod(Date.now())+DAY, L=Object.values(chores).filter(c=>c&&c.title&&choreMine(c)&&choreDue(c)<end).sort((a,b)=>choreDue(a)-choreDue(b));
+    row("🧹","haushalt.html","Haushalt",L.length?L.slice(0,3).map(c=>`<span>${esc(c.title)}${choreDue(c)<sod(Date.now())?' <span class="m">überfällig</span>':""}</span>`).join("")+(L.length>3?`<span class="m">+${L.length-3} weitere</span>`:""):`<span class="m">Heute nichts fällig ✓</span>`); }
+  const bu=homeData.budget; if(bu){ const due=(bu.pays||[]).filter(p=>p.d>=t&&p.d<=addD(t,1));
+    row("💶","budget.html","Budget",(bu.fc?`<span>${bu.fc.pay?"Bis zum Gehalt":"Bis Monatsende"} übrig: <b${bu.fc.rest<0?' style="color:#d92d20"':""}>${EUR(bu.fc.rest)}</b></span>`:"")+due.map(p=>`<span class="m">${p.d===t?"Heute":"Morgen"} fällig: ${esc(p.name)} · ${EUR(p.amt)}</span>`).join("")||`<span class="m">Öffne das Budget für den aktuellen Stand</span>`); }
+  const nt=nextTrip(); if(nt){ const [id,tr]=nt, dd=dayNum(tr.from)-dayNum(t), left=packLeft(tr);
+    row("✈️","reise.html?trip="+encodeURIComponent(id),"Reise",dd>0?`<span><b>${esc(tr.dest)}</b> in ${dd} ${dd===1?"Tag":"Tagen"}</span>${dd<=7?`<span class="m">${left?`Noch ${left} Sachen zu packen`:"Koffer ist gepackt ✓"}</span>`:""}`
+      :`<span><b>${esc(tr.dest)}</b> · Tag ${dayNum(t)-dayNum(tr.from)+1} von ${dayNum(tr.to||tr.from)-dayNum(tr.from)+1}</span>${Object.values(tr.plan||{}).filter(p=>p.d===t&&p.time).sort((a,b)=>a.time.localeCompare(b.time)).slice(0,3).map(p=>`<span class="m">${esc(p.time)} ${esc(p.t)}</span>`).join("")}`); }
+  const box=$("#dayBox"), btn=$("#moreBtn");
+  btn.hidden=!rows.length; box.hidden=!rows.length||!dayOpen; btn.setAttribute("aria-expanded",!box.hidden);
+  box.innerHTML=rows.join("")+`<div class="drow" style="display:block" id="pushRow" hidden></div>`;
+  paintPushCta();
+}
+async function paintPushCta(){ const r=document.getElementById("pushRow"); if(!r||!window.OursPush) return; const st=await OursPush.state(); if(st!=="off"){ r.hidden=true; return; }
+  try{ if(localStorage.getItem("ours.pushask")==="no") return; }catch(e){}
+  r.hidden=false; r.innerHTML=`<button type="button" class="pushcta" id="pushOn">🔔 <span><b>Erinnerungen aufs Handy?</b><br>Vor Terminen, fälligen Zahlungen, Training, Haushalt und Reisen.</span></button>`; }
+document.addEventListener("click",async e=>{
+  if(e.target.closest("#moreBtn")){ dayOpen=!dayOpen; paintDay(); return; }
+  if(e.target.closest("#pushOn")){ const b=e.target.closest("#pushOn"); b.disabled=true; try{ await OursPush.enable(); b.innerHTML="✓ <span><b>Mitteilungen sind an.</b> Einstellen kannst du sie in den Einstellungen.</span>"; planAll(true); }catch(err){ b.disabled=false; b.innerHTML=`⚠️ <span>${esc(err.message||"Das hat nicht geklappt.")}</span>`; } }
+});
+// Erinnerungen der nächsten 7 Tage für die Mitteilungen
+let planT=null; function planAll(now){ clearTimeout(planT); planT=setTimeout(()=>{ if(!window.OursPush) return; const t=isoD(new Date()), R=[], add=(c,ms,tt,b,u,id)=>{ if(ms>Date.now()+60e3) R.push({c,at:ms,t:tt,b:b||"",u,id:id||null}); };
+  for(let i=0;i<8;i++){ const d=addD(t,i);
+    evsOn(d).forEach(e=>{ if(e.allDay||!e.start) add("ev",at(d,"08:00"),"📅 Heute: "+e.title,e.loc||"Ganztägig","kalender.html");
+      else add("ev",at(d,e.start)-30*60e3,"📅 In 30 Minuten: "+e.title,[e.start+" Uhr",e.loc].filter(Boolean).join(" · "),"kalender.html"); }); }
+  const g=homeData.gym; if(g&&g.days) g.days.forEach(x=>(x.items||[]).forEach(it=>{ if(!it.done) add("gym",it.time?at(x.d,it.time)-60*60e3:at(x.d,"08:00"),"🏋️ "+(it.time?"In einer Stunde: ":"Heute: ")+it.t,it.time?it.time+" Uhr":"Heute ist Trainingstag","gym.html"); }));
+  const bu=homeData.budget; if(bu) (bu.pays||[]).forEach(p=>{ if(p.d>t) add("pay",at(addD(p.d,-1),"18:00"),"💶 Morgen fällig: "+p.name,EUR(p.amt),"budget.html"); });
+  if(spaces.chores) Object.values(chores).forEach(c=>{ if(!c||!c.title||!choreMine(c)) return; const due=isoD(new Date(choreDue(c)));
+    if(due>=t&&due<=addD(t,7)) add("chore",at(due,"09:00"),"🧹 Heute dran: "+c.title,"Im Haushalt abhaken","haushalt.html"); });
+  Object.entries(trips).forEach(([id,tr])=>{ if(!tr||!tr.from) return; const u="reise.html?trip="+encodeURIComponent(id);
+    add("trip",at(addD(tr.from,-1),"18:00"),"🧳 Morgen geht's los: "+tr.dest,packLeft(tr)?`Noch ${packLeft(tr)} Sachen zu packen`:"Koffer ist fertig – gute Reise!",u);
+    add("trip",at(tr.from,"07:00"),"✈️ Heute geht's nach "+tr.dest,"Fenster zu, Herd aus, Schlüssel dabei?",u);
+    Object.values(tr.todo||{}).forEach(x=>{ const off=+x.off||0; if(!x.done&&off>1) add("trip",at(addD(tr.from,-off),"09:00"),"🧳 "+tr.dest+": "+x.t,`Noch ${off} Tage bis zur Reise`,u); });
+    Object.values(tr.plan||{}).forEach(p=>{ if(p&&p.d&&p.time) add("trip",at(p.d,p.time)-(p.kind==="flight"?180:45)*60e3,(p.ic||"📍")+" "+p.t,`${p.time} Uhr${p.place?" · "+p.place:""}${p.conf?" · "+p.conf:""}`,u); }); });
+  OursPush.plan("all",R); },now?50:1500); }
+document.addEventListener("ours-push",()=>planAll(true));
 greet(""); paint();
 Auth.start(firebaseConfig,"home",(r,info)=>{
   if(!info) return; greet(info.name||"");
-  try{ (info.db||firebase.database()).ref(`users/${info.uid}/home`).on("value",s=>{ homeData=s.val()||{}; paintNews(); },()=>{}); }catch(e){}
+  me=info.uid; const db=info.db||firebase.database();
+  try{ db.ref(`users/${info.uid}/home`).on("value",s=>{ homeData=s.val()||{}; paintNews(); paintDay(); planAll(); },()=>{}); }catch(e){}
+  try{ db.ref(`users/${info.uid}/spaces`).once("value").then(s=>{ spaces=s.val()||{}; paintDay();
+    const watch=(k,path,set)=>{ if(spaces[k]) db.ref(`spaces/${spaces[k]}/${path}`).on("value",x=>{ set(x.val()||{}); paintDay(); planAll(); },()=>{}); };
+    watch("calendar","events",v=>events=v); watch("chores","chores",v=>chores=v); watch("trips","trips",v=>{ trips=v; extraTrip(); });
+    extraTrip(); }).catch(()=>{}); }catch(e){}
   // Gesamtstand aus dem Budget (nur deine eigenen Daten)
   try{ (info.db||firebase.database()).ref(`users/${info.uid}/fin/accounts`).once("value").then(s=>{ const a=Object.values(s.val()||{}).filter(x=>x&&typeof x.balance==="number");
     if(a.length){ const sum=a.reduce((x,y)=>x+y.balance,0); extra.budget={sub:new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR"}).format(sum/100)}; paint(); } }).catch(()=>{}); }catch(e){}

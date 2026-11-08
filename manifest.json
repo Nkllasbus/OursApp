@@ -1,7 +1,7 @@
 {
  "name": "Ours",
  "short_name": "Ours",
- "description": "Dateideen, Rezepte, Haushalt, Budget und Gym",
+ "description": "Dateideen, Rezepte, Haushalt, Budget, Gym, Kalender und Reisen",
  "display": "standalone",
  "background_color": "#f3efe9",
  "theme_color": "#3c4270",
@@ -16,6 +16,20 @@
    "sizes": "128x128",
    "type": "image/png",
    "purpose": "any"
+  }
+ ],
+ "shortcuts": [
+  {
+   "name": "Heute",
+   "url": "home.html#heute"
+  },
+  {
+   "name": "Neuer Termin",
+   "url": "kalender.html?neu=1"
+  },
+  {
+   "name": "Aktuelle Reise",
+   "url": "reise.html?jetzt=1"
   }
  ]
 }
