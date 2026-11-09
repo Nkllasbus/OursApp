@@ -7,6 +7,9 @@ on:
     paths: ["app/**", ".github/workflows/ios-app.yml"]
 permissions:
   contents: write
+concurrency:
+  group: ios-app
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: macos-latest
