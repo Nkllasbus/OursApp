@@ -380,7 +380,8 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
 /* ---------- Mitteilungen aufs Handy (Web Push über den Helfer in Cloudflare) ----------
    Auf dem iPhone nur, wenn Ours vom Home-Bildschirm geöffnet wird (ab iOS 16.4). */
 window.OursPush=(function(){
-  const W="https://oursapp.niklasbergnerbus.workers.dev", CATS=[["ev","Termine","Erinnerung vor deinen Terminen"],["pay","Zahlungen","Am Vortag, wenn Miete, Verträge oder Abbuchungen fällig sind"],["gym","Training","Am Morgen eines Trainingstags"],["chore","Haushalt","Wenn eine Aufgabe für dich fällig ist"],["trip","Reisen","Packliste, Abreise und Tagesplan"],["partner","Änderungen von anderen","Wenn jemand einen Termin oder eine Reise einträgt"]];
+  const W="https://oursapp.niklasbergnerbus.workers.dev", CATS=[["ev","Termine","Nur bei Terminen, für die du im Kalender einen Hinweis eingestellt hast"],["gym","Training","Nur wenn du im Gym-Plan einen Hinweis eingestellt hast"],["chore","Haushalt","Wenn eine Aufgabe für dich fällig ist"],["trip","Reisen","Packliste, Abreise und Tagesplan"],["partner","Änderungen von anderen","Wenn jemand einen Termin oder eine Reise einträgt"]],
+    ALL=["ev","gym","chore","trip","partner","pay","cancel","tx"], DEF={tx:false};   // Budget-Mitteilungen stellst du auf der Budget-Seite ein
   const u8=s=>Uint8Array.from(atob(s.replace(/-/g,"+").replace(/_/g,"/")+"===".slice((s.length+3)%4)),c=>c.charCodeAt(0));
   const ls=(k,v)=>{ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){ return null; } };
   const supported=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;
@@ -389,7 +390,7 @@ window.OursPush=(function(){
     const r=await fetch(W,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...body,token})}); const d=await r.json().catch(()=>({}));
     if(!r.ok) throw new Error(d.error||"Der Helfer antwortet nicht."); return d; }
   const reg=()=>Promise.race([navigator.serviceWorker.ready,new Promise((_,rej)=>setTimeout(()=>rej(new Error("Der Hintergrunddienst läuft noch nicht. Lade die Seite einmal neu.")),6000))]);
-  let cats={}; const catsOut=()=>Object.fromEntries(CATS.map(([k])=>[k,cats[k]!==false]));
+  let cats={}; const catsOut=()=>Object.fromEntries(ALL.map(k=>[k,k in cats?cats[k]!==false:DEF[k]!==false]));
   async function state(){ if(!supported()) return standaloneNeeded()?"homescreen":"na"; if(Notification.permission==="denied") return "denied";
     try{ const r=await reg(), s=await r.pushManager.getSubscription(); return s&&ls("ours.push")==="1"?"on":"off"; }catch(e){ return "off"; } }
   async function enable(){
@@ -700,7 +701,7 @@ window.OursPush=(function(){
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-09-124618";
+  const APP_VERSION="2026-11-09-130000";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1581,11 +1582,16 @@ let edit=null;
 const COLNAMES={"#2f6b4f":"Grün","#2563eb":"Blau","#dc2626":"Rot","#ca8a04":"Gelb","#9333ea":"Lila","#db2777":"Pink","#0891b2":"Türkis","#ea580c":"Orange","#8c7559":"Braun"};
 const nextHalf=()=>{ const d=new Date(); d.setMinutes(d.getMinutes()<30?30:60,0,0); return pad(d.getHours())+":"+pad(d.getMinutes()); };
 const addMin=(t,m)=>{ const [h,mi]=t.split(":").map(Number), x=h*60+mi+m; return pad(Math.floor(x/60)%24)+":"+pad(x%60); };
+// Hinweise wie bei Apple: Minuten vor Beginn (ganztägig: vor 9 Uhr am Tag)
+const AL_TIMED=[[null,"Ohne"],[0,"Zum Zeitpunkt des Ereignisses"],[5,"5 Minuten vorher"],[10,"10 Minuten vorher"],[15,"15 Minuten vorher"],[30,"30 Minuten vorher"],[60,"1 Stunde vorher"],[120,"2 Stunden vorher"],[1440,"1 Tag vorher"],[2880,"2 Tage vorher"],[10080,"1 Woche vorher"]];
+const AL_DAY=[[null,"Ohne"],[0,"Am Tag des Ereignisses (9:00)"],[1440,"1 Tag vorher (9:00)"],[2880,"2 Tage vorher (9:00)"],[10080,"1 Woche vorher (9:00)"]];
+const alList=()=>edit&&edit.allDay?AL_DAY:AL_TIMED;
+const alText=(v,all)=>v==null?"Ohne":((all?AL_DAY:AL_TIMED).find(x=>x[0]===v)||[0,v+" Min. vorher"])[1].replace(" (9:00)","");
 // Neues Ereignis bzw. bearbeiten
 function openEv(id,date){
   const e=id?events[id]:null, st=e&&e.start||nextHalf();
   edit={id:id||null,page:"main",title:e?e.title:"",loc:e&&e.loc||"",allDay:e?!!e.allDay:false,date:e?e.date:(date||iso(now)),end:e?(e.end||e.date):(date||iso(now)),
-    start:st,endTime:e&&e.endTime||addMin(st,60),rep:e?(repOf(e)?{...repOf(e)}:null):null,col:e?e.col||ECOLS[0]:ECOLS[0],note:e&&e.note||"",idea:e?e.idea||null:null};
+    start:st,endTime:e&&e.endTime||addMin(st,60),rep:e?(repOf(e)?{...repOf(e)}:null):null,col:e?e.col||ECOLS[0]:ECOLS[0],note:e&&e.note||"",idea:e?e.idea||null:null,al:(e&&e.al&&e.al[myUid]||[]).slice(0,2)};
   if(edit.rep&&edit.rep.days) edit.rep.days=[...edit.rep.days];
   paintSheet(); $("#modal").hidden=false; if(!e) setTimeout(()=>{ const t=$("#eTitle"); if(t) t.focus(); },60);
 }
@@ -1603,6 +1609,7 @@ function paintSheet(){
       <div class="cell"><span>Beginn</span><span class="dt"><input type="date" id="eDate" value="${esc(E.date)}">${E.allDay?"":`<input type="time" id="eStart" value="${esc(E.start)}">`}</span></div>
       <div class="cell"><span>Ende</span><span class="dt"><input type="date" id="eEnd" value="${esc(E.end)}">${E.allDay?"":`<input type="time" id="eEndT" value="${esc(E.endTime)}">`}</span></div></div>
     <div class="igrp">${cell("Wiederholen",esc(repText(E.rep)),' data-page="rep"')}${E.rep?cell("Wiederholung beenden",E.rep.until?fromIso(E.rep.until).toLocaleDateString("de-DE"):"Nie",' data-page="end"'):""}</div>
+    <div class="igrp">${cell("Hinweis",esc(alText(E.al[0],E.allDay)),' data-page="al0"')}${E.al[0]!=null?cell("2. Hinweis",esc(alText(E.al[1],E.allDay)),' data-page="al1"'):""}</div>
     <div class="igrp">${cell("Farbe",`<span class="cdot" style="background:${E.col}"></span>${COLNAMES[E.col]||""}`,' data-page="col"')}</div>
     <div class="igrp"><textarea class="cell inp note" id="eNote" maxlength="1000" placeholder="Notizen">${esc(E.note)}</textarea></div>
     ${E.id?`<div class="igrp"><button type="button" class="cell danger" id="eDel">Ereignis löschen</button></div>`:""}`;
@@ -1624,6 +1631,10 @@ function paintSheet(){
     sh.innerHTML=`<div class="ihead"><button type="button" class="ib" data-page="main">‹ Neues Ereignis</button><b>Wiederholung beenden</b><span class="ib"></span></div>
       <div class="igrp"><button type="button" class="cell" data-endset="never"><span>Nie</span>${!u?`<span class="chk">✓</span>`:""}</button><button type="button" class="cell" data-endset="date"><span>An Datum</span>${u?`<span class="chk">✓</span>`:""}</button>
       ${u?`<div class="cell"><span>Ende am</span><span class="dt"><input type="date" id="eUntil" value="${esc(u)}" min="${esc(E.date)}"></span></div>`:""}</div>`; }
+  else if(E.page==="al0"||E.page==="al1"){ const k=+E.page.slice(2);
+    sh.innerHTML=`<div class="ihead"><button type="button" class="ib" data-page="main">‹ ${E.id?"Bearbeiten":"Neues Ereignis"}</button><b>${k?"2. Hinweis":"Hinweis"}</b><span class="ib"></span></div>
+      <div class="igrp">${alList().map(([v,l])=>`<button type="button" class="cell" data-alset="${k}:${v==null?"":v}"><span>${l}</span>${(E.al[k]??null)===v?`<span class="chk">✓</span>`:""}</button>`).join("")}</div>
+      <p class="ifoot">Damit Hinweise aufs Handy kommen, schalte in den Einstellungen „Mitteilungen aufs Handy“ ein. Deine Hinweise gelten nur für dich.</p>`; }
   else if(E.page==="col"){ sh.innerHTML=`<div class="ihead"><button type="button" class="ib" data-page="main">‹ Neues Ereignis</button><b>Farbe</b><span class="ib"></span></div>
       <div class="igrp">${ECOLS.map(c=>`<button type="button" class="cell" data-colset="${c}"><span><span class="cdot" style="background:${c}"></span> ${COLNAMES[c]||c}</span>${E.col===c?`<span class="chk">✓</span>`:""}</button>`).join("")}</div>`; }
   else if(E.page==="idea"){ const list=Object.entries(ideas).filter(([,i])=>i&&i.title&&!i.done);
@@ -1639,6 +1650,7 @@ function showEv(id,on){
   sh.innerHTML=`<div class="ihead"><button type="button" class="ib" data-close>‹ Kalender</button><b></b><button type="button" class="ib" id="evEdit">Bearbeiten</button></div>
     <div class="evd"><h3 style="--c:${e.col||"var(--c-ev)"}">${esc(e.title)}</h3>${e.loc?`<p class="sub">${esc(e.loc)}</p>`:""}
       <p>${d0.toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"short",year:"numeric"})}<br>${esc(when)}</p>
+      ${e.al&&e.al[myUid]?`<p class="sub">🔔 ${e.al[myUid].map(v=>esc(alText(v,e.allDay))).join(" · ")}</p>`:""}
       ${r?`<p class="sub">🔁 ${esc(repText(r))}${r.until?` · bis ${fromIso(r.until).toLocaleDateString("de-DE")}`:""}</p>`:""}
       ${e.by&&e.by!==myUid?`<p class="sub">Eingetragen von ${esc((profiles[e.by]||{}).name||"deinem Partner")}</p>`:""}</div>
     ${e.note?`<div class="igrp"><div class="cell col"><small class="sub">Notizen</small><span>${esc(e.note).replace(/\n/g,"<br>")}</span></div></div>`:""}
@@ -1663,7 +1675,8 @@ function saveEv(){
   const id=E.id||Date.now().toString(36)+Math.random().toString(36).slice(2,5), old=E.id?events[E.id]:{};
   let rep=E.rep?{f:E.rep.f,n:Math.max(1,+E.rep.n||1)}:null; if(rep){ if(E.rep.custom) rep.custom=true; if(rep.f==="week") rep.days=(E.rep.days&&E.rep.days.length?E.rep.days:[dowOf(E.date)]).slice().sort(); if(E.rep.until) rep.until=E.rep.until; }
   const e={title,loc:E.loc.trim()||null,date:E.date,end:E.end&&E.end>E.date?E.end:null,allDay:E.allDay||null,start:E.allDay?null:E.start||null,endTime:E.allDay?null:E.endTime||null,
-    rep,col:E.col,note:E.note.trim()||null,idea:E.idea||null,skip:old.skip||null,by:old.by||myUid,at:old.at||Date.now()};
+    rep,col:E.col,note:E.note.trim()||null,idea:E.idea||null,skip:old.skip||null,by:old.by||myUid,at:old.at||Date.now(),
+    al:(()=>{ const a={...(old.al||{})}, mine=E.al.filter(v=>v!=null); if(mine.length) a[myUid]=mine; else delete a[myUid]; return Object.keys(a).length?a:null; })()};
   events[id]=e; root.child("events/"+id).set(e).catch(showErr);
   if(!E.id&&window.OursPush) OursPush.notify(root.key,`${myName||"Jemand"} hat einen Termin eingetragen`,`${title} · ${fromIso(E.date).toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"})}${e.start?" · "+e.start+" Uhr":""}`,"kalender.html");
   if(e.idea&&ideasRef) ideasRef.child(e.idea+"/date").set(E.date).catch(()=>{});
@@ -1678,7 +1691,9 @@ function icsFor(e){
     if(r.f==="week"&&r.days&&r.days.length) rr+=";BYDAY="+r.days.map(d=>["MO","TU","WE","TH","FR","SA","SU"][d]).join(","); if(r.until) rr+=";UNTIL="+r.until.replace(/-/g,"")+"T235959Z"; L.push(rr);
     Object.keys(e.skip||{}).forEach(d=>L.push(e.allDay||!e.start?"EXDATE;VALUE=DATE:"+d.replace(/-/g,""):"EXDATE:"+d.replace(/-/g,"")+"T"+e.start.replace(":","")+"00")); }
   if(e.loc) L.push("LOCATION:"+z(e.loc));
-  if(e.note) L.push("DESCRIPTION:"+z(e.note)); L.push("END:VEVENT","END:VCALENDAR"); return L.join("\r\n");
+  if(e.note) L.push("DESCRIPTION:"+z(e.note));
+  ((e.al&&e.al[myUid])||[]).forEach(v=>{ const m=e.allDay||!e.start?v-9*60:v; L.push("BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+z(e.title||"Termin"),"TRIGGER:"+(m<0?"PT"+(-m)+"M":"-PT"+m+"M"),"END:VALARM"); });
+  L.push("END:VEVENT","END:VCALENDAR"); return L.join("\r\n");
 }
 
 /* ---------- Klicks ---------- */
@@ -1708,12 +1723,13 @@ $("#modal").addEventListener("click",ev=>{
   if(!edit) return;
   const pg=t.closest("[data-page]"); if(pg){ grab(); edit.page=pg.dataset.page; return paintSheet(); }
   if(t.closest("#eSave")) return saveEv();
-  if(t.id==="eAll"){ grab(); edit.allDay=t.checked; return paintSheet(); }
+  if(t.id==="eAll"){ grab(); edit.allDay=t.checked; const ok=new Set(alList().map(x=>x[0])); edit.al=edit.al.map(v=>ok.has(v)?v:(v==null?null:edit.allDay?0:15)); return paintSheet(); }
   const rs=t.closest("[data-repset]"); if(rs){ const k=rs.dataset.repset; edit.rep=k?{f:k.replace(/\d+$/,""),n:+k.match(/\d+$/)[0],until:edit.rep&&edit.rep.until||null}:null; if(edit.rep&&edit.rep.f==="week") edit.rep.days=[dowOf(edit.date)]; edit.page="main"; return paintSheet(); }
   const fq=t.closest("[data-freq]"); if(fq){ edit.rep.f=fq.dataset.freq; if(edit.rep.f==="week"&&(!edit.rep.days||!edit.rep.days.length)) edit.rep.days=[dowOf(edit.date)]; return paintSheet(); }
   const nn=t.closest("[data-n]"); if(nn){ edit.rep.n=Math.max(1,Math.min(99,(+edit.rep.n||1)+(+nn.dataset.n))); return paintSheet(); }
   const wd=t.closest("[data-wday]"); if(wd){ const i=+wd.dataset.wday, d=edit.rep.days||[]; edit.rep.days=d.includes(i)?(d.length>1?d.filter(x=>x!==i):d):[...d,i]; return paintSheet(); }
   const es=t.closest("[data-endset]"); if(es){ if(es.dataset.endset==="never") edit.rep.until=null; else if(!edit.rep.until){ const x=fromIso(edit.date); x.setMonth(x.getMonth()+3); edit.rep.until=iso(x); } return paintSheet(); }
+  const as=t.closest("[data-alset]"); if(as){ const [k,v]=as.dataset.alset.split(":"); edit.al[+k]=v===""?null:+v; if(+k===0&&edit.al[0]==null) edit.al[1]=null; edit.page="main"; return paintSheet(); }
   const cs=t.closest("[data-colset]"); if(cs){ edit.col=cs.dataset.colset; edit.page="main"; return paintSheet(); }
   const pi=t.closest("[data-idea]"); if(pi){ const i=ideas[pi.dataset.idea]; edit.idea=pi.dataset.idea; edit.title=i.title; edit.note=[i.when,i.where,i.notes].filter(Boolean).join(" · "); edit.col="#8c7559"; edit.page="main"; return paintSheet(); }
 });

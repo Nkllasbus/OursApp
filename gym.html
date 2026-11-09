@@ -636,6 +636,8 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
 
 /* Kopf wie auf den anderen Seiten */
 .foot-count{display:none}
+.alrow{display:flex;gap:8px;flex-wrap:wrap}
+.alrow select{flex:1 1 100%;min-width:0;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:10px 12px;font:inherit}
 </style>
 </head>
 <body>
@@ -713,6 +715,9 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
       <div id="repEvery" class="timerow"><span>Alle</span><span class="stepper"><button type="button" data-repn="-1" aria-label="Weniger">−</button><b id="repN">2</b><button type="button" data-repn="1" aria-label="Mehr">+</button></span><span>Tage, ab</span><input type="date" id="repStart" aria-label="Startdatum"></div>
       <div id="repOnce" class="timerow"><span>Am</span><input type="date" id="repDate" aria-label="Datum"></div>
       <p class="rep-hint" id="repHint"></p></div>
+    <div class="field"><span class="flabel">Hinweis</span>
+      <div class="alrow"><select id="dayAl0" aria-label="Hinweis"></select><select id="dayAl1" aria-label="2. Hinweis"></select></div>
+      <p class="rep-hint">Erinnerung aufs Handy vor dem Training. Dafür in den Einstellungen „Mitteilungen aufs Handy“ einschalten.</p></div>
     <div class="sheet-actions"><button class="del" type="button" id="dayRest" hidden>Aus dem Plan nehmen</button>
       <div class="right"><button class="ghost" type="button" id="dayCancel">Abbrechen</button><button class="btn primary" type="submit">Speichern</button></div></div>
   </form>
@@ -843,7 +848,8 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
 /* ---------- Mitteilungen aufs Handy (Web Push über den Helfer in Cloudflare) ----------
    Auf dem iPhone nur, wenn Ours vom Home-Bildschirm geöffnet wird (ab iOS 16.4). */
 window.OursPush=(function(){
-  const W="https://oursapp.niklasbergnerbus.workers.dev", CATS=[["ev","Termine","Erinnerung vor deinen Terminen"],["pay","Zahlungen","Am Vortag, wenn Miete, Verträge oder Abbuchungen fällig sind"],["gym","Training","Am Morgen eines Trainingstags"],["chore","Haushalt","Wenn eine Aufgabe für dich fällig ist"],["trip","Reisen","Packliste, Abreise und Tagesplan"],["partner","Änderungen von anderen","Wenn jemand einen Termin oder eine Reise einträgt"]];
+  const W="https://oursapp.niklasbergnerbus.workers.dev", CATS=[["ev","Termine","Nur bei Terminen, für die du im Kalender einen Hinweis eingestellt hast"],["gym","Training","Nur wenn du im Gym-Plan einen Hinweis eingestellt hast"],["chore","Haushalt","Wenn eine Aufgabe für dich fällig ist"],["trip","Reisen","Packliste, Abreise und Tagesplan"],["partner","Änderungen von anderen","Wenn jemand einen Termin oder eine Reise einträgt"]],
+    ALL=["ev","gym","chore","trip","partner","pay","cancel","tx"], DEF={tx:false};   // Budget-Mitteilungen stellst du auf der Budget-Seite ein
   const u8=s=>Uint8Array.from(atob(s.replace(/-/g,"+").replace(/_/g,"/")+"===".slice((s.length+3)%4)),c=>c.charCodeAt(0));
   const ls=(k,v)=>{ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){ return null; } };
   const supported=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;
@@ -852,7 +858,7 @@ window.OursPush=(function(){
     const r=await fetch(W,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...body,token})}); const d=await r.json().catch(()=>({}));
     if(!r.ok) throw new Error(d.error||"Der Helfer antwortet nicht."); return d; }
   const reg=()=>Promise.race([navigator.serviceWorker.ready,new Promise((_,rej)=>setTimeout(()=>rej(new Error("Der Hintergrunddienst läuft noch nicht. Lade die Seite einmal neu.")),6000))]);
-  let cats={}; const catsOut=()=>Object.fromEntries(CATS.map(([k])=>[k,cats[k]!==false]));
+  let cats={}; const catsOut=()=>Object.fromEntries(ALL.map(k=>[k,k in cats?cats[k]!==false:DEF[k]!==false]));
   async function state(){ if(!supported()) return standaloneNeeded()?"homescreen":"na"; if(Notification.permission==="denied") return "denied";
     try{ const r=await reg(), s=await r.pushManager.getSubscription(); return s&&ls("ours.push")==="1"?"on":"off"; }catch(e){ return "off"; } }
   async function enable(){
@@ -1163,7 +1169,7 @@ window.OursPush=(function(){
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-09-124618";
+  const APP_VERSION="2026-11-09-130000";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -2129,8 +2135,8 @@ function homeSummary(){
   if(!myUid||!tLoaded||!wLoaded) return; clearTimeout(homeSumT);
   homeSumT=setTimeout(()=>{ try{
     const days=[], t0=new Date(); t0.setHours(12,0,0,0);
-    for(let i=0;i<7;i++){ const d=new Date(t0); d.setDate(t0.getDate()+i); const di=iso(d);
-      days.push({d:di,items:onDate(di).map(([wid,w])=>{ const ty=typeOf(w)||{}; return {t:wTitle(w),time:timeOfW(w)||null,emo:ty.emo||"🏋️",done:mySessions().some(x=>x.end&&x.date===di&&(x.plan===wid||(w.tpl&&x.tpl===w.tpl)))}; })}); }
+    for(let i=0;i<14;i++){ const d=new Date(t0); d.setDate(t0.getDate()+i); const di=iso(d);
+      days.push({d:di,items:onDate(di).map(([wid,w])=>{ const ty=typeOf(w)||{}; return {t:wTitle(w),time:timeOfW(w)||null,emo:ty.emo||"🏋️",al:Array.isArray(w.al)&&w.al.length?w.al:null,done:mySessions().some(x=>x.end&&x.date===di&&(x.plan===wid||(w.tpl&&x.tpl===w.tpl)))}; })}); }
     const last=mySessions().filter(x=>x.end).sort((a,b)=>b.start-a.start)[0], act=activeSession();
     const sum={days,streak:streakOf(workouts,sessions,myUid),last:last?{t:(templates[last.tpl]||{}).title||"Training",d:last.date,dur:last.dur||0}:null,active:act?(templates[act.tpl]||{}).title||"Training":null};
     const js=JSON.stringify(sum); if(js===homeSumLast) return; homeSumLast=js; sum.at=Date.now();
@@ -3122,6 +3128,7 @@ function openWEdit(wid,onDi){
   $("#dayTitle").textContent=w?"Plan ändern":"In den Plan";
   $("#dayTime").value=timeOfW(w)||lastTime()||"18:00";
   $("#dayRest").hidden=!w; $("#dayRest").textContent="Aus dem Plan nehmen"; delete $("#dayRest").dataset.sure;
+  dayEdit.al=(w&&Array.isArray(w.al)?w.al:[]).slice(0,2); renderAl();
   renderDur(); renderRep(); renderTplPick();
   $("#dayModal").hidden=false;
 }
@@ -3140,6 +3147,9 @@ function renderRep(){
   $("#repHint").textContent=r.type==="weekly"?(r.days.length?`Jede Woche am ${r.days.slice().sort().map(i=>DAYS[i]).join(", ")}.`:"Wähl mindestens einen Tag."):
     r.type==="every"?`Ab ${nice(r.start)} alle ${r.n} Tage, also auch wochenübergreifend.`:`Nur am ${nice(r.date)}.`;
 }
+const GAL=[[null,"Ohne"],[0,"Zum Trainingsbeginn"],[15,"15 Minuten vorher"],[30,"30 Minuten vorher"],[60,"1 Stunde vorher"],[120,"2 Stunden vorher"],[180,"3 Stunden vorher"],[1440,"1 Tag vorher"]];
+function renderAl(){ const o=(k)=>GAL.map(([v,l])=>`<option value="${v==null?"":v}"${(dayEdit.al[k]??null)===v?" selected":""}>${k&&v==null?"Kein 2. Hinweis":l}</option>`).join("");
+  $("#dayAl0").innerHTML=o(0); $("#dayAl1").innerHTML=o(1); $("#dayAl1").hidden=dayEdit.al[0]==null; }
 const closeDay=()=>{ $("#dayModal").hidden=true; dayEdit=null; };
 const lastTime=()=>{ for(const w of Object.values(workouts)) if(timeOfW(w)) return timeOfW(w); return null; };
 function renderDur(){ $("#dayDur").innerHTML=[45,60,75,90,120].map(m=>`<button type="button" class="chip" data-dur="${m}" aria-pressed="${dayEdit.dur===m}">${m<60?m+" min":m%60?`${Math.floor(m/60)}:${m%60} Std.`:m/60+" Std."}</button>`).join(""); }
@@ -3156,6 +3166,7 @@ $("#dayModal").addEventListener("change",e=>{
   if(!dayEdit) return;
   if(e.target.id==="repStart"&&e.target.value){ dayEdit.rep.start=e.target.value; renderRep(); }
   if(e.target.id==="repDate"&&e.target.value){ dayEdit.rep.date=e.target.value; renderRep(); }
+  if(e.target.id==="dayAl0"||e.target.id==="dayAl1"){ const k=+e.target.id.slice(-1), v=e.target.value; dayEdit.al[k]=v===""?null:+v; if(dayEdit.al[0]==null) dayEdit.al[1]=null; renderAl(); }
 });
 $("#dayForm").addEventListener("submit",e=>{
   e.preventDefault(); if(!dayEdit||!root) return;
@@ -3163,7 +3174,8 @@ $("#dayForm").addEventListener("submit",e=>{
   const r=dayEdit.rep; if(r.type==="weekly"&&!r.days.length){ renderRep(); return; }
   const rep=r.type==="weekly"?{type:"weekly",days:r.days.slice().sort()}:r.type==="every"?{type:"every",n:r.n,start:r.start}:{type:"once",date:r.date};
   const tm=$("#dayTime").value, id=dayEdit.wid||uid();
-  const data={tpl:dayEdit.tpl,time:/^\d{2}:\d{2}$/.test(tm)?tm:null,dur:dayEdit.dur||60,rep,at:(dayEdit.wid&&workouts[id].at)||Date.now()};
+  const al=(dayEdit.al||[]).filter(v=>v!=null);
+  const data={tpl:dayEdit.tpl,time:/^\d{2}:\d{2}$/.test(tm)?tm:null,dur:dayEdit.dur||60,rep,at:(dayEdit.wid&&workouts[id].at)||Date.now(),al:al.length?al:null};
   workouts[id]=data; root.child("workouts/"+id).set(data).catch(showErr);
   const show=rep.type==="once"?rep.date:rep.type==="every"?rep.start:dayEdit.onDi; openKey=occurs(data,dayEdit.onDi)?`${dayEdit.onDi}|${id}`:null;
   closeDay(); render();
