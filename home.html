@@ -140,6 +140,93 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
     if(save!==false) try{ const u=firebase.auth().currentUser; if(u) firebase.database().ref(`users/${u.uid}/settings/theme`).set(v).catch(()=>{}); }catch(e){} },apply};
   apply();
 })();
+/* ---------- Apple-Design für alle Seiten ----------
+   Systemschrift (SF Pro), Systemfarben in Hell und Dunkel, gruppierte Flächen, weiches Federn beim Drücken,
+   Haptik beim Umschalten (iPhone ab iOS 18), Bögen mit Feder-Animation, sanfte Übergänge zwischen den Seiten. */
+(function(){
+  const root=document.documentElement, pg=(location.pathname.split("/").pop()||"index.html").replace(/\.html$/,"")||"index";
+  root.dataset.higPage=pg;
+  const css=document.createElement("style"); css.id="ours-hig";
+  css.textContent=`
+  :root:root{--display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Helvetica Neue",system-ui,sans-serif;--body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Helvetica Neue",system-ui,sans-serif;
+    --hig-spring:cubic-bezier(.32,.72,0,1);--hig-bounce:cubic-bezier(.25,1.45,.45,1)}
+  :root:root[data-theme="light"]{--page:#f2f2f7;--bg:#f2f2f7;--surface:#ffffff;--surface2:#f2f2f7;--ink:#000000;--muted:#6e6e73;--line:#e3e3e8;--frame-line:#e3e3e8;--btn:#e9e9ee;--dots:transparent;
+    --shadow:rgba(0,0,0,.06);--theirs:#e9e9eb;--accent-soft:color-mix(in srgb,var(--accent) 11%,#fff);--grouped:#f2f2f7;--cell:#fff;--sep:#d1d1d6;--red:#ff3b30;--minus:#ff3b30;--plus:#34c759;color-scheme:light}
+  :root:root[data-theme="dark"]{--page:#000;--bg:#000;--surface:#1c1c1e;--surface2:#2c2c2e;--ink:#ffffff;--muted:#98989f;--line:#38383a;--frame-line:#2c2c2e;--btn:#2c2c2e;--dots:transparent;
+    --shadow:rgba(0,0,0,.5);--theirs:#26252a;--accent:color-mix(in srgb,var(--band) 40%,#fff);--accent-soft:color-mix(in srgb,var(--band) 30%,#1c1c1e);--grouped:#000;--cell:#1c1c1e;--sep:#38383a;--red:#ff453a;--minus:#ff453a;--plus:#30d158;color-scheme:dark}
+  /* Kalender und Reisen: weißer Hintergrund wie die Apple-Apps */
+  :root:root[data-theme="light"][data-hig-page="kalender"],:root:root[data-theme="light"][data-hig-page="reise"]{--bg:#ffffff;--surface2:#f2f2f7}
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  body{font-family:var(--body)!important;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;letter-spacing:-.01em;background-image:none!important}
+  *{-webkit-tap-highlight-color:transparent}
+  ::selection{background:color-mix(in srgb,var(--accent) 30%,transparent)}
+  h1,h2,h3,h4,.wordmark,.auth-head h2,.auth-setup h3{font-family:var(--display)!important;font-weight:700!important;letter-spacing:-.022em!important}
+  header.brand .wordmark{font-weight:800!important;letter-spacing:-.03em!important}
+  button,input,select,textarea{font-family:inherit}
+  button,[role=button],a{touch-action:manipulation}
+  button,[role=button],label.auth-sw,.tile{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  @media (pointer:coarse){input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{font-size:max(16px,1em)!important}}
+  /* Drücken: kleine Elemente federn, breite Zeilen werden hinterlegt */
+  .hig-down{scale:.955;transition:scale .14s var(--hig-spring),filter .14s,opacity .14s!important}
+  .hig-down.hig-wide{scale:.985}
+  .hig-down.hig-row{scale:1;filter:brightness(.93)}
+  :root[data-theme="dark"] .hig-down.hig-row{filter:brightness(1.4)}
+  .hig-up{transition:scale .55s var(--hig-bounce),filter .3s ease-out!important}
+  /* Bögen und Dialoge */
+  .modal:not([hidden]),.auth-screen.dim{animation:hig-fade .28s ease-out both;-webkit-backdrop-filter:blur(8px) saturate(140%);backdrop-filter:blur(8px) saturate(140%)}
+  .modal{background:rgba(0,0,0,.34)!important}
+  .modal:not([hidden])>*,.auth-screen .auth-card{animation:hig-sheet .52s var(--hig-spring) both}
+  .sheet,.auth-card{border-radius:20px!important}
+  .sheet.ios{border-radius:16px!important}
+  /* große Bögen kommen wie in iOS von unten */
+  @media (max-width:600px){.modal:has(>.sheet.ios){place-items:end center!important;padding:max(44px,env(safe-area-inset-top,0px)) 0 0!important}
+    .sheet.ios{max-width:none!important;width:100%!important;border-radius:14px 14px 0 0!important;max-height:100%!important;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))!important}
+    .modal:not([hidden])>.sheet.ios{animation:hig-rise .55s var(--hig-spring) both}}
+  @keyframes hig-rise{from{transform:translateY(100%)}}
+  .dt input{padding:6px 7px!important}
+  @keyframes hig-fade{from{opacity:0}}
+  @keyframes hig-sheet{from{opacity:0;transform:translateY(48px) scale(.96)}}
+  /* Seitenwechsel wie in iOS */
+  @view-transition{navigation:auto}
+  header.brand{view-transition-name:hig-head}
+  ::view-transition-old(root){animation:.22s ease-in both hig-out}
+  ::view-transition-new(root){animation:.42s var(--hig-spring) both hig-in}
+  ::view-transition-group(hig-head){animation-duration:.42s;animation-timing-function:var(--hig-spring)}
+  @keyframes hig-in{from{opacity:0;transform:translateY(14px) scale(.985)}}
+  @keyframes hig-out{to{opacity:0;transform:scale(.985)}}
+  @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}.hig-down{scale:1}::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}
+  /* Schalter in iOS-Grün */
+  input[type=checkbox][role=switch]:checked+i,.tgl input:checked+i{background:#34c759!important}
+  :root[data-theme="dark"] input[type=checkbox][role=switch]:checked+i{background:#30d158!important}`;
+  const put=()=>{ if(!css.isConnected) document.head.appendChild(css); }; put(); addEventListener("DOMContentLoaded",()=>document.head.appendChild(css));
+  // Statusleiste in der Farbe des Kopfes
+  const tint=()=>{ let m=document.querySelector('meta[name="theme-color"]'); if(!m){ m=document.createElement("meta"); m.name="theme-color"; document.head.appendChild(m); }
+    const c=getComputedStyle(root).getPropertyValue("--band").trim(); if(c) m.content=c; };
+  tint(); document.addEventListener("ours-theme",()=>setTimeout(tint,0));
+  // Haptik: iPhone (iOS 18+) über einen versteckten Schalter, Android über vibrate
+  let hl=null, busy=false;
+  function haptic(){ if(busy) return; busy=true; try{
+    if(navigator.vibrate&&!/iPhone|iPad|iPod/.test(navigator.userAgent)) navigator.vibrate(8);
+    else { if(!hl){ hl=document.createElement("label"); hl.setAttribute("aria-hidden","true"); hl.style.cssText="position:fixed;left:-200px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none";
+      const i=document.createElement("input"); i.type="checkbox"; i.setAttribute("switch",""); i.tabIndex=-1; hl.appendChild(i); document.body.appendChild(hl); } hl.click(); }
+  }catch(e){} busy=false; }
+  window.OursHaptic=haptic;
+  // abgebrochene Seitenübergänge (z. B. beim Zurückwischen) still schlucken
+  ["pagereveal","pageswap"].forEach(t=>addEventListener(t,e=>{ const v=e.viewTransition; if(v){ v.ready.catch(()=>{}); v.finished.catch(()=>{}); if(v.updateCallbackDone) v.updateCallbackDone.catch(()=>{}); } }));
+  // Drück-Gefühl
+  const SEL='button,a[href],[role=button],[role=checkbox],[role=switch],[role=tab],summary,label.auth-sw,.tile,.chip';
+  let pressed=null, t0=0;
+  const release=()=>{ const el=pressed; if(!el) return; pressed=null; const wait=Math.max(0,90-(Date.now()-t0));
+    setTimeout(()=>{ el.classList.remove("hig-down"); el.classList.add("hig-up"); setTimeout(()=>el.classList.remove("hig-up","hig-wide","hig-row"),560); },wait); };
+  document.addEventListener("pointerdown",e=>{ if(e.button>0) return; const el=e.target.closest(SEL); if(!el||el.disabled||el.getAttribute("aria-disabled")==="true"||el===hl||el.closest(".hig-off")) return;
+    const r=el.getBoundingClientRect(), wide=r.width>window.innerWidth*.7, rad=parseFloat(getComputedStyle(el).borderTopLeftRadius)||0;
+    pressed=el; t0=Date.now(); el.classList.remove("hig-up"); el.classList.toggle("hig-wide",wide&&rad>=12); el.classList.toggle("hig-row",wide&&rad<12); el.classList.add("hig-down"); },{passive:true});
+  ["pointerup","pointercancel","dragstart"].forEach(t=>document.addEventListener(t,release,{passive:true}));
+  document.addEventListener("scroll",release,{passive:true,capture:true});
+  // Haptik bei Auswahl und Umschaltern
+  document.addEventListener("change",e=>{ const t=e.target; if(t&&t!==(hl&&hl.firstChild)&&(t.type==="checkbox"||t.type==="radio")) haptic(); },true);
+  document.addEventListener("click",e=>{ if(busy) return; const el=e.target.closest('[role=checkbox],[role=tab],[aria-pressed],[aria-checked],.ck,[data-theme]'); if(el&&!el.closest("label")) haptic(); },true);
+})();
 /* ---------- Mitteilungen aufs Handy (Web Push über den Helfer in Cloudflare) ----------
    Auf dem iPhone nur, wenn Ours vom Home-Bildschirm geöffnet wird (ab iOS 16.4). */
 window.OursPush=(function(){
@@ -463,7 +550,7 @@ window.OursPush=(function(){
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-08-160505";
+  const APP_VERSION="2026-11-09-124431";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
