@@ -700,7 +700,7 @@ window.OursPush=(function(){
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-09-124431";
+  const APP_VERSION="2026-11-09-124618";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -961,7 +961,11 @@ window.OursPush=(function(){
       paintPush();
       $a("#psBtn").onclick=async()=>{ const b=$a("#psBtn"); b.disabled=true; try{ if(b.dataset.st==="on") await OursPush.disable(); else{ await OursPush.enable(); msg("Mitteilungen sind an. Deine Erinnerungen werden beim nächsten Öffnen der Startseite geplant."); } }catch(err){ msg(err&&err.message||"Das hat nicht geklappt.",true); } b.disabled=false; paintPush(); };
       screen.querySelectorAll("[data-pcat]").forEach(el=>el.onchange=()=>OursPush.setCat(el.dataset.pcat,el.checked,db,user.uid).catch(()=>msg("Speichern hat nicht geklappt.",true)));
-      $a("#psTest").onclick=async()=>{ try{ const r=await OursPush.test(); msg(r.sent?"Gesendet. Sie sollte gleich ankommen.":"Kein Gerät hat die Mitteilung angenommen. Schalte sie einmal aus und wieder ein."); }catch(err){ msg(err.message,true); } };
+      $a("#psTest").onclick=async()=>{ try{ const r=await OursPush.test();
+          if(r.sent){ msg(`Gesendet an ${r.sent} ${r.sent===1?"Gerät":"Geräte"}. Sie sollte gleich ankommen. Falls nicht: iPhone-Einstellungen → Mitteilungen → Ours → „Mitteilungen erlauben“ prüfen und Fokus/Nicht stören ausschalten.`); return; }
+          const d=(r.info||[]).map(x=>`${x.host}: ${x.status||"keine Verbindung"}${x.text?" – "+x.text:""}`).join(" · ");
+          msg(r.version?`Apple hat die Mitteilung nicht angenommen (${d||"kein Gerät gespeichert"}). Schick mir diesen Text.`:"Der Cloudflare-Worker hat noch eine ältere Version. Füg den neuesten Code ein und drück auf Deploy.",true);
+        }catch(err){ msg(err.message,true); } };
       screen.querySelectorAll("[data-theme]").forEach(b=>b.onclick=()=>{ if(window.OursTheme) OursTheme.set(b.dataset.theme); screen.querySelectorAll("[data-theme]").forEach(x=>x.setAttribute("aria-pressed",x===b)); });
       $a("#stPw").onclick=async()=>{
         try{ await auth.sendPasswordResetEmail(user.email); msg(`Wir haben dir eine Mail an ${user.email} geschickt. Darüber legst du ein neues Passwort fest.`); }
