@@ -34,6 +34,10 @@ jobs:
           /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations array" $PL
           /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:0 string UIInterfaceOrientationPortrait" $PL
           /usr/libexec/PlistBuddy -c "Add :UIUserInterfaceStyle string Automatic" $PL || true
+          # Service Worker (offline) in der App: eigene Domain als App-Bound Domain
+          /usr/libexec/PlistBuddy -c "Delete :WKAppBoundDomains" $PL || true
+          /usr/libexec/PlistBuddy -c "Add :WKAppBoundDomains array" $PL
+          /usr/libexec/PlistBuddy -c "Add :WKAppBoundDomains:0 string nkllasbus.github.io" $PL
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.${{ github.run_number }}" $PL || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.${{ github.run_number }}" $PL
       - name: Bauen (ohne Signatur)
         run: |

@@ -11,7 +11,7 @@
   "ios": {
     "contentInset": "never",
     "backgroundColor": "#2b2a33",
-    "limitsNavigationsToAppBoundDomains": false
+    "limitsNavigationsToAppBoundDomains": true
   },
   "plugins": {
     "Keyboard": {
