@@ -1,0 +1,62 @@
+# Baut die iPhone-App (unsigniert). Sideloadly signiert sie beim Installieren mit deiner Apple-ID.
+name: iPhone-App bauen
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["app/**", ".github/workflows/ios-app.yml"]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Abhängigkeiten
+        run: npm install --no-audit --no-fund
+      - name: iOS-Projekt anlegen
+        run: |
+          npx cap add ios
+          npx cap sync ios
+      - name: Symbol und Einstellungen
+        run: |
+          cp assets/icon.png ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png
+          PL=ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Ours" $PL
+          /usr/libexec/PlistBuddy -c "Delete :UISupportedInterfaceOrientations" $PL || true
+          /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations array" $PL
+          /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:0 string UIInterfaceOrientationPortrait" $PL
+          /usr/libexec/PlistBuddy -c "Add :UIUserInterfaceStyle string Automatic" $PL || true
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.${{ github.run_number }}" $PL || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.${{ github.run_number }}" $PL
+      - name: Bauen (ohne Signatur)
+        run: |
+          cd ios/App
+          if [ -d App.xcworkspace ]; then TARGET="-workspace App.xcworkspace"; else TARGET="-project App.xcodeproj"; fi
+          xcodebuild $TARGET -scheme App -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" archive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" | tail -n 40
+      - name: IPA packen
+        run: |
+          cd "$RUNNER_TEMP"
+          mkdir -p Payload
+          cp -R App.xcarchive/Products/Applications/App.app Payload/
+          zip -qry Ours.ipa Payload
+          ls -la Ours.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Ours-iPhone-App
+          path: ${{ runner.temp }}/Ours.ipa
+      - name: Als Download bereitstellen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete app-neueste --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" || true
+          gh release create app-neueste "$RUNNER_TEMP/Ours.ipa" --repo "$GITHUB_REPOSITORY" \
+            --title "Ours iPhone-App (neueste)" --notes "Zum Installieren mit Sideloadly. Gebaut am $(date '+%d.%m.%Y %H:%M') UTC." --latest

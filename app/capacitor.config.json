@@ -1,0 +1,14 @@
+{
+  "appId": "de.nkllasbus.ours",
+  "appName": "Ours",
+  "webDir": "www",
+  "server": {
+    "url": "https://nkllasbus.github.io/OursApp/home.html",
+    "allowNavigation": ["nkllasbus.github.io"]
+  },
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#2b2a33",
+    "limitsNavigationsToAppBoundDomains": false
+  }
+}
