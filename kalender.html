@@ -361,6 +361,10 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
       const i=document.createElement("input"); i.type="checkbox"; i.setAttribute("switch",""); i.tabIndex=-1; hl.appendChild(i); document.body.appendChild(hl); } hl.click(); }
   }catch(e){} busy=false; }
   window.OursHaptic=haptic;
+  // iPhone-App (WKWebView): nach dem Schließen der Tastatur die Ansicht zurücksetzen, damit Tippen wieder genau trifft
+  if(window.Capacitor){ root.classList.add("ours-native");
+    document.addEventListener("focusout",()=>setTimeout(()=>{ const a=document.activeElement; if(!a||!/INPUT|TEXTAREA|SELECT/.test(a.tagName)) window.scrollTo(0,0); },60));
+    if(window.visualViewport) visualViewport.addEventListener("resize",()=>{ if(visualViewport.height>=innerHeight*.9) window.scrollTo(0,0); }); }
   // abgebrochene Seitenübergänge (z. B. beim Zurückwischen) still schlucken
   ["pagereveal","pageswap"].forEach(t=>addEventListener(t,e=>{ const v=e.viewTransition; if(v){ v.ready.catch(()=>{}); v.finished.catch(()=>{}); if(v.updateCallbackDone) v.updateCallbackDone.catch(()=>{}); } }));
   // Drück-Gefühl
@@ -701,7 +705,7 @@ window.OursPush=(function(){
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-09-130000";
+  const APP_VERSION="2026-11-09-141542";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -809,7 +813,11 @@ window.OursPush=(function(){
         <div class="auth-or"><span>oder</span></div>
         <button class="auth-btn alt auth-google" type="button" id="authGoogle">${GOOGLE}Mit Google ${reg?"registrieren":"anmelden"}</button>`);
       screen.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>loginView(b.dataset.mode));
-      (reg?$a("#authName"):$a("#authMail")).focus();
+      // in der iPhone-App nicht automatisch fokussieren (sonst verrutschen die Felder unter der Tastatur)
+      if(!window.Capacitor) (reg?$a("#authName"):$a("#authMail")).focus();
+      // Eingabetaste springt zum nächsten Feld
+      const flds=[...screen.querySelectorAll("#authForm input")]; flds.forEach((el,i)=>{ el.setAttribute("enterkeyhint",i<flds.length-1?"next":"go");
+        el.addEventListener("keydown",ev=>{ if(ev.key==="Enter"&&i<flds.length-1){ ev.preventDefault(); flds[i+1].focus(); } }); });
       $a("#authForm").onsubmit=async e=>{
         e.preventDefault();
         const mail=$a("#authMail").value.trim(), pw=$a("#authPw").value;
