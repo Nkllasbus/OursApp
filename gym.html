@@ -2776,13 +2776,28 @@ function restPaint(){
     el.classList.add("done"); el.innerHTML=`<b>−${Math.floor(over/60)}:${String(over%60).padStart(2,"0")}</b><small>Pause vorbei</small><button type="button" data-rest="x" aria-label="Pause beenden">✕</button>`; return; }
   el.classList.remove("done"); el.innerHTML=`<b>${Math.floor(left/60)}:${String(left%60).padStart(2,"0")}</b><small>Pause</small><button type="button" data-rest="-15">−15</button><button type="button" data-rest="15">+15</button><button type="button" data-rest="x" aria-label="Pause beenden">✕</button>`;
 }
+// Mitteilung, wenn die Pause vorbei ist. iPhone-App: auf die Sekunde eingeplant, kommt auch bei gesperrtem Handy.
+// Webseite: nur wenn der Tab im Hintergrund ist und Mitteilungen schon erlaubt sind.
+const REST_NID=7001, restMsg={title:"Pause vorbei",body:"Weiter geht's mit dem nächsten Satz 💪"};
+const LN=()=>{ try{ return window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()&&Capacitor.Plugins&&Capacitor.Plugins.LocalNotifications||null; }catch(e){ return null; } };
+let lnOk=null;
+async function restNotifyPlan(){ const ln=LN(); if(!ln) return;
+  try{ await ln.cancel({notifications:[{id:REST_NID}]}).catch(()=>{}); if(!restEnd||restEnd<=Date.now()) return;
+    if(lnOk===null){ let p=await ln.checkPermissions(); if(p.display==="prompt"||p.display==="prompt-with-rationale") p=await ln.requestPermissions(); lnOk=p.display==="granted"; }
+    if(!lnOk||!restEnd) return; const at=restEnd;
+    await ln.schedule({notifications:[{id:REST_NID,...restMsg,schedule:{at:new Date(at),allowWhileIdle:true}}]});
+    if(restEnd!==at) restNotifyPlan();   // inzwischen verschoben oder beendet
+  }catch(e){} }
+function restNotifyNow(){ if(LN()||!document.hidden) return;
+  try{ if(!("Notification" in window)||Notification.permission!=="granted"||!navigator.serviceWorker) return;
+    navigator.serviceWorker.ready.then(r=>r.showNotification(restMsg.title,{body:restMsg.body,icon:"apple-touch-icon.png",badge:"ours-mark.png",tag:"ours-rest",data:{u:"gym.html"}})).catch(()=>{}); }catch(e){} }
 function startRest(){
-  clearInterval(restTick); restEnd=Date.now()+restSec*1000; $("#restBar").hidden=false; restPaint(); let rung=false;
-  restTick=setInterval(()=>{ restPaint(); if(!rung&&Date.now()>=restEnd){ rung=true; try{ navigator.vibrate&&navigator.vibrate([250,120,250]); }catch(e){} beep(); } },250);
+  clearInterval(restTick); restEnd=Date.now()+restSec*1000; $("#restBar").hidden=false; restPaint(); restNotifyPlan(); let rung=false;
+  restTick=setInterval(()=>{ restPaint(); if(!rung&&Date.now()>=restEnd){ rung=true; try{ navigator.vibrate&&navigator.vibrate([250,120,250]); }catch(e){} beep(); restNotifyNow(); } },250);
 }
-function stopRest(){ clearInterval(restTick); restEnd=0; restPaint(); }
+function stopRest(){ clearInterval(restTick); const was=restEnd; restEnd=0; restPaint(); if(was) restNotifyPlan(); }
 $("#restBar").addEventListener("click",e=>{ e.stopPropagation(); const b=e.target.closest("[data-rest]"); if(!b) return;
-  if(b.dataset.rest==="x") return stopRest(); restEnd=Math.max(Date.now()+1000,restEnd+(+b.dataset.rest)*1000); restPaint(); });
+  if(b.dataset.rest==="x") return stopRest(); restEnd=Math.max(Date.now()+1000,restEnd+(+b.dataset.rest)*1000); restPaint(); restNotifyPlan(); });
 document.addEventListener("click",e=>{ const r=e.target.closest("[data-restsec]"); if(!r) return; restSec=+r.dataset.restsec; try{ localStorage.setItem("gym.rest",restSec); }catch(err){} render(); });
 /* ---------- Bildschirm bleibt während des Trainings an ---------- */
 let wakeLock=null;
