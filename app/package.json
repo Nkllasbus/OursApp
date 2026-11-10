@@ -1,7 +1,7 @@
 {
   "name": "ours-app",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Ours als iPhone-App (Capacitor). Die Inhalte kommen live von GitHub Pages.",
   "dependencies": {
     "@capacitor/cli": "7.4.2",
