@@ -142,7 +142,7 @@ li.done .exn b{color:var(--muted);text-decoration:line-through;text-decoration-c
 .rest-bar b{font-size:1.15rem;font-variant-numeric:tabular-nums;min-width:3.2em}
 .rest-bar small{font-size:.75rem;opacity:.75}
 .rest-bar button{border:0;border-radius:999px;background:rgba(255,255,255,.14);color:inherit;font:inherit;font-size:.8rem;font-weight:700;padding:7px 10px}
-.rest-bar.done{background:#3f8a4f}
+.rest-bar.done{background:var(--red,#ff3b30);color:#fff}
 .rest-set{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:.8rem;color:var(--muted)}
 .rest-set button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:4px 10px;font:inherit;font-size:.8rem}
 .rest-set button[aria-pressed="true"]{background:var(--band);color:var(--on-band);border-color:var(--band)}
@@ -2772,12 +2772,13 @@ function beep(){ try{ const c=new (window.AudioContext||window.webkitAudioContex
 function restPaint(){
   const el=$("#restBar"); if(!el) return; if(!restEnd){ el.hidden=true; return; }
   const left=Math.ceil((restEnd-Date.now())/1000);
-  if(left<=0){ el.classList.add("done"); el.innerHTML=`<b>Los!</b><small>Pause vorbei</small><button type="button" data-rest="x">OK</button>`; return; }
+  if(left<=0){ const over=Math.floor((Date.now()-restEnd)/1000);
+    el.classList.add("done"); el.innerHTML=`<b>−${Math.floor(over/60)}:${String(over%60).padStart(2,"0")}</b><small>Pause vorbei</small><button type="button" data-rest="x" aria-label="Pause beenden">✕</button>`; return; }
   el.classList.remove("done"); el.innerHTML=`<b>${Math.floor(left/60)}:${String(left%60).padStart(2,"0")}</b><small>Pause</small><button type="button" data-rest="-15">−15</button><button type="button" data-rest="15">+15</button><button type="button" data-rest="x" aria-label="Pause beenden">✕</button>`;
 }
 function startRest(){
   clearInterval(restTick); restEnd=Date.now()+restSec*1000; $("#restBar").hidden=false; restPaint(); let rung=false;
-  restTick=setInterval(()=>{ restPaint(); if(!rung&&Date.now()>=restEnd){ rung=true; try{ navigator.vibrate&&navigator.vibrate([250,120,250]); }catch(e){} beep(); setTimeout(()=>{ if(rung&&Date.now()-restEnd>8000) stopRest(); },9000); } },250);
+  restTick=setInterval(()=>{ restPaint(); if(!rung&&Date.now()>=restEnd){ rung=true; try{ navigator.vibrate&&navigator.vibrate([250,120,250]); }catch(e){} beep(); } },250);
 }
 function stopRest(){ clearInterval(restTick); restEnd=0; restPaint(); }
 $("#restBar").addEventListener("click",e=>{ e.stopPropagation(); const b=e.target.closest("[data-rest]"); if(!b) return;
