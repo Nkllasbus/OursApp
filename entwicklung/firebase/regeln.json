@@ -1,0 +1,106 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "spaces": {
+      "$sid": {
+        ".read": "auth != null && (data.child('access').child(auth.uid).exists() || ((data.child('meta').child('type').val() === 'recipes' || data.child('meta').child('type').val() === 'gym') && data.child('readers').child(auth.uid).exists()))",
+        ".write": "auth != null && data.child('access').child(auth.uid).exists()",
+        "access": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.isString() && (!root.child('spaces').child($sid).exists() || root.child('spaces').child($sid).child('invites').child(newData.val()).exists())"
+          }
+        }
+      }
+    },
+    "friendCodes": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && ((!data.exists() && newData.val() === auth.uid) || (data.val() === auth.uid && !newData.exists()))"
+      }
+    },
+    "requests": {
+      "$to": {
+        ".read": "auth != null && auth.uid === $to",
+        "$from": {
+          ".write": "auth != null && (auth.uid === $from || auth.uid === $to)"
+        }
+      }
+    },
+    "friends": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$f": {
+          ".write": "auth != null && (auth.uid === $uid || (auth.uid === $f && (!newData.exists() || root.child('requests').child($f).child($uid).exists() || root.child('requests').child($uid).child($f).exists())))"
+        }
+      }
+    },
+    "inbox": {
+      "$to": {
+        ".read": "auth != null && auth.uid === $to",
+        "$id": {
+          ".write": "auth != null && (auth.uid === $to || (!data.exists() && newData.child('from').val() === auth.uid && root.child('friends').child($to).child(auth.uid).exists()))"
+        }
+      }
+    },
+    "shelf": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('friends').child($uid).child(auth.uid).exists())",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "posts": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('friends').child($uid).child(auth.uid).exists())",
+        ".write": "auth != null && auth.uid === $uid",
+        "$pid": {
+          "comments": {
+            "$cid": {
+              ".write": "auth != null && ((!data.exists() && newData.child('by').val() === auth.uid && (auth.uid === $uid || root.child('friends').child($uid).child(auth.uid).exists())) || (data.exists() && !newData.exists() && (data.child('by').val() === auth.uid || auth.uid === $uid)))"
+            }
+          }
+        }
+      }
+    },
+    "swipes": {
+      "$id": {
+        ".read": "auth != null && (data.child('a').val() === auth.uid || data.child('b').val() === auth.uid)",
+        ".write": "auth != null && (data.exists() ? (data.child('a').val() === auth.uid || data.child('b').val() === auth.uid) : (newData.child('a').val() === auth.uid && root.child('friends').child(auth.uid).child(newData.child('b').val()).exists()))"
+      }
+    },
+    "pub": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "!newData.exists() || (newData.child('name').isString() && newData.child('name').val().length <= 30 && (!newData.child('photo').exists() || (newData.child('photo').isString() && newData.child('photo').val().length < 250000)) && (!newData.child('bio').exists() || (newData.child('bio').isString() && newData.child('bio').val().length <= 140)))"
+      }
+    },
+    "chats": {
+      "$cid": {
+        ".read": "auth != null && ($cid.beginsWith(auth.uid + '_') || $cid.endsWith('_' + auth.uid))",
+        "messages": {
+          "$mid": {
+            ".write": "auth != null && ($cid.beginsWith(auth.uid + '_') || $cid.endsWith('_' + auth.uid)) && ((!data.exists() && newData.child('by').val() === auth.uid && newData.child('text').isString() && newData.child('text').val().length <= 2000 && root.child('friends').child(auth.uid).child($cid.replace(auth.uid, '').replace('_', '')).exists()) || (data.exists() && !newData.exists() && data.child('by').val() === auth.uid))"
+          }
+        },
+        "read": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && ($cid.beginsWith(auth.uid + '_') || $cid.endsWith('_' + auth.uid))"
+          }
+        }
+      }
+    },
+    "chatIndex": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$cid": {
+          ".write": "auth != null && (auth.uid === $uid || (($cid.beginsWith(auth.uid + '_') || $cid.endsWith('_' + auth.uid)) && ($cid.beginsWith($uid + '_') || $cid.endsWith('_' + $uid))))"
+        }
+      }
+    }
+  }
+}
