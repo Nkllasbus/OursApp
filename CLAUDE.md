@@ -21,6 +21,7 @@ Ours ist eine private Web-App für ein Paar bzw. eine WG (Niklas, GitHub `Nkllas
 - Jede Seite ist eine einzelne HTML-Datei im Hauptordner: `home` (Start), `index` (Dateideen), `rezepte`, `haushalt`, `budget`, `gym`, `kalender`, `reise`, `mail`, `chat`, `raum` (Raumdesign), `smarthome` (bald), `datenschutz`.
 - **`entwicklung/auth.js`** ist der gemeinsame Kern und steckt eingebettet in jeder Seite: Anmeldung, Bereiche (`spaces/<id>`), Seitenmenü, Einstellungen, Hell/Dunkel (`OursTheme`), Apple-Design-Schicht (Schrift, Farben, Drück-Gefühl, Haptik `OursHaptic`, Bögen, Seitenübergänge), Offline-Schicht (Zwischenspeicher `ofl:c:` + Warteschlange `ofl:outbox`, Daten sofort aus dem Speicher), Mitteilungen (`OursPush`), Kurzbefehle-Links, Freunde/Chat.
   - Nach Änderungen an `auth.js`: `python3 entwicklung/build.py` (baut es in alle Seiten ein und setzt eine neue Version in `version.json`).
+  - **Navigation (seit 12.11.2026, Stil wie Instagram/YouTube):** Leiste unten `#oursTabs` mit Home · Kalender · Seiten (Raster `#pgMenu`, Liste `GRID`) · Chats (Zähler `#oursChatN`) · Du (Profilbild `#pfBtn`, Menü `#pfMenu` als Bogen). Kopfzeile schlicht (Hintergrund `--bg`, Titel links). `.wrap` endet über der Leiste (`--tab-h`). Kein Logo und kein schwebender Chat-Knopf mehr.
 - `sw.js`: Service Worker. Seiten zuerst aus dem Speicher, im Hintergrund aktualisieren. Bei Bild-/Dateiänderungen `CACHE` (z. B. `ours-v7`) hochzählen und denselben Namen in `auth.js` (Versionsprüfung, `caches.open(...)`) anpassen.
 - `entwicklung/cloudflare-worker.js`: aktueller Worker-Code (Rezept-Import, Nährwerte, Raumdesign mit Gemini, Bank über Enable Banking `fin-*`, Mitteilungen `push-*`, Cron für Erinnerungen und neue Umsätze).
 - `entwicklung/firebase/regeln.json`: aktuelle Firebase-Regeln (Bereiche generisch über `spaces/$sid/access`).
@@ -40,9 +41,15 @@ Ours ist eine private Web-App für ein Paar bzw. eine WG (Niklas, GitHub `Nkllas
 - KV-Bindung **`PUSH`** (Mitteilungen; VAPID-Schlüssel erzeugt der Worker selbst) und Cron-Trigger `*/15 * * * *`.
 
 ## Testen
-Seiten lokal mit `python3 -m http.server` ausliefern und mit Playwright (Chromium ist vorinstalliert) testen; Firebase dabei durch eine Attrappe ersetzen (Route auf `gstatic.com/firebasejs/*app-compat*`). Vor jedem Push die betroffenen Abläufe durchklicken.
+Seiten lokal mit `python3 -m http.server` ausliefern und mit Playwright (Chromium ist vorinstalliert) testen. Vor jedem Push die betroffenen Abläufe durchklicken.
+- `entwicklung/test/firebase-attrappe.js`: Firebase-Attrappe mit angemeldetem Nutzer „Niklas“ (uid `u1`), Startdaten über `window.__SEED`.
+- `python3 entwicklung/test/screens.py <ordner> [seiten…] [--dark]`: Screenshots aller Seiten im iPhone-Format.
+- `python3 entwicklung/test/leiste.py`: Ablauftest der Navigationsleiste (Handy und PC).
+- Wichtig: im Kontext `service_workers="block"` setzen und die Route als Regex `gstatic\.com/firebasejs/` angeben (ein Glob `**/gstatic.com/…` trifft `www.gstatic.com` nicht).
 
-## Offene Punkte (Stand 10.11.2026)
+## Offene Punkte (Stand 12.11.2026)
+- Neues Aussehen (Leiste unten, schlichte Kopfzeile) ist ein erster Entwurf: Niklas sagt, was er anders haben möchte.
+- Räume: Seite war im Kern nicht eingetragen und stürzte beim Start ab; jetzt Typ `rooms` mit eigenem Bereich (`designs`). Niklas muss die Raumsammlung einmal anlegen.
 - Budget: Umsätze vom selben Tag kommen bei der Sparkasse teils nicht an. Diagnose eingebaut (Meldung nach „Aktualisieren“ zeigt Anzahl und Datum des neuesten Umsatzes). Auf der Webseite geht es, in der App noch prüfen (neue App-Version installieren).
 - iPhone-App: nächster Schritt für Niklas = automatische Verlängerung alle 7 Tage (kostenlose Apple-ID; Sideloadly „Auto Refresh“ o. Ä.).
 - Mail: Gmail-OAuth-Client-ID fehlt noch (`GMAIL_CLIENT_ID` in `mail.html`).

@@ -200,9 +200,9 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
   input[type=checkbox][role=switch]:checked+i,.tgl input:checked+i{background:#34c759!important}
   :root[data-theme="dark"] input[type=checkbox][role=switch]:checked+i{background:#30d158!important}`;
   const put=()=>{ if(!css.isConnected) document.head.appendChild(css); }; put(); addEventListener("DOMContentLoaded",()=>document.head.appendChild(css));
-  // Statusleiste in der Farbe des Kopfes
+  // Statusleiste in der Farbe des (jetzt schlichten) Kopfes
   const tint=()=>{ let m=document.querySelector('meta[name="theme-color"]'); if(!m){ m=document.createElement("meta"); m.name="theme-color"; document.head.appendChild(m); }
-    const c=getComputedStyle(root).getPropertyValue("--band").trim(); if(c) m.content=c; };
+    const c=getComputedStyle(root).getPropertyValue("--bg").trim()||getComputedStyle(root).getPropertyValue("--band").trim(); if(c) m.content=c; };
   tint(); document.addEventListener("ours-theme",()=>setTimeout(tint,0));
   // Haptik: iPhone (iOS 18+) über einen versteckten Schalter, Android über vibrate
   let hl=null, busy=false;
@@ -360,7 +360,28 @@ window.OursPush=(function(){
 })();
 (function(){
   // Zukunftsprojekte: stehen im Menü, sind aber noch nicht anklickbar
-  const SOON = [{label:"Smart Home",color:"#5a5f6e"}];
+  const SOON = [{label:"Smart Home",color:"#5a5f6e",ic:"🏠"}];
+  // Raster im Tab „Seiten“
+  const GRID = [
+    {type:"dates",file:"index.html",label:"Dateideen",color:"#8c7559",ic:"💡"},
+    {type:"recipes",file:"rezepte.html",label:"Rezepte",color:"#7a2434",ic:"🍝"},
+    {type:"chores",file:"haushalt.html",label:"Haushalt",color:"#3f6f8c",ic:"🧹"},
+    {type:"budget",file:"budget.html",label:"Budget",color:"#123354",ic:"💶"},
+    {type:"gym",file:"gym.html",label:"Gym",color:"#3c4270",ic:"🏋️"},
+    {type:"calendar",file:"kalender.html",label:"Kalender",color:"#2f6b4f",ic:"📅"},
+    {type:"trips",file:"reise.html",label:"Reisen",color:"#1d6a7a",ic:"✈️"},
+    {type:"mail",file:"mail.html",label:"Mail",color:"#7a2e2e",ic:"✉️"},
+    {type:"rooms",file:"raum.html",label:"Räume",color:"#8a4a30",ic:"🛋️"},
+  ];
+  // Symbole der Leiste unten: Umriss, aktiv ausgefüllt
+  const svg=(b,on)=>`<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="${on?2:1.8}" stroke-linecap="round" stroke-linejoin="round">${b}</svg>`;
+  const TAB_IC = {
+    home:on=>svg(`<path d="M4 10.4 12 4l8 6.4V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.2a.8.8 0 0 0-.8-.8H9.8a.8.8 0 0 0-.8.8v5.2H5.5A1.5 1.5 0 0 1 4 19z"${on?' fill="currentColor"':""}/>`,on),
+    calendar:on=>svg(`<rect x="3.5" y="5" width="17" height="15.5" rx="3.2"/>${on?'<path d="M3.5 8.2A3.2 3.2 0 0 1 6.7 5h10.6a3.2 3.2 0 0 1 3.2 3.2V10h-17z" fill="currentColor"/>':'<path d="M3.5 10h17"/>'}<path d="M8 3v4M16 3v4"/>${on?'<circle cx="12" cy="15.2" r="1.4" fill="currentColor" stroke="none"/>':""}`,on),
+    all:on=>svg(["4,4","13.5,4","4,13.5","13.5,13.5"].map(xy=>{ const [x,y]=xy.split(","); return `<rect x="${x}" y="${y}" width="6.5" height="6.5" rx="1.9"${on?' fill="currentColor"':""}/>`; }).join(""),on),
+    chat:on=>svg(`<path d="M12 3.8c4.7 0 8.3 3.3 8.3 7.5s-3.6 7.5-8.3 7.5c-1 0-2-.15-2.9-.45L4.6 19.6l1.2-3.6a7.1 7.1 0 0 1-2.1-4.7c0-4.2 3.6-7.5 8.3-7.5z"${on?' fill="currentColor"':""}/>`,on),
+    me:svg(`<circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/>`,false),
+  };
   const PAGES = [
     {type:"home",    file:"home.html",     label:"Home",  color:"#2b2a33", noSpace:true, menu:true},
     {type:"dates",   file:"index.html",    label:"Dateideen", color:"#8c7559", noun:"Dateideen-Liste",
@@ -384,6 +405,9 @@ window.OursPush=(function(){
     {type:"trips",   file:"reise.html",    label:"Reisen", color:"#1d6a7a", noun:"Reiseplanung",
      empty:"Noch keine Reiseplanung", hint:"Leg eine Reiseplanung an und lad deine Freundin oder deinen Freund ein. Ihr plant zusammen: Packliste, Ablauf, Buchungen und Kosten.",
      keys:["trips"]},
+    {type:"rooms",   file:"raum.html",     label:"Räume", color:"#8a4a30", noun:"Raumsammlung",
+     empty:"Noch keine Raumsammlung", hint:"Leg eine Sammlung für deine Raumideen an. Später kannst du deine Freundin oder deinen Freund dazuholen.",
+     keys:["designs"]},
     {type:"chat",    file:"chat.html",     label:"Chats", color:"#5f6e54", noSpace:true},
     {type:"mail",    file:"mail.html",     label:"Mail",  color:"#7a2e2e", noSpace:true, menu:true},
   ];
@@ -521,6 +545,62 @@ window.OursPush=(function(){
   .auth-setup{position:absolute;left:0;right:0;bottom:0;z-index:20;background:var(--bg);overflow-y:auto;padding:18px 22px 22px;display:flex;flex-direction:column;align-items:stretch}
   .auth-setup .box{margin:auto 0;display:flex;flex-direction:column;gap:12px;max-width:420px;align-self:center;width:100%;color:var(--ink)}
   .auth-setup h3{margin:0;font-family:var(--display);font-weight:400;font-size:1.6rem;line-height:1.15}
+
+  /* ---------- Leiste unten wie bei Instagram/YouTube ---------- */
+  body.ours-tabbed{--tab-h:calc(50px + env(safe-area-inset-bottom,0px))}
+  .ours-tabs{position:fixed;left:0;right:0;bottom:0;z-index:45;height:var(--tab-h);box-sizing:border-box;display:grid;grid-template-columns:repeat(5,1fr);max-width:720px;margin:0 auto;
+    padding:0 max(4px,env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) max(4px,env(safe-area-inset-left,0px));
+    background:color-mix(in srgb,var(--bg) 84%,transparent);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+    border-top:.5px solid var(--sep,var(--line))}
+  .ours-native .ours-tabs{background:var(--bg)}
+  .ours-tab{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:0;border:0;background:none;padding:2px 0 0;margin:0;
+    font:inherit;color:var(--muted);text-decoration:none;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  .ours-tab>svg,.ours-tab .tab-av svg{width:26px;height:26px;display:block}
+  .ours-tab>span:not(.cb):not(.tab-av){font-size:.64rem;font-weight:600;letter-spacing:.01em;line-height:1.2}
+  .ours-tab[aria-current="page"],.ours-tab[aria-expanded="true"],.tab-me[data-open]{color:var(--ink)}
+  .ours-tab .cb{position:absolute;top:3px;left:calc(50% + 5px);min-width:17px;height:17px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:var(--red,#ff3b30);color:#fff;
+    font-size:.66rem;font-weight:700;display:grid;place-items:center;box-shadow:0 0 0 2px var(--bg)}
+  .ours-tab .cb[hidden]{display:none}
+  .ours-tabs .pf-btn{position:relative;top:auto;right:auto;z-index:auto;width:27px;height:27px;border:0;background:none;color:inherit;box-shadow:0 0 0 1.5px transparent;transition:box-shadow .2s}
+  .ours-tabs .pf-btn .ours-av{background:var(--band);color:var(--on-band)}
+  .tab-me[data-open] .pf-btn{box-shadow:0 0 0 1.5px var(--bg),0 0 0 3px var(--ink)}
+  .ours-tabs .pf-dot{top:-2px;right:-3px;width:11px;height:11px;background:var(--red,#ff3b30);border:2px solid var(--bg)}
+  .ours-tabs .pf-btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  /* Bögen über der Leiste: Seiten und Profil */
+  .ours-sheet{position:fixed!important;top:auto!important;left:max(8px,env(safe-area-inset-left,0px))!important;right:max(8px,env(safe-area-inset-right,0px))!important;transform:none!important;
+    bottom:calc(var(--tab-h) + 8px)!important;z-index:44!important;max-width:480px;min-width:0!important;margin:0 auto;box-sizing:border-box;max-height:calc(100dvh - var(--tab-h) - 90px);overflow-y:auto;
+    background:var(--surface)!important;color:var(--ink);border:0!important;border-radius:22px!important;padding:10px!important;
+    box-shadow:0 0 0 100vmax rgba(0,0,0,.3),0 18px 40px -16px rgba(0,0,0,.5)!important;animation:ours-pop .42s var(--hig-spring) backwards}
+  .ours-sheet[hidden]{display:none!important}
+  @keyframes ours-pop{from{opacity:0;translate:0 18px;scale:.98}}
+  .sheet-t{margin:6px 10px 12px;font-family:var(--display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em}
+  .pg-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 4px;padding:0 2px 8px}
+  .pg-tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;text-decoration:none;color:var(--ink);padding:2px 0}
+  .pg-ic{width:58px;height:58px;border-radius:16px;display:grid;place-items:center;font-size:1.65rem;background:var(--c);
+    box-shadow:inset 0 0 0 .5px rgba(255,255,255,.2),0 6px 14px -8px rgba(0,0,0,.55)}
+  .pg-tile b{font-size:.74rem;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pg-tile[aria-current="page"] .pg-ic{box-shadow:0 0 0 2.5px var(--surface),0 0 0 5px var(--ink)}
+  .pg-tile.soon{opacity:.55;cursor:default}
+  .pg-tile small{position:absolute;top:-4px;right:calc(50% - 36px);font-size:.56rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;background:var(--ink);color:var(--surface);border-radius:999px;padding:2px 6px}
+  .pf-menu.ours-sheet{display:flex;flex-direction:column}
+  .pf-menu.ours-sheet a,.pf-menu.ours-sheet button{padding:12px}
+  .pf-menu.ours-sheet .pf-who{flex-direction:row;align-items:center;gap:12px;padding:6px 10px 8px}
+  .pf-menu.ours-sheet #pfBig{margin:0}
+  .pf-menu.ours-sheet .pf-who b{font-size:1.05rem}
+  .pf-menu.ours-sheet .pf-who>span+b{margin-top:0}
+  /* Inhalt endet über der Leiste */
+  body.ours-tabbed .wrap{height:calc(100dvh - var(--tab-h))!important;max-height:calc(100dvh - var(--tab-h))!important;min-height:0!important}
+  body.ours-tabbed #chatBtn,body.ours-tabbed .ours-logo{display:none!important}
+  /* schwebende Knöpfe: der Abstand zum unteren Rand übernimmt jetzt die Leiste */
+  :root:not([data-hig-page="rezepte"]) body.ours-tabbed :is(.fab,.g-fab,.fab-menu,.todaypill,.rest-bar,.sp-card){translate:0 calc(max(12px,env(safe-area-inset-bottom,0px)) - 6px)}
+  body.ours-tabbed .toast{bottom:calc(var(--tab-h) + 14px)!important}
+  /* Kopf schlicht wie bei Instagram: Seitenfarbe raus, Titel groß und links */
+  body.ours-tabbed :is(header,#head){background:var(--bg)!important;color:var(--ink)!important;--on-band:var(--ink);--on-band-muted:var(--muted);box-shadow:none!important;
+    padding:calc(6px + env(safe-area-inset-top,0px)) var(--hdr-x,16px) 4px!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:flex-end!important;text-align:left!important;min-height:0!important}
+  body.ours-tabbed :is(header,#head)::after,body.ours-tabbed :is(header,#head)::before{display:none!important}
+  body.ours-tabbed :is(header,#head) .wordmark{font-family:var(--display)!important;font-size:1.9rem!important;font-weight:800!important;letter-spacing:-.03em!important;line-height:1.2!important;
+    color:var(--ink)!important;text-shadow:none!important;margin:0!important;opacity:1!important;pointer-events:auto!important}
+  body.ours-tabbed :is(header,#head) .wordmark.pg-title::after{width:.24em;height:.24em;margin-left:.3em;opacity:.45}
   `;
   const IC = {
     people:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M16.5 6.2a2.8 2.8 0 0 1 0 5.4M17 14.3c2 .5 3.2 2 3.5 4.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
@@ -570,7 +650,7 @@ window.OursPush=(function(){
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-09-151713";
+  const APP_VERSION="2026-11-12-005738";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -592,8 +672,10 @@ window.OursPush=(function(){
     gym:     {keys:["exercises","templates","workouts","sessions","bw","week","log"], word:["Übung","Übungen"]},
     calendar:{keys:["events"], word:["Termin","Termine"]},
     trips:   {keys:["trips"], word:["Reise","Reisen"]},
+    rooms:   {keys:["designs"], word:["Raum","Räume"]},
   };
-  function pgToggle(open){ const m=document.getElementById("pgMenu"), b=document.querySelector("header .wordmark.pg-title")||document.getElementById("pgBtn"); if(!m||!b) return; m.hidden=!open; b.setAttribute("aria-expanded",open); }
+  function pgToggle(open){ const m=document.getElementById("pgMenu"); if(!m) return; m.hidden=!open;
+    ["pgBtn"].map(id=>document.getElementById(id)).concat([document.querySelector("header .wordmark.pg-title")]).forEach(b=>b&&b.setAttribute("aria-expanded",open)); }
   // Schalter in den Einstellungen, getrennt pro Seite (standardmäßig aus):
   // Rezepte → Kalorien & Nährwerte, Gym → Essen-Tagebuch
   const KC_KEY={recipes:"kcalRecipes",gym:"kcalGym"}, kcalOn={recipes:false,gym:false};
@@ -611,18 +693,27 @@ window.OursPush=(function(){
     const st=document.createElement("style"); st.textContent=CSS; document.head.appendChild(st);
     // Name der App oben in jeder Seite
     const hd=document.querySelector("header");
-    if(hd && !hd.querySelector(".ours-logo")){
-      hd.insertAdjacentHTML("afterbegin",'<button type="button" class="ours-logo" id="pgBtn" aria-label="Ours – zur Startseite"><img src="ours-mark.png" alt=""></button>');
-      // Seiten-Menü hinter dem Logo: sofort nutzbar, auch bevor die Anmeldung fertig ist
-      hd.insertAdjacentHTML("beforeend",`<nav class="pf-menu pg-menu" id="pgMenu" hidden aria-label="Seiten">
-          <div class="pf-who"><img class="pf-logo" src="ours-mark.png" alt=""><span class="pf-brand">Ours</span></div>
-          <div class="pf-sep"></div>
-          ${PAGES.filter(p=>!p.noSpace||p.menu).map(p=>`<a href="${p.file}" data-page="${p.type}"${p.type===type?' aria-current="page"':""}><span class="dot" style="background:${p.color}"></span>${p.label}</a>`).join("")}
-          ${SOON.map(p=>`<span class="pg-soon" aria-disabled="true" title="Kommt bald"><span class="dot" style="background:${p.color}"></span>${p.label}<small>bald</small></span>`).join("")}
+    if(hd && !document.getElementById("oursTabs")){
+      // Navigation unten wie bei Instagram/YouTube: Home · Kalender · Seiten · Chats · Du
+      document.body.classList.add("ours-tabbed");
+      const tabOn=type==="home"?"home":type==="calendar"?"calendar":type==="chat"?"chat":"all";
+      const cur=t=>t===tabOn?' aria-current="page"':"";
+      document.body.insertAdjacentHTML("beforeend",`<nav class="ours-tabs" id="oursTabs" aria-label="Navigation">
+          <a href="home.html" class="ours-tab" data-tab="home"${cur("home")}>${TAB_IC.home(tabOn==="home")}<span>Home</span></a>
+          <a href="kalender.html" class="ours-tab" data-tab="calendar"${cur("calendar")}>${TAB_IC.calendar(tabOn==="calendar")}<span>Kalender</span></a>
+          <button type="button" class="ours-tab" id="pgBtn" data-tab="all"${cur("all")} aria-haspopup="true" aria-expanded="false" aria-controls="pgMenu">${TAB_IC.all(tabOn==="all")}<span>Seiten</span></button>
+          <a href="chat.html?from=${type}" class="ours-tab" data-tab="chat"${cur("chat")}>${TAB_IC.chat(tabOn==="chat")}<span>Chats</span><span class="cb" id="oursChatN" hidden></span></a>
+          <div class="ours-tab tab-me" id="tabMe" data-tab="me"><span class="tab-av" aria-hidden="true">${TAB_IC.me}</span><span>Du</span></div>
+        </nav>
+        <nav class="ours-sheet pg-menu" id="pgMenu" hidden aria-label="Alle Seiten">
+          <p class="sheet-t">Alle Seiten</p>
+          <div class="pg-grid">
+          ${GRID.map(p=>`<a href="${p.file}" class="pg-tile" data-page="${p.type}" style="--c:${p.color}"${p.type===type?' aria-current="page"':""}><span class="pg-ic" aria-hidden="true">${p.ic}</span><b>${p.label}</b></a>`).join("")}
+          ${SOON.map(p=>`<span class="pg-tile soon" aria-disabled="true" title="Kommt bald" style="--c:${p.color}"><span class="pg-ic" aria-hidden="true">${p.ic||"✨"}</span><b>${p.label}</b><small>bald</small></span>`).join("")}
+          </div>
         </nav>`);
       const pgBtn=document.getElementById("pgBtn"), pgMenu=document.getElementById("pgMenu");
-      // Logo → Startseite (auf der Startseite selbst: Seitenliste); Überschrift → Seitenliste
-      pgBtn.addEventListener("click",e=>{ e.stopPropagation(); if(window.Auth._closePf) window.Auth._closePf(); if(type==="home") pgToggle(pgMenu.hidden); else location.href="home.html"; });
+      pgBtn.addEventListener("click",e=>{ e.stopPropagation(); if(window.Auth._closePf) window.Auth._closePf(); pgToggle(pgMenu.hidden); });
       const wm=hd.querySelector(".wordmark");
       if(wm){ wm.classList.add("pg-title"); wm.setAttribute("role","button"); wm.setAttribute("tabindex","0"); wm.removeAttribute("aria-hidden"); wm.setAttribute("aria-haspopup","true"); wm.setAttribute("aria-expanded","false"); wm.setAttribute("aria-controls","pgMenu"); wm.setAttribute("aria-label",(PAGE?PAGE.label:"Seite")+" – Seiten anzeigen");
         const tgl=e=>{ e.preventDefault(); e.stopPropagation(); if(window.Auth._closePf) window.Auth._closePf(); pgToggle(pgMenu.hidden); };
@@ -630,15 +721,11 @@ window.OursPush=(function(){
       document.addEventListener("click",e=>{ if(!pgMenu.hidden && !pgMenu.contains(e.target)) pgToggle(false); });
       document.addEventListener("keydown",e=>{ if(e.key==="Escape") pgToggle(false); });
       pgMenu.addEventListener("click",e=>{ if(e.target.closest("a")) pgToggle(false); });
+      // Titel im Kopf bündig mit dem Inhalt
       const wrap=document.querySelector(".wrap");
-      if(wrap && type!=="chat" && !document.getElementById("chatBtn")){
-        wrap.insertAdjacentHTML("beforeend",`<a class="ours-chat" id="oursChat" href="chat.html?from=${type}" aria-label="Chats mit Freunden" title="Chats">${IC.chat}<span class="cb" id="oursChatN" hidden></span></a>`);
-        if(getComputedStyle(wrap).position==="static") wrap.style.position="relative";
-        // gleiche Stelle wie bei Rezepte: am Innenrand der Karte
-        const placeChat=()=>wrap.style.setProperty("--chat-x",getComputedStyle(wrap).paddingLeft);
-        placeChat(); addEventListener("resize",placeChat);
-        document.body.classList.add("has-chat");
-      }
+      const placeHead=()=>{ const px=wrap?parseFloat(getComputedStyle(wrap).paddingLeft)||0:0; hd.style.setProperty("--hdr-x",Math.max(16,px)+"px"); };
+      placeHead(); addEventListener("resize",placeHead);
+      document.getElementById("oursTabs").addEventListener("click",e=>{ if(e.target.closest(".ours-tab")&&window.OursHaptic) OursHaptic(); });
       // Zurück-Geste: Seite kommt aus dem Zwischenspeicher, Menüs dann zu
       addEventListener("pageshow",()=>{ pgToggle(false); if(window.Auth._closePf) window.Auth._closePf(); });
     }
@@ -720,7 +807,7 @@ window.OursPush=(function(){
 
     /* ---------- Profil-Knopf mit Menü ---------- */
     function installMenu(){
-      const head=document.querySelector("header"); if(!head || head.querySelector(".pf-btn")) { updateMenu(); return; }
+      const head=document.querySelector("header"); if(!head || document.getElementById("pfBtn")) { updateMenu(); return; }
       head.insertAdjacentHTML("beforeend",`<button class="pf-btn" type="button" id="pfBtn" aria-haspopup="true" aria-expanded="false" aria-controls="pfMenu" aria-label="Profil und Seiten"><span id="pfInit"></span><span class="pf-dot" id="pfDot" hidden></span></button>
         <nav class="pf-menu" id="pfMenu" hidden aria-label="Profil und Seiten">
           <div class="pf-who"><span id="pfBig"></span><b id="pfName"></b><small id="pfMail"></small></div>
@@ -733,7 +820,11 @@ window.OursPush=(function(){
           <button type="button" data-pf="logout">${IC.out}Abmelden</button>
         </nav>`);
       const btn=document.getElementById("pfBtn"), menu=document.getElementById("pfMenu");
-      const toggle=open=>{ menu.hidden=!open; btn.setAttribute("aria-expanded",open); };
+      // mit Leiste unten: Profilbild sitzt im Tab „Du“, das Menü kommt als Bogen von unten
+      const me=document.getElementById("tabMe");
+      if(me){ const av=me.querySelector(".tab-av"); av.replaceWith(btn); menu.classList.add("ours-sheet"); document.body.appendChild(menu);
+        me.addEventListener("click",e=>{ if(e.target.closest("#pfBtn")) return; e.stopPropagation(); btn.click(); }); }
+      const toggle=open=>{ menu.hidden=!open; btn.setAttribute("aria-expanded",open); if(me) me.toggleAttribute("data-open",!!open); };
       btn.onclick=e=>{ e.stopPropagation(); pgToggle(false); toggle(menu.hidden); };
       window.Auth._closePf=()=>toggle(false);
       document.addEventListener("click",e=>{ if(!menu.hidden && !menu.contains(e.target)) toggle(false); });
@@ -745,7 +836,7 @@ window.OursPush=(function(){
     function updateMenu(){
       const name=profile.name||user.email.split("@")[0];
       const b=document.getElementById("pfBtn"); if(!b) return;
-      document.getElementById("pfInit").innerHTML=avatar(user.uid,name,37); updateFriendBadge();
+      document.getElementById("pfInit").innerHTML=avatar(user.uid,name,document.getElementById("tabMe")?26:37); updateFriendBadge();
       const big=document.getElementById("pfBig"); if(big) big.innerHTML=avatar(user.uid,name,48);
       document.getElementById("pfName").textContent=name;
       document.getElementById("pfMail").textContent=user.email;
@@ -1194,7 +1285,6 @@ window.OursPush=(function(){
     });
   }};
 })();
-
 </script>
 <script>
 const $=s=>document.querySelector(s);
