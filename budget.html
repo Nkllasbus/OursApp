@@ -80,6 +80,20 @@ ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px
 .pp-note{display:flex;flex-direction:column;gap:4px;background:color-mix(in srgb,#2f72c4 9%,#fff);border-radius:14px;padding:12px 14px;margin:0 0 14px;font-size:14px;line-height:1.4}
 .pp-note b{font-size:15px}.pp-note span{color:var(--muted)}
 .pp-keep{align-self:flex-start;border:0;background:none;padding:4px 0 0;color:var(--accent);font:inherit;font-weight:600;font-size:14px;cursor:pointer}
+.adj-grp,.pc-list,.pc-tiles,.pp-note{flex:none}
+.adj-grp{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.adj-row{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;padding:10px 12px;text-align:left;font:inherit;color:var(--ink);border-bottom:.5px solid var(--line)}
+.adj-row .main{flex:1;min-width:0;display:flex;flex-direction:column}.adj-row .main small{color:var(--muted);font-size:.8rem}
+.adj-ic{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(118,118,128,.14);color:var(--muted);font-weight:700}
+.adj-ic.back{background:color-mix(in srgb,var(--accent) 16%,#fff);color:var(--accent)}
+.adj-row .amt{font-weight:600;font-variant-numeric:tabular-nums}.adj-row .amt.plus{color:var(--accent)}
+.adj-add{display:block;width:100%;border:0;background:none;padding:13px 14px;text-align:left;color:var(--accent);font:inherit;font-weight:600}
+.adj-seg{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:rgba(118,118,128,.12);border-radius:10px;padding:2px;margin:10px 0 6px}
+.adj-seg button{border:0;background:none;border-radius:8px;padding:7px 4px;font:inherit;font-size:.92rem;font-weight:600;color:var(--ink)}
+.adj-seg button[aria-pressed="true"]{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.adj-sug{display:flex;flex-wrap:wrap;gap:6px}
+.amount input{background:none!important;border:0!important;box-shadow:none!important;padding:4px 0!important}
+#adjSign{font-size:1.8rem;font-weight:700;color:var(--muted)}
 .pc-head{display:flex;align-items:center;gap:8px}.pc-head h3{margin:0}.pc-head .dot{width:12px;height:12px}
 .pc-sum{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:12px 0 8px}.pc-sum b{font-size:34px;font-weight:700;letter-spacing:-.02em}.pc-sum span{color:var(--muted);font-size:15px}
 .pc-track{display:block!important;height:8px!important;min-height:8px;margin:0 0 6px;border-radius:999px;background:var(--surface2,#ececf0);overflow:hidden}.pc-track>span{display:block!important;height:8px!important;border-radius:999px}
@@ -2106,7 +2120,7 @@ function nextDate(r){ const t=new Date(); t.setHours(0,0,0,0);
 
 /* ---------- Zustand ---------- */
 let rec={}, exp={}, customCats={};                    // gemeinsamer Bereich (manuelle Einträge)
-let fin={accounts:{},tx:{},rules:{},budgets:{},contracts:{},eb:{},meta:{},alias:{},aicat:{},goals:{}};   // privat: users/<uid>/fin
+let fin={accounts:{},tx:{},rules:{},budgets:{},contracts:{},eb:{},meta:{},alias:{},aicat:{},goals:{},adj:{}};   // privat: users/<uid>/fin
 const now=new Date(); let vy=now.getFullYear(), vm=now.getMonth();
 let view="home"; try{ const v=localStorage.getItem("budget.view"); if(["home","tx","con","stats"].includes(v)) view=v; }catch(e){}
 let q="", txFilter="all";
@@ -2609,6 +2623,7 @@ function salaryInfo(){
 function periodSpend(start,end){
   const byCat={};
   allTx().forEach(t=>{ if(t.ex||t.amount>=0||t.date<start||t.date>end) return; const c=catOf(t); if(NO_SPEND.has(c)||INCOME_CATS.has(c)) return; byCat[c]=(byCat[c]||0)-t.amount; });
+  adjIn(start,end).forEach(x=>{ byCat[x.cat]=Math.max(0,(byCat[x.cat]||0)-x.a); });
   return {byCat};
 }
 const budLevel=(v,b)=>!b?0:v>=b?2:v>=b*.8?1:0;
@@ -2793,11 +2808,33 @@ function saveKillMeta(){
   fin.meta=fin.meta||{}; fin.meta.fullName=name; fin.meta.address=addr; finRef("meta").update({fullName:name||null,address:addr||null}).catch(()=>{});
   fin.contracts[k]={...(fin.contracts[k]||{}),customerNo:no||null,mail:mail||null}; finRef("contracts/"+k).update({customerNo:no||null,mail:mail||null}).catch(()=>{});
 }
+// Korrekturen je Kategorie (fin.adj): a > 0 = Geld zurück (z. B. von Freunden), a < 0 = zusätzliche Ausgabe (z. B. bar bezahlt)
+const adjIn=(start,end,cat)=>Object.entries(fin.adj||{}).map(([id,x])=>({id,...x})).filter(x=>x&&x.cat&&typeof x.a==="number"&&x.d>=start&&x.d<=end&&(!cat||x.cat===cat)).sort((a,b)=>b.d.localeCompare(a.d));
+// eingegangenes Geld im Zeitraum, das zu einer Kategorie passen könnte (Rückzahlungen, Überweisungen von Freunden)
+function adjSuggestions(si){
+  const linked=new Set(Object.values(fin.adj||{}).map(x=>x&&x.tx).filter(Boolean));
+  return allTx().filter(t=>t.amount>0&&!t.ex&&t.date>=si.start&&t.date<=si.end&&!linked.has(t.id)&&["Rückzahlung","Sonstige Einnahmen"].includes(catOf(t))).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6);
+}
+function adjSheet(cat,id){
+  const si=salaryInfo(), x=id?(fin.adj||{})[id]:null, sug=id?[]:adjSuggestions(si);
+  sheetCtx={type:"adj",cat,id:id||null,kind:x&&x.a<0?"add":"back",tx:x&&x.tx||null,sug};
+  const today=iso(new Date()), d=x?x.d:(today>si.end?si.end:today<si.start?si.start:today);
+  openSheet(`<button type="button" class="pc-back" data-plancat="${esc(cat)}">‹ ${esc(cat)}</button>
+    <h3>${x?"Korrektur bearbeiten":"Betrag anpassen"}</h3>
+    <div class="adj-seg" role="group" aria-label="Art"><button type="button" data-adjkind="back" aria-pressed="${sheetCtx.kind==="back"}">Geld zurück</button><button type="button" data-adjkind="add" aria-pressed="${sheetCtx.kind==="add"}">Ausgabe dazu</button></div>
+    <p class="note" id="adjHint">${sheetCtx.kind==="back"?`Zieht den Betrag von „${esc(cat)}“ ab, z. B. wenn dir Freunde Geld zurückgegeben haben.`:`Rechnet den Betrag zu „${esc(cat)}“ dazu, z. B. wenn du bar bezahlt hast.`}</p>
+    ${sug.length?`<div class="field"><span class="flabel">Eingegangen in diesem Zeitraum</span><div class="adj-sug">${sug.map((t,i)=>`<button type="button" class="chip" data-adjsug="${i}" aria-pressed="false"><b>${money(t.amount)}</b> ${esc(displayName(t))} · ${fromIso(t.date).toLocaleDateString("de-DE",{day:"numeric",month:"short"})}</button>`).join("")}</div></div>`:""}
+    <label class="amount"><span id="adjSign">${sheetCtx.kind==="back"?"−":"+"}</span><input id="adjAmt" inputmode="decimal" placeholder="0,00" value="${x?(Math.abs(x.a)/100).toFixed(2).replace(".",","):""}" aria-label="Betrag"><span>€</span></label>
+    <div class="field"><span class="flabel">Notiz</span><input type="text" id="adjNote" maxlength="60" placeholder="${sheetCtx.kind==="back"?"z. B. Von Freunden fürs Kino":"z. B. Bar bezahlt"}" value="${esc(x&&x.n||"")}"></div>
+    <div class="field"><span class="flabel">Datum</span><input type="date" id="adjDate" value="${esc(d)}"></div>
+    <div class="sheet-actions">${x?`<button class="del" type="button" id="adjDel">Löschen</button>`:"<span></span>"}<div class="right"><button class="ghost" type="button" data-plancat="${esc(cat)}">Abbrechen</button><button class="btn primary" type="button" id="adjSave">Sichern</button></div></div>`);
+}
 // Kategorie im Reiter „Budgets“ antippen: alle Abbuchungen im aktuellen Zeitraum
 function planCatSheet(c){
   const si=salaryInfo(), b=(fin.budgets||{})[c]||0;
   const list=allTx().filter(t=>!t.ex&&t.amount<0&&t.date>=si.start&&t.date<=si.end&&catOf(t)===c).sort((a,b)=>b.date.localeCompare(a.date)||a.amount-b.amount);
-  const v=list.reduce((a,t)=>a-t.amount,0), lv=budLevel(v,b), left=b-v;
+  const raw=list.reduce((a,t)=>a-t.amount,0), adj=adjIn(si.start,si.end,c), adjSum=adj.reduce((a,x)=>a+x.a,0);
+  const v=Math.max(0,raw-adjSum), lv=budLevel(v,b), left=b-v;
   const col=lv===2?"var(--red,#cf4b42)":lv===1?"#d98e30":catColor(c);
   const fmt=d=>fromIso(d).toLocaleDateString("de-DE",{day:"numeric",month:"short"});
   const big=list.length?list.reduce((m,t)=>t.amount<m.amount?t:m,list[0]):null;
@@ -2811,8 +2848,11 @@ function planCatSheet(c){
     <div class="pc-sum"><b class="num">${money(v)}</b><span>${b?`von ${money(b)} Budget`:"ausgegeben"}</span></div>
     ${b?`<span class="track pc-track"><span style="width:${Math.min(100,v/b*100)}%;background:${col}"></span></span>
     <p class="pc-st${lv===2?" over":""}">${lv===2?`${money(-left)} über dem Budget`:`Noch ${money(left)} frei${lv===1?" · fast aufgebraucht":""}`}</p>`:""}
-    <p class="note">Zeitraum ${fmt(si.start)} – ${fmt(si.end)}</p>
-    ${list.length?`<div class="pc-tiles"><div><b class="num">${list.length}</b><span>${list.length===1?"Abbuchung":"Abbuchungen"}</span></div><div><b class="num">${money(Math.round(v/list.length))}</b><span>im Schnitt</span></div><div><b class="num">${money(-big.amount)}</b><span>größte</span></div></div>`:""}
+    <p class="note">Zeitraum ${fmt(si.start)} – ${fmt(si.end)}${adj.length?` · ${money(raw)} abgebucht ${adjSum>=0?"−":"+"} ${money(Math.abs(adjSum))} Korrekturen`:""}</p>
+    ${list.length?`<div class="pc-tiles"><div><b class="num">${list.length}</b><span>${list.length===1?"Abbuchung":"Abbuchungen"}</span></div><div><b class="num">${money(Math.round(raw/list.length))}</b><span>im Schnitt</span></div><div><b class="num">${money(-big.amount)}</b><span>größte</span></div></div>`:""}
+    <p class="pc-day">Korrekturen</p>
+    <div class="adj-grp">${adj.map(x=>`<button type="button" class="adj-row" data-adj="${esc(x.id)}"><span class="adj-ic${x.a>0?" back":""}">${x.a>0?"↩":"+"}</span><span class="main"><b>${esc(x.n||(x.a>0?"Geld zurück":"Ausgabe dazu"))}</b><small>${fromIso(x.d).toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"})}</small></span><span class="amt${x.a>0?" plus":""}">${x.a>0?"−":"+"}${money(Math.abs(x.a))}</span></button>`).join("")}
+      <button type="button" class="adj-add" data-adjnew="${esc(c)}">${adj.length?"+ Weitere Korrektur":"+ Betrag hinzufügen oder abziehen"}</button></div>
     <div class="pc-list">${days||`<div class="empty">In diesem Zeitraum gibt es noch keine Abbuchungen in „${esc(c)}“.</div>`}</div>
     <p class="note">Tipp: Umsatz antippen, um ihn einer anderen Kategorie zuzuordnen.</p>
     <div class="actions"><button class="btn" type="button" data-bud="${esc(c)}">${b?"Budget ändern":"Budget festlegen"}</button><button class="btn primary" type="button" data-close>Fertig</button></div>`);
@@ -3084,6 +3124,21 @@ document.addEventListener("click",e=>{
   const pk=t.closest("[data-ppkeep],[data-ppunkeep]"); if(pk){ const id=pk.dataset.ppkeep||pk.dataset.ppunkeep, on=!!pk.dataset.ppkeep;
     fin.meta=fin.meta||{}; fin.meta.ppKeep={...(fin.meta.ppKeep||{})}; if(on) fin.meta.ppKeep[id]=true; else delete fin.meta.ppKeep[id];
     finRef("meta/ppKeep/"+id).set(on?true:null).catch(showErr); ppCache.tx=null; render(); return txSheet(id); }
+  const an=t.closest("[data-adjnew]"); if(an) return adjSheet(an.dataset.adjnew);
+  const ae=t.closest("[data-adj]"); if(ae&&sheetCtx&&sheetCtx.type==="plancat") return adjSheet(sheetCtx.cat,ae.dataset.adj);
+  const ak2=t.closest("[data-adjkind]"); if(ak2&&sheetCtx&&sheetCtx.type==="adj"){ const k=sheetCtx.kind=ak2.dataset.adjkind; document.querySelectorAll("[data-adjkind]").forEach(x=>x.setAttribute("aria-pressed",x===ak2));
+    $("#adjSign").textContent=k==="back"?"−":"+"; $("#adjNote").placeholder=k==="back"?"z. B. Von Freunden fürs Kino":"z. B. Bar bezahlt";
+    $("#adjHint").textContent=k==="back"?`Zieht den Betrag von „${sheetCtx.cat}“ ab, z. B. wenn dir Freunde Geld zurückgegeben haben.`:`Rechnet den Betrag zu „${sheetCtx.cat}“ dazu, z. B. wenn du bar bezahlt hast.`; return; }
+  const asg=t.closest("[data-adjsug]"); if(asg&&sheetCtx&&sheetCtx.type==="adj"){ const tx=sheetCtx.sug[+asg.dataset.adjsug]; const on=asg.getAttribute("aria-pressed")!=="true";
+    document.querySelectorAll("[data-adjsug]").forEach(x=>x.setAttribute("aria-pressed","false"));
+    if(on){ asg.setAttribute("aria-pressed","true"); sheetCtx.tx=tx.id; $("#adjAmt").value=(tx.amount/100).toFixed(2).replace(".",","); if(!$("#adjNote").value) $("#adjNote").value=("Von "+displayName(tx)).slice(0,60); $("#adjDate").value=tx.date;
+      if(sheetCtx.kind!=="back") document.querySelector('[data-adjkind="back"]').click(); } else sheetCtx.tx=null; return; }
+  if(t.closest("#adjSave")&&sheetCtx&&sheetCtx.type==="adj"){ const v=parseMoney($("#adjAmt").value); if(!v){ say("Gib einen Betrag ein."); return; }
+    const d=/^\d{4}-\d{2}-\d{2}$/.test($("#adjDate").value)?$("#adjDate").value:iso(new Date());
+    const id=sheetCtx.id||("a"+Date.now().toString(36)), val={cat:sheetCtx.cat,a:sheetCtx.kind==="back"?v:-v,n:($("#adjNote").value||"").trim().slice(0,60)||null,d,tx:sheetCtx.tx||null,at:Date.now()};
+    fin.adj={...(fin.adj||{}),[id]:val}; finRef("adj/"+id).set(val).catch(showErr); render(); budgetPush(); return planCatSheet(sheetCtx.cat); }
+  if(t.closest("#adjDel")&&sheetCtx&&sheetCtx.type==="adj"){ const del=t.closest("#adjDel"); if(del.dataset.sure!=="1"){ del.dataset.sure="1"; del.textContent="Wirklich löschen?"; del.classList.add("sure"); return; }
+    const id=sheetCtx.id, c=sheetCtx.cat; fin.adj={...fin.adj}; delete fin.adj[id]; finRef("adj/"+id).remove().catch(showErr); render(); budgetPush(); return planCatSheet(c); }
   const pcat=t.closest("[data-plancat]"); if(pcat) return planCatSheet(pcat.dataset.plancat);
   const tx=t.closest("[data-tx]"); if(tx){ const back=sheetCtx&&sheetCtx.type==="plancat"&&!$("#sheetModal").hidden?sheetCtx.cat:null; txSheet(tx.dataset.tx);
     if(back&&!$("#sheetModal").hidden&&sheetCtx&&sheetCtx.type!=="plancat") $("#sheet").insertAdjacentHTML("afterbegin",`<button type="button" class="pc-back" data-plancat="${esc(back)}">‹ ${esc(back)}</button>`);
@@ -3189,7 +3244,7 @@ Auth.start(firebaseConfig,"budget",(r,info)=>{
   root.child("expenses").on("value",s=>{ exp=s.val()||{}; render(); });
   root.child("cats").on("value",s=>{ customCats=s.val()||{}; render(); if(form) renderFormChips(); });
   if(myUid){ let first=true;
-    finRef().on("value",s=>{ finLoaded=true; const v=s.val()||{}; fin={accounts:v.accounts||{},tx:v.tx||{},rules:v.rules||{},budgets:v.budgets||{},contracts:v.contracts||{},eb:v.eb||{},meta:v.meta||{},alias:v.alias||{},aicat:v.aicat||{},goals:v.goals||{}};
+    finRef().on("value",s=>{ finLoaded=true; const v=s.val()||{}; fin={accounts:v.accounts||{},tx:v.tx||{},rules:v.rules||{},budgets:v.budgets||{},contracts:v.contracts||{},eb:v.eb||{},meta:v.meta||{},alias:v.alias||{},aicat:v.aicat||{},goals:v.goals||{},adj:v.adj||{}};
       if(!document.querySelector("#sheetModal:not([hidden]) input:focus")) render();
       if(first){ first=false; if(ebBack) finishBank();
         const last=Math.max(0,...Object.values(fin.accounts).filter(a=>a&&a.src==="eb").map(a=>a.syncAt||0));
