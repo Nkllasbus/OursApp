@@ -31,6 +31,7 @@ header.brand .wordmark{font-weight:800}
 .filters::-webkit-scrollbar{display:none}
 .post{display:block;color:inherit;background:var(--surface);border-radius:20px;padding:14px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
 .ph{display:flex;align-items:center;gap:10px}
+.pwho{flex:1;min-width:0;display:flex;align-items:center;gap:10px;border:0;background:none;padding:0;text-align:left}
 .ph .who{flex:1;min-width:0;display:flex;flex-direction:column}
 .ph b{font-weight:600;font-size:.98rem}
 .ph small{color:var(--muted);font-size:.8rem}
@@ -306,6 +307,70 @@ header.brand .wordmark{font-weight:800}
   .fr-add>*::before,.fr-add>*::after{display:none!important}
   .st-grp+.fr-share{margin-top:24px}
   .fr-add input{border-top:0!important}
+  /* Profil eines Freundes */
+  .fp-card .auth-head{padding-top:14px!important}
+  .fp-back{display:inline-flex;align-items:center;gap:2px;border:0;background:none;color:var(--tint);font:inherit;font-size:17px;padding:6px 6px 6px 0;cursor:pointer}
+  .fp-back svg{width:22px;height:22px;margin-left:-4px}
+  .fp-hero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 8px 6px}
+  .fp-hero .ours-av{box-shadow:0 6px 22px rgba(0,0,0,.12);font-size:40px!important}
+  .fp-hero h3{margin:12px 0 2px;font-size:26px;font-weight:700;letter-spacing:-.02em}
+  .fp-bio{margin:4px 0 0;font-size:15px;line-height:1.4;color:var(--ink);max-width:320px}
+  .fp-bio.muted{color:var(--muted)}
+  .fp-hero small{margin-top:6px;color:var(--muted);font-size:13px}
+  .fp-acts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 0 4px}
+  .fp-act{display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:#fff;border-radius:14px;padding:10px 4px 8px;color:var(--tint);font:inherit;font-size:12px;font-weight:500;text-decoration:none;cursor:pointer}
+  .fp-act svg{width:22px;height:22px}
+  .fp-act:disabled{color:#c4c4c7;cursor:default}
+  .fp-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:12px 0 4px!important;padding:12px 4px}
+  .fp-stats>div{display:flex;flex-direction:column;align-items:center;gap:1px;text-align:center}
+  .fp-stats>div+div::before{top:6px!important;bottom:6px;left:0!important;right:auto!important;border-top:0!important;border-left:.5px solid #d1d1d6}
+  .fp-stats b{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+  .fp-stats span{font-size:12px;color:var(--muted)}
+  .fp-sec{display:flex;align-items:center;gap:7px}
+  .fp-dot{flex:none;width:20px;height:20px;border-radius:6px;display:inline-grid;place-items:center;font-size:11px;line-height:1}
+  .fp-foot{margin:6px 16px 0;font-size:13px;color:var(--muted);line-height:1.35}
+  .fp-row{text-decoration:none;min-height:56px}
+  .fp-row .st-t b{font-weight:500;font-size:16px}
+  .fp-empty{margin:0;padding:14px 16px;color:var(--muted);font-size:15px}
+  .fp-rez{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -18px;padding:0 18px 4px;scroll-padding-inline:18px;scrollbar-width:none}
+  .fp-rez::-webkit-scrollbar{display:none}
+  .fp-rc{flex:none;width:132px;scroll-snap-align:start;border:0;background:#fff;border-radius:16px;padding:0 0 10px;overflow:hidden;text-align:left;font:inherit;color:var(--ink);cursor:pointer}
+  .fp-rc b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;font-weight:600;line-height:1.25;margin:8px 10px 0}
+  .fp-img{display:grid;place-items:center;width:100%;aspect-ratio:1;background:color-mix(in srgb,#d98e30 12%,#fff);font-size:34px;overflow:hidden}
+  .fp-img img{width:100%;height:100%;object-fit:cover;display:block}
+  .fp-all .fp-img{background:rgba(118,118,128,.1);color:var(--tint);font-size:40px;font-weight:300}
+  .fp-gym{padding:14px 14px 12px}
+  .fp-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .fp-tiles>div{display:flex;flex-direction:column;background:rgba(118,118,128,.08);border-radius:12px;padding:10px 10px 8px}
+  .fp-tiles b{font-size:22px;font-weight:700;color:#5a5bb8;font-variant-numeric:tabular-nums}
+  .fp-tiles span{font-size:12px;color:var(--muted)}
+  .fp-bars{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;align-items:end;height:74px;margin-top:14px}
+  .fp-bars span{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}
+  .fp-bars i{display:block;width:100%;max-width:22px;border-radius:5px;background:#5a5bb8}
+  .fp-bars i.z{background:rgba(118,118,128,.18)}
+  .fp-bars em{font-style:normal;font-size:10px;color:var(--muted);height:13px;margin-top:3px}
+  .fp-danger{margin-top:22px!important}
+  .fp-danger .st-row{justify-content:center;color:var(--red);font-weight:500}
+  .fp-load{display:flex;align-items:center;justify-content:center;gap:10px;padding:34px 0;color:var(--muted);font-size:15px}
+  .fp-spin{width:18px;height:18px;border-radius:50%;border:2.2px solid rgba(118,118,128,.25);border-top-color:var(--muted);animation:fp-r .8s linear infinite}
+  @keyframes fp-r{to{transform:rotate(360deg)}}
+  .fp-as{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.28);display:flex;align-items:flex-end;justify-content:center;padding:0 8px calc(8px + env(safe-area-inset-bottom,0px));animation:hig-fade .2s ease-out}
+  .fp-as-in{width:100%;max-width:440px;display:flex;flex-direction:column;gap:8px;animation:fp-up .32s cubic-bezier(.2,.9,.25,1)}
+  .fp-as.out{opacity:0;transition:opacity .2s}
+  @keyframes fp-up{from{transform:translateY(110%)}}
+  .fp-as-g{background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-radius:14px;overflow:hidden}
+  .fp-as-g p{margin:0;padding:13px 16px;text-align:center;font-size:13px;color:var(--muted);line-height:1.35;border-bottom:.5px solid #d1d1d6}
+  .fp-as-g button,.fp-as-c{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:57px;border:0;background:none;font:inherit;font-size:19px;color:var(--tint);cursor:pointer}
+  .fp-as-g button+button{border-top:.5px solid #d1d1d6}
+  .fp-as-g button.red{color:var(--red)}
+  .fp-as-g button:disabled{color:#a1a1a6}
+  .fp-as-c{background:#fff;border-radius:14px;font-weight:600}
+  .fp-toast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:2147483001;background:rgba(30,30,32,.9);color:#fff;font-size:14px;font-weight:500;padding:10px 16px;border-radius:999px;animation:fp-dn .3s ease-out;transition:opacity .3s}
+  .fp-toast.out{opacity:0}
+  @keyframes fp-dn{from{transform:translate(-50%,-30px);opacity:0}}
+  .fp-zoom{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.85);display:grid;place-items:center;padding:24px}
+  .fp-zoom img{max-width:100%;max-height:80dvh;border-radius:50%;aspect-ratio:1;object-fit:cover}
+  .fr-row.st-row{width:100%}
   /* Knöpfe: Kapseln wie in iOS */
   .btn{border:0!important;border-radius:999px!important;background:var(--fill)!important;color:var(--tint)!important;font-weight:600!important;box-shadow:none!important}
   .btn.primary,.btn.big.primary,.auth-btn:not(.alt):not(.auth-google){background:var(--tint)!important;color:#fff!important;border:0!important;border-radius:999px!important;box-shadow:none!important}
@@ -815,7 +880,7 @@ window.OursPush=(function(){
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-12-100735";
+  const APP_VERSION="2026-11-12-102023";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -852,6 +917,7 @@ window.OursPush=(function(){
     avatar, pub:uid=>{ loadPub(uid); return pubCache.get(uid)||null; },
     refreshPub(uid){ pubCache.delete(uid); loadPub(uid); },
     editProfile(){ if(window.Auth._profileView) window.Auth._profileView(); },
+    openFriend(uid){ if(window.Auth._friendProfile) window.Auth._friendProfile(uid); },
     start(config, type, cb){
     const PAGE = PAGES.find(p=>p.type===type);
     const st=document.createElement("style"); st.textContent=CSS; document.head.appendChild(st); if(window.OursDesign) OursDesign.attach();
@@ -1019,8 +1085,10 @@ window.OursPush=(function(){
         <label>Über mich <small>(optional)</small><textarea id="pfBio" maxlength="140" placeholder="z.B. Koche am liebsten Asiatisch, backe sonntags">${esc(pb.bio||"")}</textarea></label>
         <p class="auth-msg" id="authMsg" hidden></p>
         <button class="auth-btn" type="button" id="pfSave">Speichern</button>
-        <button class="auth-link" type="button" id="pfClose">Abbrechen</button>`,true);
+        <button class="auth-link" type="button" id="pfClose">Abbrechen</button>
+        <button class="auth-link" type="button" id="pfPreview">So sehen dich deine Freunde ›</button>`,true);
       $a("#pfClose").onclick=hide;
+      $a("#pfPreview").onclick=()=>friendProfile(user.uid,"profile");
       $a("#pfPick").onclick=()=>$a("#pfFile").click();
       $a("#pfDrop").onclick=()=>{ photo=null; $a("#pfPrev").textContent=initial($a("#pfIn").value||profile.name); $a("#pfDrop").hidden=true; $a("#pfPick").textContent="Profilbild wählen"; };
       $a("#pfFile").onchange=async e=>{
@@ -1266,8 +1334,7 @@ window.OursPush=(function(){
         <form class="st-grp fr-add" id="frAdd" autocomplete="off"><input type="text" id="frIn" maxlength="40" placeholder="Freundescode eingeben" aria-label="Freundescode" autocapitalize="characters"><button type="submit" id="frAddBtn">Senden</button></form>
         <p class="auth-msg${isErr?" err":""}" id="authMsg"${msgText?"":" hidden"}>${esc(msgText||"")}</p>
         <p class="auth-sec">Deine Freunde${fl.length?` · ${fl.length}`:""}</p>
-        ${fl.length?`<div class="st-grp">${fl.map(([id,f])=>`<div class="fr-row">${avatar(id,f.name,44)}<span class="st-t"><b>${esc(f.name||"Freund")}</b><small>Freunde seit ${since(f.since)}</small></span>
-          <button type="button" class="fr-rm${frConfirm===id?" sure":""}" data-fr-rm="${esc(id)}">${frConfirm===id?"Entfernen":"•••"}</button></div>`).join("")}</div>`
+        ${fl.length?`<div class="st-grp">${fl.map(([id,f])=>`<button type="button" class="fr-row st-row" data-fr-open="${esc(id)}">${avatar(id,(pubCache.get(id)||{}).name||f.name,44)}<span class="st-t"><b>${esc((pubCache.get(id)||{}).name||f.name||"Freund")}</b><small>Freunde seit ${since(f.since)}</small></span><i class="chev">›</i></button>`).join("")}</div>`
           :`<div class="st-grp"><div class="fr-empty"><b>Noch keine Freunde</b><span>Teile oben deinen Link oder gib den Code eines Freundes ein.</span></div></div>`}
         <button type="button" id="frClose" hidden>Fertig</button>`,true);
       $a("#frClose").onclick=()=>{ friendsOpen=false; frConfirm=null; hide(); };
@@ -1286,19 +1353,139 @@ window.OursPush=(function(){
         const target=`${p.file}#join-${x.sid}-${x.code}`;
         if(p.type===type){ history.replaceState(null,"",target); location.reload(); } else location.href=target;
       });
-      screen.querySelectorAll("[data-fr-rm]").forEach(b=>b.onclick=async()=>{
-        const id=b.dataset.frRm; if(frConfirm!==id){ frConfirm=id; friendsView(); return; }
-        frConfirm=null;
-        await db.ref(`friends/${user.uid}/${id}`).remove().catch(()=>{});
-        await db.ref(`friends/${id}/${user.uid}`).remove().catch(()=>{});
-      });
+      screen.querySelectorAll("[data-fr-open]").forEach(b=>b.onclick=()=>friendProfile(b.dataset.frOpen,"friends"));
     }
-    // Freund direkt zu dieser Liste einladen (landet bei ihm unter "Freunde")
-    async function inviteFriend(fid){
+    async function removeFriend(id){
+      await db.ref(`friends/${user.uid}/${id}`).remove().catch(()=>{});
+      await db.ref(`friends/${id}/${user.uid}`).remove().catch(()=>{});
+    }
+
+    /* ---------- Profil eines Freundes (wie eine Kontaktkarte in iOS) ---------- */
+    const FP_TYPES=["calendar","trips","dates","recipes","gym","chores"];
+    let fpUid=null, fpBack=null, fpData=null, fpSent={};
+    const fpIc={
+      msg:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4c4.7 0 8.3 3.2 8.3 7.3s-3.6 7.3-8.3 7.3c-1.1 0-2.1-.2-3-.5L4.5 19.6l1.2-3.5a6.9 6.9 0 0 1-2-4.8C3.7 7.2 7.3 4 12 4z" fill="currentColor"/></svg>',
+      inv:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
+      book:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h9.5A2.5 2.5 0 0 1 17 7v13H7.5A2.5 2.5 0 0 1 5 17.5z" fill="currentColor"/><path d="M17 7h1.5A1.5 1.5 0 0 1 20 8.5V20h-3" fill="currentColor" opacity=".55"/></svg>',
+      more:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="1.9" fill="currentColor"/><circle cx="12" cy="12" r="1.9" fill="currentColor"/><circle cx="18" cy="12" r="1.9" fill="currentColor"/></svg>'};
+    function fpActionSheet(title,opts){
+      const o=document.createElement("div"); o.className="fp-as";
+      o.innerHTML=`<div class="fp-as-in" role="dialog" aria-label="${esc(title||"Aktionen")}"><div class="fp-as-g">${title?`<p>${esc(title)}</p>`:""}${opts.map((x,i)=>`<button type="button" data-i="${i}"${x.red?' class="red"':""}${x.off?" disabled":""}>${x.html||esc(x.label)}</button>`).join("")}</div><button type="button" class="fp-as-c">Abbrechen</button></div>`;
+      o.onclick=e=>{ const b=e.target.closest("[data-i]"); if(b){ if(b.disabled) return; o.classList.add("out"); setTimeout(()=>o.remove(),200); opts[+b.dataset.i].act(); return; }
+        if(e.target===o||e.target.closest(".fp-as-c")){ o.classList.add("out"); setTimeout(()=>o.remove(),200); } };
+      document.body.appendChild(o);
+    }
+    async function inviteTo(fid,t,sid){
       const code=rand(20);
       await db.ref(`spaces/${sid}/invites/${code}`).set({by:user.uid,at:Date.now(),for:fid});
-      await db.ref(`inbox/${fid}`).push().set({type,sid,code,from:user.uid,fromName:myName(),at:Date.now()});
+      await db.ref(`inbox/${fid}`).push().set({type:t,sid,code,from:user.uid,fromName:myName(),at:Date.now()});
     }
+    async function loadFriendProfile(fid){
+      const once=p=>db.ref(p).once("value").then(s=>s.val()).catch(()=>null);
+      const me=fid===user.uid, todayIso=(()=>{ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); })();
+      const [pb,shelf,posts,mySp]=await Promise.all([once(`pub/${fid}`),once(`shelf/${fid}`),once(`posts/${fid}`),me?null:once(`users/${user.uid}/spaces`)]);
+      if(pb){ pubCache.set(fid,pb); }
+      const d={uid:fid,pub:pb||{},posts:Object.values(posts||{}).filter(p=>p&&p.at).length,recipes:null,gym:null,shared:[],invite:[],shelf:shelf||{}};
+      const sh=d.shelf, jobs=[];
+      if(sh.recipes) jobs.push(once(`spaces/${sh.recipes}/recipes`).then(rs=>{ const list=Object.entries(rs||{}).map(([id,r])=>({id,...r})).filter(r=>r&&typeof r==="object");
+        const t=r=>r.at||r.createdAt||r.created||r.added||0;
+        d.recipes={sid:sh.recipes,n:list.length,list:list.sort((a,b)=>t(b)-t(a)||String(a.title||"").localeCompare(String(b.title||""))).slice(0,10)}; }));
+      if(sh.gym) jobs.push(Promise.all([once(`spaces/${sh.gym}/sessions`),once(`spaces/${sh.gym}/templates`)]).then(([se,tp])=>{
+        const endAt=x=>typeof x.end==="number"&&x.end>1e11?x.end:(x.start||0)+(x.dur||0)*1000;
+        const list=Object.entries(se||{}).map(([id,x])=>({id,...x})).filter(x=>x.end&&x.by===fid).map(x=>({...x,at:endAt(x)})).sort((a,b)=>b.at-a.at);
+        const m0=new Date(); m0.setDate(1); m0.setHours(0,0,0,0);
+        const month=list.filter(x=>x.at>=m0.getTime());
+        const wk=t=>{ const x=new Date(t); x.setHours(0,0,0,0); x.setDate(x.getDate()-((x.getDay()+6)%7)); return x.getTime(); };
+        const weeks={}; list.forEach(x=>{ const w=wk(x.at); weeks[w]=(weeks[w]||0)+1; });
+        let w=wk(Date.now()); if(!weeks[w]) w=wk(w-3*864e5); let streak=0; while(weeks[w]){ streak++; w=wk(w-3*864e5); }
+        const bars=[]; let b=wk(Date.now()); for(let i=0;i<8;i++){ bars.unshift({w:b,n:weeks[b]||0}); b=wk(b-3*864e5); }
+        d.gym={n:month.length,mins:Math.round(month.reduce((a,x)=>a+(+x.dur||0),0)/60),streak,bars,last:list.slice(0,3).map(x=>({title:((tp||{})[x.tpl]||{}).title||"Training",at:x.at,min:Math.round((+x.dur||0)/60)}))}; }));
+      if(!me) FP_TYPES.forEach(t=>{ const sid=(mySp||{})[t]; if(!sid) return; jobs.push(once(`spaces/${sid}/access`).then(async acc=>{ if(!acc) return;
+        if(!acc[fid]){ d.invite.push({t,sid}); return; }
+        let sub="";
+        try{
+          if(t==="calendar"){ const ev=(await once(`spaces/${sid}/events`))||{}; const nx=Object.values(ev).filter(e=>e&&e.date&&e.date>=todayIso&&e.kind!=="rem").sort((a,b)=>(a.date+(a.start||"")).localeCompare(b.date+(b.start||"")))[0];
+            sub=nx?`Nächster Termin: ${nx.title||"Termin"} · ${new Date(nx.date+"T12:00").toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"})}`:"Gemeinsamer Kalender"; }
+          else if(t==="trips"){ const tr=(await once(`spaces/${sid}/trips`))||{}; const nx=Object.values(tr).filter(x=>x&&x.from&&(x.to||x.from)>=todayIso).sort((a,b)=>a.from.localeCompare(b.from))[0];
+            if(nx){ const n=Math.round((new Date(nx.from+"T12:00")-new Date(todayIso+"T12:00"))/864e5); sub=`Nächste Reise: ${nx.dest||"Reise"} · ${n<=0?"gerade unterwegs":n===1?"morgen":`in ${n} Tagen`}`; } else sub="Gemeinsame Reisen"; }
+          else if(t==="dates"){ const n=Object.keys((await once(`spaces/${sid}/ideas`))||{}).length; sub=`${n} ${n===1?"Idee":"Ideen"} gesammelt`; }
+          else if(t==="recipes"){ const n=Object.keys((await once(`spaces/${sid}/recipes`))||{}).length; sub=`${n} ${n===1?"Rezept":"Rezepte"} gemeinsam`; }
+          else if(t==="chores"){ const n=Object.keys((await once(`spaces/${sid}/chores`))||{}).length; sub=`${n} ${n===1?"Aufgabe":"Aufgaben"} im Haushalt`; }
+          else if(t==="gym") sub="Gemeinsamer Trainingsplan";
+        }catch(e){}
+        d.shared.push({t,sid,sub}); })); });
+      await Promise.all(jobs);
+      d.shared.sort((a,b)=>FP_TYPES.indexOf(a.t)-FP_TYPES.indexOf(b.t)); d.invite.sort((a,b)=>FP_TYPES.indexOf(a.t)-FP_TYPES.indexOf(b.t));
+      return d;
+    }
+    function friendProfile(fid,back){
+      if(!fid) return;
+      if(fpUid!==fid){ fpData=null; fpSent={}; }
+      fpUid=fid; fpBack=back||null; friendsOpen=false;
+      renderFriendProfile();
+      if(!fpData) loadFriendProfile(fid).then(d=>{ if(fpUid!==fid) return; fpData=d; if(screen&&!screen.hidden&&screen.querySelector(".fp")) renderFriendProfile(); }).catch(()=>{});
+    }
+    function renderFriendProfile(){
+      const fid=fpUid, me=fid===user.uid, f=friends[fid]||{}, d=fpData, pb=(d&&d.pub)||pubCache.get(fid)||{};
+      const name=me?myName():(pb.name||f.name||"Freund"), first=esc(name.split(" ")[0]);
+      const G=t=>GRID.find(g=>g.type===t)||{};
+      const isFriend=me||!!friends[fid];
+      const dt=t=>new Date(t).toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"});
+      const sec=(t,label,body,foot)=>`<p class="auth-sec fp-sec"><span class="fp-dot" style="background:${G(t).color}">${G(t).ic}</span>${label}</p>${body}${foot?`<p class="fp-foot">${foot}</p>`:""}`;
+      let h=`<div class="fp">
+        <div class="fp-hero">${avatar(fid,name,104)}<h3>${esc(name)}</h3>
+          ${pb.bio?`<p class="fp-bio">${esc(pb.bio)}</p>`:me?`<p class="fp-bio muted">Noch keine Beschreibung. Unter „Mein Profil“ kannst du ein paar Worte über dich schreiben.</p>`:""}
+          <small>${me?"So sehen dich deine Freunde":f.since?`Freunde seit ${new Date(f.since).toLocaleDateString("de-DE",{month:"long",year:"numeric"})}`:""}</small></div>`;
+      if(!me&&isFriend) h+=`<div class="fp-acts">
+          <a class="fp-act" href="chat.html#with-${esc(fid)}">${fpIc.msg}<span>Nachricht</span></a>
+          <button type="button" class="fp-act" id="fpInv"${d&&!d.invite.length?" disabled":""}>${fpIc.inv}<span>Einladen</span></button>
+          <button type="button" class="fp-act" id="fpRez"${d&&!d.recipes?" disabled":""}>${fpIc.book}<span>Rezepte</span></button>
+          <button type="button" class="fp-act" id="fpMore">${fpIc.more}<span>Mehr</span></button></div>`;
+      if(!d){ h+=`<div class="fp-load"><span class="fp-spin"></span>Profil wird geladen …</div></div>`; }
+      else{
+        h+=`<div class="st-grp fp-stats"><div><b>${d.recipes?d.recipes.n:"–"}</b><span>Rezepte</span></div><div><b>${d.gym?d.gym.n:"–"}</b><span>Trainings im ${new Date().toLocaleDateString("de-DE",{month:"short"}).replace(".","")}</span></div><div><b>${d.posts}</b><span>Beiträge</span></div></div>`;
+        if(!me&&d.shared.length) h+=`<p class="auth-sec">Gemeinsam</p><div class="st-grp">${d.shared.map(x=>`<a class="st-row fp-row" href="${G(x.t).file}"><span class="st-ic" style="background:${G(x.t).color}">${G(x.t).ic}</span><span class="st-t"><b>${esc(G(x.t).label)}</b><small>${esc(x.sub||"")}</small></span><i class="chev">›</i></a>`).join("")}</div>`;
+        // Rezepte
+        if(d.recipes&&d.recipes.n) h+=sec("recipes","Rezepte",`<div class="fp-rez">${d.recipes.list.map(r=>`<button type="button" class="fp-rc" data-rez="${esc(r.id)}"><span class="fp-img" data-ph="${esc(/^[\w-]{4,80}$/.test(r.cover||"")?r.cover:"")}">🍝</span><b>${esc(r.title||"Ohne Namen")}</b></button>`).join("")}
+            <button type="button" class="fp-rc fp-all" id="fpRezAll"><span class="fp-img">›</span><b>Alle ${d.recipes.n} ansehen</b></button></div>`);
+        else h+=sec("recipes","Rezepte",`<div class="st-grp"><p class="fp-empty">${me?"Du teilst deine Rezepte gerade nicht mit Freunden.":`${first} teilt die eigenen Rezepte gerade nicht.`}</p></div>`,me?"Freigeben kannst du sie auf der Seite Rezepte unter „Freunde“.":"");
+        // Gym
+        if(d.gym){ const g=d.gym, mx=Math.max(1,...g.bars.map(b=>b.n));
+          h+=sec("gym","Training",`<div class="st-grp"><div class="fp-gym">
+              <div class="fp-tiles"><div><b>${g.n}</b><span>Trainings</span></div><div><b>${g.mins}</b><span>Minuten</span></div><div><b>${g.streak}</b><span>${g.streak===1?"Woche":"Wochen"} in Folge</span></div></div>
+              <div class="fp-bars" aria-label="Trainings der letzten 8 Wochen">${g.bars.map((b,i)=>`<span title="${b.n}"><i style="height:${Math.max(6,Math.round(b.n/mx*100))}%"${b.n?"":' class="z"'}></i><em>${i===7?"jetzt":""}</em></span>`).join("")}</div></div>
+            ${g.last.map(x=>`<div class="st-row fp-row"><span class="st-t"><b>${esc(x.title)}</b><small>${dt(x.at)}${x.min?` · ${x.min} Min.`:""}</small></span></div>`).join("")||`<p class="fp-empty">Noch kein Training abgeschlossen.</p>`}</div>`,"Diesen Monat und die letzten 8 Wochen.");
+        }else h+=sec("gym","Training",`<div class="st-grp"><p class="fp-empty">${me?"Du teilst dein Training gerade nicht mit Freunden.":`${first} teilt das Training gerade nicht.`}</p></div>`,me?"Freigeben kannst du es auf der Seite Gym.":"");
+        if(!me&&isFriend) h+=`<div class="st-grp fp-danger"><button type="button" class="st-row" id="fpRemove">Freund entfernen</button></div>`;
+        if(!me&&!isFriend) h+=`<p class="fp-foot">Ihr seid nicht mehr befreundet.</p>`;
+        h+=`</div>`;
+      }
+      show(name,"",h,true);
+      const hd=screen.querySelector(".auth-head"), close=()=>{ fpUid=null; hide(); };
+      if(hd){ const h2=hd.querySelector("h2"); if(h2) h2.outerHTML=fpBack?`<button type="button" class="fp-back" id="fpBack"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>${fpBack==="profile"?"Profil":"Freunde"}</button>`:`<span></span>`;
+        hd.insertAdjacentHTML("beforeend",'<button type="button" class="auth-done" id="fpDone">Fertig</button>'); }
+      $a("#fpDone").onclick=close;
+      const bk=$a("#fpBack"); if(bk) bk.onclick=()=>{ const b=fpBack; fpUid=null; b==="profile"?profileView():friendsView(); };
+      screen.querySelector(".auth-card").classList.add("fp-card");
+      if(!d) return;
+      // Titelbilder der Rezepte nachladen
+      if(d.recipes) screen.querySelectorAll(".fp-img[data-ph]").forEach(el=>{ const id=el.dataset.ph; if(!id) return;
+        db.ref(`spaces/${d.recipes.sid}/photos/${id}`).once("value").then(s=>{ const v=s.val(); if(typeof v==="string"&&v.startsWith("data:image/")){ el.innerHTML=`<img src="${v}" alt="">`; } }).catch(()=>{}); });
+      const goRez=hash=>{ if(type==="recipes"&&window.OursRezHash){ hide(); fpUid=null; window.OursRezHash(hash); } else location.href="rezepte.html#"+hash; };
+      screen.querySelectorAll("[data-rez]").forEach(b=>b.onclick=()=>goRez(`frr~${fid}~${d.recipes.sid}~${b.dataset.rez}`));
+      const all=$a("#fpRezAll"); if(all) all.onclick=()=>goRez(`prof~${fid}`);
+      const rz=$a("#fpRez"); if(rz) rz.onclick=()=>{ if(d.recipes) goRez(`prof~${fid}`); };
+      const inv=$a("#fpInv"); if(inv) inv.onclick=()=>fpActionSheet(`${name} einladen zu …`,d.invite.map(x=>({html:`<span class="fp-dot" style="background:${G(x.t).color}">${G(x.t).ic}</span>${esc(G(x.t).label)}${fpSent[x.t]?" · gesendet":""}`,off:!!fpSent[x.t],act:async()=>{
+        try{ await inviteTo(fid,x.t,x.sid); fpSent[x.t]=1; fpToast(`Einladung zu ${G(x.t).label} gesendet`); }catch(e){ fpToast("Die Einladung hat nicht geklappt."); } }})));
+      const rmv=()=>fpActionSheet(`${name} als Freund entfernen? Ihr seht dann keine Rezepte und Trainings mehr voneinander.`,[{label:"Freund entfernen",red:true,act:async()=>{ await removeFriend(fid); fpUid=null; friendsView(); }}]);
+      const more=$a("#fpMore"); if(more) more.onclick=()=>fpActionSheet(name,[
+        ...(okPhoto(pb.photo)?[{label:"Profilbild ansehen",act:()=>{ const o=document.createElement("div"); o.className="fp-zoom"; o.innerHTML=`<img src="${pb.photo}" alt="Profilbild von ${esc(name)}">`; o.onclick=()=>o.remove(); document.body.appendChild(o); }}]:[]),
+        {label:"Freund entfernen",red:true,act:rmv}]);
+      const rm=$a("#fpRemove"); if(rm) rm.onclick=rmv;
+    }
+    function fpToast(t){ const o=document.createElement("div"); o.className="fp-toast"; o.textContent=t; document.body.appendChild(o); setTimeout(()=>o.classList.add("out"),1800); setTimeout(()=>o.remove(),2200); }
+    // Freund direkt zu dieser Liste einladen (landet bei ihm unter "Freunde")
+    async function inviteFriend(fid){ await inviteTo(fid,type,sid); }
 
     /* ---------- Seite ohne Bereich: neu anlegen ---------- */
     function setupView(problem){
@@ -1439,7 +1626,7 @@ window.OursPush=(function(){
         }
         try{ const pb=(await db.ref(`pub/${u.uid}`).once("value")).val()||{}; pubCache.set(u.uid,pb);
           if(pb.name!==profile.name) await db.ref(`pub/${u.uid}/name`).set(profile.name); pubCache.get(u.uid).name=profile.name; }catch(e){}
-        window.Auth._profileView=profileView; window.Auth.me=u.uid;
+        window.Auth._profileView=profileView; window.Auth._friendProfile=uid=>friendProfile(uid,null); window.Auth.me=u.uid;
         installMenu();
         db.ref(`users/${u.uid}/settings`).on("value",s=>{ const v=s.val()||{};
           Object.entries(KC_KEY).forEach(([t,k])=>applyKcal(t,typeof v[k]==="boolean"?v[k]:v.kcal===true));
@@ -1510,7 +1697,7 @@ function postHtml(it){
   if(it.k==="gym"){ text=`${first} hat ein Training abgeschlossen: <strong>${esc(it.title)}</strong>`; extra=`<div class="pmeta">${it.dur?`<span>⏱️ ${it.dur} Min.</span>`:""}${it.n?`<span>✅ ${it.n} Übungen</span>`:""}</div>`; }
   if(it.k==="cal"){ const d=it.date?new Date(it.date+"T12:00").toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"}):""; text=`${first} hat einen Termin eingetragen: <strong>${esc(it.title)}</strong>`; extra=`<div class="pmeta"><span>📅 ${esc(d)}${it.start?` · ${esc(it.start)} Uhr`:""}</span></div>`; }
   const cs=Object.entries(it.comments||{}).filter(([,x])=>x&&x.text).sort((a,b)=>a[1].at-b[1].at), n=cs.length, idx=items.indexOf(it);
-  return `<article class="post"><div class="ph">${av(it.fid,it.name,38)}<span class="who"><b>${esc(it.name)}</b><small>${ago(it.at)}</small></span><span class="src" style="--c:${c}">${ic} ${lab}</span></div>
+  return `<article class="post"><div class="ph"><button type="button" class="pwho" data-fp="${esc(it.fid)}" aria-label="Profil von ${esc(it.name)}">${av(it.fid,it.name,38)}<span class="who"><b>${esc(it.name)}</b><small>${ago(it.at)}</small></span></button><span class="src" style="--c:${c}">${ic} ${lab}</span></div>
     <a class="pbody" href="${href}"><p class="pt">${text}</p>${extra}</a>
     <div class="pact"><button type="button" class="pcom" data-com="${idx}" aria-label="Kommentieren"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4c4.7 0 8.3 3.2 8.3 7.3s-3.6 7.3-8.3 7.3c-1.1 0-2.1-.2-3-.5L4.5 19.6l1.2-3.5a6.9 6.9 0 0 1-2-4.8C3.7 7.2 7.3 4 12 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>${n?`<span>${n}</span>`:""}</button></div>
     ${n?`<div class="cprev">${n>2?`<button type="button" class="call" data-com="${idx}">Alle ${n} Kommentare ansehen</button>`:""}${cs.slice(-2).map(([,x])=>`<p><b>${esc((x.name||"").split(" ")[0]||"Jemand")}</b> ${esc(x.text)}</p>`).join("")}</div>`:""}
@@ -1539,6 +1726,7 @@ document.addEventListener("submit",async e=>{ if(e.target.id!=="cmForm") return;
   catch(err){ $("#status").textContent="Der Kommentar konnte nicht gespeichert werden."; } });
 document.addEventListener("input",e=>{ if(e.target.id==="cmIn") $("#cmSend").disabled=!e.target.value.trim(); });
 document.addEventListener("click",e=>{
+  const fp=e.target.closest("[data-fp]"); if(fp){ e.preventDefault(); if(window.Auth&&Auth.openFriend) Auth.openFriend(fp.dataset.fp); return; }
   const cm=e.target.closest("[data-com]"); if(cm){ e.preventDefault(); return openComments(+cm.dataset.com); }
   if(e.target.id==="cm"||e.target.closest("#cmClose")){ $("#cm").hidden=true; open=null; return; }
   const cd=e.target.closest("[data-cdel]"); if(cd&&open!=null){ const it=items[open], cid=cd.dataset.cdel; delete it.comments[cid]; db.ref(it.cpath+"/"+cid).remove().catch(()=>{}); paintComments(); render(); return; }
