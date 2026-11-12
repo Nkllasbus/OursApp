@@ -29,13 +29,13 @@ Ours ist eine private Web-App für ein Paar bzw. eine WG (Niklas, GitHub `Nkllas
 
 ## Daten (Firebase)
 - `spaces/<sid>/…` gemeinsame Bereiche je Seite (`users/<uid>/spaces/<typ>` zeigt auf den Bereich). Typen: dates, recipes, chores, budget, gym, calendar, trips.
-  - Kalender: `events/<id>` mit `rep` ({f:day|week|month|year, n, days, until}), `skip`, `al` (Hinweise je Nutzer: Minuten vorher).
+  - Kalender: `events/<id>` mit `rep` ({f:day|week|month|year, n, days, until}), `skip`, `al` (Hinweise je Nutzer: Minuten vorher), `kind:"rem"` (Erinnerung, abhaken über `doneOn[datum]`), `inv` (Eingeladene), `url`.
   - Reisen: `trips/<id>` mit pack, todo, plan, costs, info.
   - Gym: `workouts/<id>` mit `al` (Hinweise).
 - `users/<uid>/fin/…` privates Budget (Konten, Umsätze `tx`, Regeln, Verträge, Enable-Banking-Sitzungen `eb`).
   - Reiter „Budgets“ (Gehalt einteilen): `fin.budgets` (Kategorie → Cent je Gehaltszeitraum), `fin.meta.salaryAmt` (eigener Gehaltsbetrag), `fin.meta.extraInc` (weitere Einnahmen {n,a,m: jeden Monat, p: Zeitraum-Start}), `fin.meta.countOtherInc`. Zeitraum = letztes Gehalt bis Tag vor dem nächsten. Warnungen bei 80 %/100 % schickt der Worker (`push-budget`, auch für Abbuchungen aus dem Cron).
 - `users/<uid>/home/{budget,gym}` Kurzinfos für Startseite und Kalender.
-- Feed (`feed.html`, Tab in der Leiste): zeigt nur Freunde-Aktivität – Rezepte (`posts/<uid>`), abgeschlossene Trainings (`shelf/<uid>/gym` → `sessions`) und neue Termine anderer im geteilten Kalender (nur wenn `access` > 1 Person). Budget, Mail, Haushalt und der Rest erscheinen bewusst nicht.
+- Feed (`feed.html`, Tab in der Leiste): zeigt nur Freunde-Aktivität – Rezepte (`posts/<uid>`), abgeschlossene Trainings (`shelf/<uid>/gym` → `sessions`) und neue Termine anderer im geteilten Kalender (nur wenn `access` > 1 Person). Budget, Mail, Haushalt und der Rest erscheinen bewusst nicht. Kommentare wie bei Instagram: Rezepte `posts/<uid>/<pid>/comments`, Trainings `posts/<uid>/g_<sessionId>/comments` (ohne `at`, erscheint daher nicht als Beitrag), Termine `spaces/<kal>/events/<id>/comments`; Kommentar = {by,name,text,at}.
 - `users/<uid>/settings` (kcal-Schalter, theme, push-Kategorien).
 
 ## Cloudflare-Einstellungen (macht Niklas)

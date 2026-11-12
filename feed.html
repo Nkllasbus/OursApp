@@ -29,7 +29,7 @@ header.brand .wordmark{font-weight:800}
 .status:empty{display:none}
 .filters{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:2px 0 10px}
 .filters::-webkit-scrollbar{display:none}
-.post{display:block;background:var(--surface);border-radius:20px;padding:14px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.post{display:block;color:inherit;background:var(--surface);border-radius:20px;padding:14px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
 .ph{display:flex;align-items:center;gap:10px}
 .ph .who{flex:1;min-width:0;display:flex;flex-direction:column}
 .ph b{font-weight:600;font-size:.98rem}
@@ -48,6 +48,35 @@ header.brand .wordmark{font-weight:800}
 .day{margin:14px 4px 8px;font-size:.8rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
 .skel{height:120px;border-radius:20px;background:linear-gradient(90deg,#ececf1,#f6f6f9,#ececf1);background-size:200% 100%;animation:sk 1.2s infinite;margin-bottom:12px}
 @keyframes sk{to{background-position:-200% 0}}
+.post .pbody{display:block;color:inherit}
+.pact{display:flex;gap:14px;margin-top:10px}
+.pcom{display:inline-flex;align-items:center;gap:5px;border:0;background:none;padding:2px 0;color:var(--ink);font-weight:600;font-size:.92rem}
+.pcom svg{width:25px;height:25px}
+.cprev{margin-top:6px;display:flex;flex-direction:column;gap:3px}
+.cprev p{margin:0;font-size:.93rem;line-height:1.35}
+.cprev b{font-weight:600}
+.call{border:0;background:none;padding:0;color:var(--muted);font-size:.9rem;text-align:left}
+.cadd{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;padding:8px 0 0;color:var(--muted);font-size:.9rem;text-align:left}
+.modal{position:fixed;inset:0;z-index:55;display:grid;grid-template-columns:minmax(0,1fr);place-items:end center;background:rgba(0,0,0,.25)}
+.cm-sheet{width:100%;max-width:560px;height:min(78dvh,640px);background:#fff;border-radius:26px 26px 0 0;display:flex;flex-direction:column;padding:0 0 env(safe-area-inset-bottom,0px)!important}
+.cm-h{display:flex;align-items:center;justify-content:center;position:relative;padding:12px 16px 10px;border-bottom:.5px solid #d1d1d6}
+.cm-h b{font-size:1rem}
+.cm-h button{position:absolute;right:12px;top:8px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(118,118,128,.14);color:var(--muted);font-size:.85rem}
+.cm-list{flex:1;min-height:0;overflow-y:auto;padding:12px 16px}
+.cm{display:flex;gap:10px;margin-bottom:14px}
+.cmb{flex:1;min-width:0}
+.cmb p{margin:0;font-size:.95rem;line-height:1.38;word-wrap:break-word}
+.cmb b{font-weight:600}
+.cmb small{color:var(--muted);font-size:.78rem}
+.cdel{border:0;background:none;padding:0;color:var(--muted);font-size:.78rem;font-weight:600}
+.cmempty{display:flex;flex-direction:column;align-items:center;gap:4px;padding:40px 0;color:var(--muted)}
+.cmempty b{color:var(--ink);font-size:1.05rem}
+.cm-f{display:flex;align-items:center;gap:10px;padding:10px 14px 12px;border-top:.5px solid #d1d1d6}
+.cm-f>span{flex:none}
+.cm-sheet{overflow:hidden;box-sizing:border-box}
+.cm-f input{flex:1 1 0;width:0;min-width:0;border:0;background:rgba(118,118,128,.12);border-radius:999px;padding:10px 14px;font:inherit;font-size:16px;outline:none}
+.cm-f button{flex:none;border:0;background:none;color:var(--accent);font-weight:700;font-size:.95rem;padding:6px 2px}
+.cm-f button:disabled{opacity:.4}
 </style>
 </head>
 <body>
@@ -56,6 +85,11 @@ header.brand .wordmark{font-weight:800}
   <main class="scroll" id="list" aria-live="polite"><div class="skel"></div><div class="skel"></div></main>
   <div class="status" id="status"></div>
 </div>
+<div class="modal" id="cm" hidden><div class="sheet cm-sheet" role="dialog" aria-modal="true" aria-label="Kommentare">
+  <div class="cm-h"><b>Kommentare</b><button type="button" id="cmClose" aria-label="Schließen">✕</button></div>
+  <div class="cm-list" id="cmList"></div>
+  <form class="cm-f" id="cmForm" autocomplete="off"><span id="cmAv"></span><input id="cmIn" maxlength="500" placeholder="Kommentar hinzufügen …" enterkeyhint="send"><button id="cmSend" disabled>Posten</button></form>
+</div></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -729,7 +763,7 @@ window.OursPush=(function(){
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-12-012233";
+  const APP_VERSION="2026-11-12-012539";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1385,18 +1419,18 @@ async function load(){
     const name=(f&&f.name)||"Freund";
     // Rezepte: neue Beiträge
     const posts=(await once(`posts/${fid}`))||{};
-    Object.entries(posts).forEach(([pid,p])=>{ if(p&&p.at>cutoff) out.push({k:"recipe",at:p.at,fid,name,title:p.title||"Rezept",cover:p.cover||null,sid:p.sid||null,cat:p.category||null}); });
+    Object.entries(posts).forEach(([pid,p])=>{ if(p&&p.at>cutoff) out.push({k:"recipe",at:p.at,fid,name,title:p.title||"Rezept",cover:p.cover||null,sid:p.sid||null,cat:p.category||null,cpath:`posts/${fid}/${pid}/comments`,comments:p.comments||{}}); });
     // Gym: abgeschlossene Trainings (nur wenn der Freund seinen Plan teilt)
     const shelf=(await once(`shelf/${fid}`))||{};
     if(shelf.gym){ const [se,tp]=await Promise.all([once(`spaces/${shelf.gym}/sessions`),once(`spaces/${shelf.gym}/templates`)]);
-      Object.values(se||{}).forEach(x=>{ if(!x||!x.end||x.by!==fid) return; const at=typeof x.end==="number"&&x.end>1e11?x.end:(x.start||0)+(x.dur||0)*1000; if(at<cutoff) return;
-        const t=(tp||{})[x.tpl]||{}; out.push({k:"gym",at,fid,name,title:t.title||"Training",dur:Math.round((x.dur||0)/60),n:null}); }); }
+      Object.entries(se||{}).forEach(([xid,x])=>{ if(!x||!x.end||x.by!==fid) return; const at=typeof x.end==="number"&&x.end>1e11?x.end:(x.start||0)+(x.dur||0)*1000; if(at<cutoff) return;
+        const t=(tp||{})[x.tpl]||{}; out.push({k:"gym",at,fid,name,title:t.title||"Training",dur:Math.round((x.dur||0)/60),n:null,cpath:`posts/${fid}/g_${xid}/comments`,comments:((posts||{})["g_"+xid]||{}).comments||{}}); }); }
   }));
   // Kalender: nur wenn er mit jemandem geteilt ist – neue Termine der anderen
   const cal=await once(`users/${me}/spaces/calendar`);
   if(cal){ const acc=(await once(`spaces/${cal}/access`))||{};
     if(Object.keys(acc).length>1){ const [ev,pr]=await Promise.all([once(`spaces/${cal}/events`),once(`spaces/${cal}/profiles`)]);
-      Object.values(ev||{}).forEach(e=>{ if(!e||!e.by||e.by===me||!(e.at>cutoff)) return; out.push({k:"cal",at:e.at,fid:e.by,name:((pr||{})[e.by]||{}).name||"Jemand",title:e.title||"Termin",date:e.date,start:e.allDay?null:e.start||null}); }); } }
+      Object.entries(ev||{}).forEach(([eid,e])=>{ if(!e||!e.by||e.by===me||!(e.at>cutoff)) return; out.push({k:"cal",cpath:`spaces/${cal}/events/${eid}/comments`,comments:e.comments||{},at:e.at,fid:e.by,name:((pr||{})[e.by]||{}).name||"Jemand",title:e.title||"Termin",date:e.date,start:e.allDay?null:e.start||null}); }); } }
   items=out.sort((a,b)=>b.at-a.at).slice(0,80); render();
   try{ localStorage.setItem("ours.feedSeen",String(Date.now())); }catch(e){}
 }
@@ -1408,7 +1442,12 @@ function postHtml(it){
   if(it.k==="recipe"){ text=`${first} hat ein neues Rezept gepostet: <strong>${esc(it.title)}</strong>`; const u=photo(it); if(it.cover) extra=`<div class="pimg">${u?`<img src="${u}" alt="">`:"🍝"}</div>`; }
   if(it.k==="gym"){ text=`${first} hat ein Training abgeschlossen: <strong>${esc(it.title)}</strong>`; extra=`<div class="pmeta">${it.dur?`<span>⏱️ ${it.dur} Min.</span>`:""}${it.n?`<span>✅ ${it.n} Übungen</span>`:""}</div>`; }
   if(it.k==="cal"){ const d=it.date?new Date(it.date+"T12:00").toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"}):""; text=`${first} hat einen Termin eingetragen: <strong>${esc(it.title)}</strong>`; extra=`<div class="pmeta"><span>📅 ${esc(d)}${it.start?` · ${esc(it.start)} Uhr`:""}</span></div>`; }
-  return `<a class="post" href="${href}"><div class="ph">${av(it.fid,it.name,38)}<span class="who"><b>${esc(it.name)}</b><small>${ago(it.at)}</small></span><span class="src" style="--c:${c}">${ic} ${lab}</span></div><p class="pt">${text}</p>${extra}</a>`;
+  const cs=Object.entries(it.comments||{}).filter(([,x])=>x&&x.text).sort((a,b)=>a[1].at-b[1].at), n=cs.length, idx=items.indexOf(it);
+  return `<article class="post"><div class="ph">${av(it.fid,it.name,38)}<span class="who"><b>${esc(it.name)}</b><small>${ago(it.at)}</small></span><span class="src" style="--c:${c}">${ic} ${lab}</span></div>
+    <a class="pbody" href="${href}"><p class="pt">${text}</p>${extra}</a>
+    <div class="pact"><button type="button" class="pcom" data-com="${idx}" aria-label="Kommentieren"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4c4.7 0 8.3 3.2 8.3 7.3s-3.6 7.3-8.3 7.3c-1.1 0-2.1-.2-3-.5L4.5 19.6l1.2-3.5a6.9 6.9 0 0 1-2-4.8C3.7 7.2 7.3 4 12 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>${n?`<span>${n}</span>`:""}</button></div>
+    ${n?`<div class="cprev">${n>2?`<button type="button" class="call" data-com="${idx}">Alle ${n} Kommentare ansehen</button>`:""}${cs.slice(-2).map(([,x])=>`<p><b>${esc((x.name||"").split(" ")[0]||"Jemand")}</b> ${esc(x.text)}</p>`).join("")}</div>`:""}
+    <button type="button" class="cadd" data-com="${idx}">${av(me,"Ich",24)}<span>Kommentar hinzufügen …</span></button></article>`;
 }
 function render(){
   const L=$("#list"); if(items===null) return;
@@ -1418,11 +1457,28 @@ function render(){
   let last=""; list.forEach(it=>{ const d=dayLabel(it.at); if(d!==last){ h+=`<p class="day">${esc(d)}</p>`; last=d; } h+=postHtml(it); });
   L.innerHTML=h;
 }
+let open=null;
+function paintComments(){
+  const it=items[open], cs=Object.entries(it.comments||{}).filter(([,x])=>x&&x.text).sort((a,b)=>a[1].at-b[1].at);
+  $("#cmList").innerHTML=cs.length?cs.map(([cid,x])=>`<div class="cm">${av(x.by,x.name,32)}<div class="cmb"><p><b>${esc(x.name||"Jemand")}</b> ${esc(x.text)}</p><small>${ago(x.at)}${x.by===me||it.fid===me?` · <button type="button" class="cdel" data-cdel="${esc(cid)}">Löschen</button>`:""}</small></div></div>`).join("")
+    :`<div class="cmempty"><b>Noch keine Kommentare</b><span>Schreib den ersten Kommentar.</span></div>`;
+  const L=$("#cmList"); L.scrollTop=L.scrollHeight;
+}
+function openComments(i){ open=i; $("#cmAv").innerHTML=av(me,"Ich",32); paintComments(); $("#cm").hidden=false; setTimeout(()=>$("#cmIn").focus(),250); }
+let myName="";
+document.addEventListener("submit",async e=>{ if(e.target.id!=="cmForm") return; e.preventDefault(); const inp=$("#cmIn"), text=inp.value.trim(); if(!text||open==null) return;
+  const it=items[open], c={by:me,name:myName||"Ich",text:text.slice(0,500),at:Date.now()};
+  try{ const ref=db.ref(it.cpath).push(); it.comments=it.comments||{}; it.comments[ref.key]=c; inp.value=""; $("#cmSend").disabled=true; paintComments(); render(); await ref.set(c); if(window.OursHaptic) OursHaptic(); }
+  catch(err){ $("#status").textContent="Der Kommentar konnte nicht gespeichert werden."; } });
+document.addEventListener("input",e=>{ if(e.target.id==="cmIn") $("#cmSend").disabled=!e.target.value.trim(); });
 document.addEventListener("click",e=>{
+  const cm=e.target.closest("[data-com]"); if(cm){ e.preventDefault(); return openComments(+cm.dataset.com); }
+  if(e.target.id==="cm"||e.target.closest("#cmClose")){ $("#cm").hidden=true; open=null; return; }
+  const cd=e.target.closest("[data-cdel]"); if(cd&&open!=null){ const it=items[open], cid=cd.dataset.cdel; delete it.comments[cid]; db.ref(it.cpath+"/"+cid).remove().catch(()=>{}); paintComments(); render(); return; }
   const f=e.target.closest("[data-f]"); if(f){ filter=f.dataset.f; render(); return; }
   if(e.target.closest("#addFriends")){ const t=document.getElementById("tabMe"); if(t){ t.click(); setTimeout(()=>{ const b=document.querySelector('#pfMenu [data-pf="friends"]'); if(b) b.click(); },150); } }
 });
-Auth.start(firebaseConfig,"feed",(r,info)=>{ if(!info) return; me=info.uid; db=info.db||firebase.database(); load().catch(()=>{ items=items||[]; render(); }); });
+Auth.start(firebaseConfig,"feed",(r,info)=>{ if(!info) return; me=info.uid; myName=info.name||""; db=info.db||firebase.database(); load().catch(()=>{ items=items||[]; render(); }); });
 </script>
 </body>
 </html>
