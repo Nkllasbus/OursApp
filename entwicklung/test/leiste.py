@@ -40,7 +40,7 @@ try:
             check(f"{tag}: Du-Bogen offen", pg.is_visible("#pfMenu"))
             pg.click("#pfMenu [data-pf=settings]"); pg.wait_for_timeout(400)
             check(f"{tag}: Einstellungen öffnen (ohne Dunkelmodus)", pg.is_visible("#psNote") and pg.locator(".auth-theme").count() == 0)
-            pg.click("#stClose"); pg.wait_for_timeout(200)
+            pg.click("#stDone"); pg.wait_for_timeout(200)
             # Pausen-Timer sichtbar über der Leiste
             pg.evaluate("restSec=60; startRest();"); pg.wait_for_timeout(300)
             rb = pg.locator("#restBar").bounding_box()

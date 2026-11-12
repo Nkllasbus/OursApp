@@ -377,8 +377,8 @@ html,body{height:100%}
   body{font-size:17px;line-height:1.35;letter-spacing:-.022em}
   .wrap{background:var(--bg)!important;border:0!important}
   /* Großer Titel wie in iOS */
-  body.ours-tabbed :is(header,#head){padding:calc(10px + env(safe-area-inset-top,0px)) 20px 6px!important;margin-top:0!important;height:auto!important;overflow:visible!important;border:0!important}
-  body.ours-tabbed :is(header,#head) .wordmark{font-size:34px!important;line-height:41px!important;font-weight:700!important;letter-spacing:-.02em!important}
+  body.ours-tabbed :is(header,#head){padding:calc(2px + env(safe-area-inset-top,0px)) 18px 2px!important;margin-top:0!important;height:auto!important;overflow:visible!important;border:0!important}
+  body.ours-tabbed :is(header,#head) .wordmark{font-size:28px!important;line-height:34px!important;font-weight:700!important;letter-spacing:-.02em!important}
   body.ours-tabbed :is(header,#head) .wordmark.pg-title::after{opacity:.35;border-width:0 .06em .06em 0}
   body.hig-scrolled :is(header,#head){box-shadow:0 .5px 0 var(--sep)!important}
   /* Schwebende Glas-Leiste unten (iOS 26) */
@@ -430,6 +430,30 @@ html,body{height:100%}
   .auth-card{border:0!important;box-shadow:0 20px 50px -18px rgba(0,0,0,.35)!important}
   .auth-sec{color:var(--muted)!important;font-size:13px!important;font-weight:400!important;letter-spacing:0!important;text-transform:uppercase}
   #stOut{color:var(--red)!important}
+  /* Einstellungen wie in den iPhone-Einstellungen: Blatt von unten, gruppierte weiße Zeilen, „Fertig“ oben rechts */
+  @media (max-width:600px){.auth-screen.dim{place-items:end center!important;padding:max(40px,env(safe-area-inset-top,0px)) 0 0!important}
+    .auth-screen.dim .auth-card{width:100%!important;max-width:none!important;max-height:100%!important;border-radius:26px 26px 0 0!important;animation:hig-rise .5s var(--hig-spring) backwards!important}}
+  .auth-screen.dim .auth-card{background:#f2f2f7!important;overflow-y:auto;display:flex;flex-direction:column;max-height:calc(100dvh - 32px)}
+  .auth-screen.dim .auth-head{flex:none}
+  .auth-screen.dim .auth-head{background:#f2f2f7!important;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:18px 18px 6px!important}
+  .auth-screen.dim .auth-body{padding:4px 16px calc(24px + env(safe-area-inset-bottom,0px))!important;gap:0!important}
+  .auth-done{flex:none;border:0;border-radius:999px;background:rgba(118,118,128,.14);color:var(--tint);font:inherit;font-weight:600;font-size:15px;padding:8px 16px}
+  .st-grp{background:#fff;border-radius:16px;overflow:hidden;margin:0 0 4px}
+  .st-grp>*{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;margin:0!important;position:relative}
+  .st-grp>*+*::before{content:"";position:absolute;left:16px;right:0;top:0;border-top:.5px solid #d1d1d6}
+  .st-grp .auth-sw{padding:11px 14px!important;min-height:52px}
+  .st-row{display:flex;align-items:center;gap:12px;width:100%;min-height:50px;padding:10px 14px;font:inherit;font-size:16px;text-align:left;color:var(--ink);border:0;background:none;cursor:pointer}
+  .st-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+  .st-t small{font-size:13px;color:var(--muted)}
+  .st-me .st-t b{font-size:19px;font-weight:600}
+  .st-me .ours-av{flex:none}
+  .st-ic,.auth-sw>.st-ic{flex:none!important;width:30px!important;height:30px;border-radius:8px;display:grid!important;place-items:center;color:#fff;margin-right:2px}
+  .st-ic svg{width:18px;height:18px}
+  .chev{font-style:normal;color:#c4c4c7;font-size:22px;line-height:1}
+  .st-out{justify-content:center;color:var(--red)!important;font-weight:600}
+  .auth-screen.dim .auth-sec{margin:20px 16px 6px!important}
+  .st-foot{margin:14px 16px!important;font-size:13px!important;color:var(--muted)!important}
+  .auth-screen.dim .auth-msg{margin:10px 0!important}
   /* Knöpfe: Kapseln wie in iOS */
   .btn{border:0!important;border-radius:999px!important;background:var(--fill)!important;color:var(--tint)!important;font-weight:600!important;box-shadow:none!important}
   .btn.primary,.btn.big.primary,.auth-btn:not(.alt):not(.auth-google){background:var(--tint)!important;color:#fff!important;border:0!important;border-radius:999px!important;box-shadow:none!important}
@@ -939,7 +963,7 @@ window.OursPush=(function(){
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-12-014842";
+  const APP_VERSION="2026-11-12-095135";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1183,26 +1207,34 @@ window.OursPush=(function(){
       screen.querySelectorAll("[data-copy]").forEach(b=>b.onclick=async()=>{ try{ await navigator.clipboard.writeText(b.dataset.copy); b.textContent="Kopiert ✓"; }catch(e){ msg("Kopieren ging nicht. Halte den Link gedrückt.",true); } });
     }
     function settingsView(){
-      show("Einstellungen","",`<p class="auth-sec">Konto</p>
-        <p class="auth-note">Angemeldet als <b>${esc(user.email)}</b></p>
-        <button class="auth-btn alt" type="button" id="stPw">Passwort ändern</button>
+      const IC2={user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+        key:'<svg viewBox="0 0 24 24"><circle cx="8" cy="12" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M11.5 12H20M17 12v3M20 12v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+        bell:'<svg viewBox="0 0 24 24"><path d="M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 2h-14zM10 20.5a2.2 2.2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
+        link:'<svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.2 1.2M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.2-1.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+        gear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'};
+      const ic=(svg,c)=>`<span class="st-ic" style="background:${c}">${svg}</span>`;
+      // Zusatz-Einstellungen der Seite nach Abschnitt gruppieren
+      const groups=[]; (window.Auth.pageSettings||[]).forEach((x,i)=>{ const g=groups.find(g=>g.sec===(x.sec||"Diese Seite"))||(groups.push({sec:x.sec||"Diese Seite",rows:[]}),groups[groups.length-1]);
+        g.rows.push(x.button?`<div class="auth-sw row"><span>${esc(x.label)}<small id="stX${i}n">${x.noteHtml?x.noteHtml():esc(x.note())}</small></span><button type="button" class="auth-mini${x.alt&&x.alt()?" alt":""}" id="stX${i}"${x.disabled&&x.disabled()?" disabled":""}>${esc(x.button())}</button></div>`
+          :`<label class="auth-sw" for="stX${i}"><span>${esc(x.label)}<small id="stX${i}n">${esc(x.note(x.get()))}</small></span><input type="checkbox" id="stX${i}" role="switch"${x.get()?" checked":""}${x.disabled&&x.disabled()?" disabled":""}><i aria-hidden="true"></i></label>`); });
+      show("Einstellungen","",`<div class="st-grp"><button type="button" class="st-row st-me" id="stMe">${avatar(user.uid,profile.name||user.email,52)}<span class="st-t"><b>${esc(profile.name||"Ich")}</b><small>${esc(user.email)}</small></span><i class="chev">›</i></button>
+          <button type="button" class="st-row" id="stPw">${ic(IC2.key,"#8e8e93")}<span class="st-t">Passwort ändern</span><i class="chev">›</i></button></div>
         <p class="auth-msg" id="authMsg" hidden></p>
-        ${KC_KEY[type]?`<p class="auth-sec">Funktionen</p>
-        <label class="auth-sw" for="stKcal"><span>${type==="gym"?"Essen-Tagebuch":"Kalorien & Nährwerte"}<small>${type==="gym"?"Zeigt den Reiter „Essen“: Mahlzeiten eintragen, Kalorien und Nährwerte zählen.":"Zeigt kcal und Nährwerte pro Portion bei deinen Rezepten."}</small></span><input type="checkbox" id="stKcal" role="switch"${kcalOn[type]?" checked":""}><i aria-hidden="true"></i></label>`:""}
-        ${(()=>{ let last=""; return (window.Auth.pageSettings||[]).map((x,i)=>{ const h=x.sec&&x.sec!==last?`<p class="auth-sec">${esc(x.sec)}</p>`:""; last=x.sec||last;
-          if(x.button) return h+`<div class="auth-sw row"><span>${esc(x.label)}<small id="stX${i}n">${x.noteHtml?x.noteHtml():esc(x.note())}</small></span><button type="button" class="auth-mini${x.alt&&x.alt()?" alt":""}" id="stX${i}"${x.disabled&&x.disabled()?" disabled":""}>${esc(x.button())}</button></div>`;
-          return h+`<label class="auth-sw" for="stX${i}"><span>${esc(x.label)}<small id="stX${i}n">${esc(x.note(x.get()))}</small></span><input type="checkbox" id="stX${i}" role="switch"${x.get()?" checked":""}${x.disabled&&x.disabled()?" disabled":""}><i aria-hidden="true"></i></label>`; }).join(""); })()}
+        ${KC_KEY[type]?`<p class="auth-sec">Funktionen</p><div class="st-grp">
+        <label class="auth-sw" for="stKcal"><span>${type==="gym"?"Essen-Tagebuch":"Kalorien & Nährwerte"}<small>${type==="gym"?"Zeigt den Reiter „Essen“: Mahlzeiten eintragen, Kalorien und Nährwerte zählen.":"Zeigt kcal und Nährwerte pro Portion bei deinen Rezepten."}</small></span><input type="checkbox" id="stKcal" role="switch"${kcalOn[type]?" checked":""}><i aria-hidden="true"></i></label></div>`:""}
+        ${groups.map(g=>`<p class="auth-sec">${esc(g.sec)}</p><div class="st-grp">${g.rows.join("")}</div>`).join("")}
         <p class="auth-sec">Mitteilungen</p>
-        <div class="auth-sw row"><span>Mitteilungen aufs Handy<small id="psNote">Wird geprüft …</small></span><button type="button" class="auth-mini" id="psBtn" hidden></button></div>
-        <div id="psCats" hidden>${OursPush.CATS.map(([k,l,n])=>`<label class="auth-sw" for="ps_${k}"><span>${l}<small>${n}</small></span><input type="checkbox" id="ps_${k}" data-pcat="${k}" role="switch"${OursPush.cats[k]?" checked":""}><i aria-hidden="true"></i></label>`).join("")}
-          <button class="auth-link" type="button" id="psTest">Test-Mitteilung schicken</button></div>
+        <div class="st-grp"><div class="auth-sw row">${ic(IC2.bell,"#cf4b42")}<span>Mitteilungen aufs Handy<small id="psNote">Wird geprüft …</small></span><button type="button" class="auth-mini" id="psBtn" hidden></button></div></div>
+        <div id="psCats" hidden><div class="st-grp">${OursPush.CATS.map(([k,l,n])=>`<label class="auth-sw" for="ps_${k}"><span>${l}<small>${n}</small></span><input type="checkbox" id="ps_${k}" data-pcat="${k}" role="switch"${OursPush.cats[k]?" checked":""}><i aria-hidden="true"></i></label>`).join("")}
+          <button type="button" class="st-row" id="psTest"><span class="st-t" style="color:var(--tint,var(--accent))">Test-Mitteilung schicken</span></button></div></div>
         <p class="auth-sec">Kurzbefehle &amp; Siri</p>
-        <div class="auth-sw row"><span>Direkt-Links<small>Für die Kurzbefehle-App, Siri oder ein Widget auf dem Home-Bildschirm.</small></span><button type="button" class="auth-mini alt" id="stLinks">Ansehen</button></div>
-        <p class="auth-sec">Diese Seite</p>
-        <p class="auth-note">${sid?(type==="gym"?`Das ist dein eigener Trainingsplan. Freunde können ihn ansehen, aber nicht ändern.`:`Du bist in ${type==="chores"||type==="budget"?"einem":"einer"} ${esc(PAGE.noun)}. Wer ${type==="chores"?"ihn":type==="budget"?"es":"sie"} sieht, steht unter „Personen bei ${esc(PAGE.label)}“.`):`Für ${esc(PAGE.label)} gibt es noch keine Liste.`}</p>
-        <button class="auth-btn alt" type="button" id="stOut">Abmelden</button>
-        <button class="auth-link" type="button" id="stClose">Schließen</button>`,true);
+        <div class="st-grp"><button type="button" class="st-row" id="stLinks">${ic(IC2.link,"#5a5bb8")}<span class="st-t">Direkt-Links<small>Für die Kurzbefehle-App, Siri oder ein Widget</small></span><i class="chev">›</i></button></div>
+        <p class="auth-note st-foot">${sid?(type==="gym"?`Das ist dein eigener Trainingsplan. Freunde können ihn ansehen, aber nicht ändern.`:`Du bist in ${type==="chores"||type==="budget"?"einem":"einer"} ${esc(PAGE.noun)}. Wer ${type==="chores"?"ihn":type==="budget"?"es":"sie"} sieht, steht unter „Personen bei ${esc(PAGE.label)}“.`):PAGE.noSpace?"":`Für ${esc(PAGE.label)} gibt es noch keine Liste.`}</p>
+        <div class="st-grp"><button type="button" class="st-row st-out" id="stOut">Abmelden</button></div>
+        <button class="auth-link" type="button" id="stClose" hidden>Schließen</button>`,true);
       $a("#stClose").onclick=hide;
+      { const hd=screen.querySelector(".auth-head"); if(hd&&!hd.querySelector(".auth-done")){ hd.insertAdjacentHTML("beforeend",'<button type="button" class="auth-done" id="stDone">Fertig</button>'); hd.querySelector("#stDone").onclick=hide; } }
+      $a("#stMe").onclick=()=>profileView();
       const kc=$a("#stKcal"); if(kc) kc.onchange=()=>{ applyKcal(type,kc.checked); db.ref(`users/${user.uid}/settings/${KC_KEY[type]}`).set(kc.checked).catch(()=>{ msg("Speichern hat nicht geklappt. Prüf die Internetverbindung.",true); }); };
       (window.Auth.pageSettings||[]).forEach((x,i)=>{ const el=$a("#stX"+i); if(!el) return;
         if(x.button){ el.onclick=async()=>{ try{ await x.action(); }catch(err){ msg(err&&err.message||"Das hat nicht geklappt.",true); } if($a("#stX"+i)) settingsView(); }; return; }
