@@ -77,6 +77,9 @@ header p{margin:4px 0 0;color:var(--on-band-muted);font-size:.88rem}
 .add{border:1px dashed var(--line);background:none;color:var(--accent);border-radius:10px;padding:8px 12px;font-weight:600;font-size:.88rem;text-align:left}
 .add:hover{border-color:var(--accent)}
 ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.pp-note{display:flex;flex-direction:column;gap:4px;background:color-mix(in srgb,#2f72c4 9%,#fff);border-radius:14px;padding:12px 14px;margin:0 0 14px;font-size:14px;line-height:1.4}
+.pp-note b{font-size:15px}.pp-note span{color:var(--muted)}
+.pp-keep{align-self:flex-start;border:0;background:none;padding:4px 0 0;color:var(--accent);font:inherit;font-weight:600;font-size:14px;cursor:pointer}
 .pc-head{display:flex;align-items:center;gap:8px}.pc-head h3{margin:0}.pc-head .dot{width:12px;height:12px}
 .pc-sum{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:12px 0 8px}.pc-sum b{font-size:34px;font-weight:700;letter-spacing:-.02em}.pc-sum span{color:var(--muted);font-size:15px}
 .pc-track{display:block!important;height:8px!important;min-height:8px;margin:0 0 6px;border-radius:999px;background:var(--surface2,#ececf0);overflow:hidden}.pc-track>span{display:block!important;height:8px!important;border-radius:999px}
@@ -2141,7 +2144,7 @@ function cleanText(str,acc){
   if(own) x=x.split(own).join(" ");
   return x.replace(/sagt danke|vielen dank|danke|kartenzahlung|girocard|ec[- ]?karte|kartenumsatz|lastschrift|sepa|folgenr\.?|verfalld\.?|ref\.?|mandat|end-to-end|\bnotprovided\b/gi," ")
     .replace(/\b\d{1,2}[./-]\d{1,2}([./-]\d{2,4})?\b|\b\d{1,2}:\d{2}\b/g," ").replace(/\b[a-z]*\d[a-z\d]*\b/gi," ")
-    .replace(/\b(gmbh|ag|se|kg|ug|ohg|e\.?\s?k\.?|co|eu|sarl|s\.?a\.?r\.?l\.?|et cie|s\.?c\.?a\.?|ltd|inc|b\.?v\.?|mbh)\b/gi," ").replace(/[*#/\\,;:|·_]+/g," ").replace(/\s+/g," ").trim();
+    .replace(/\b(gmbh|ag|se|kg|ug|ohg|e\.?\s?k\.?|co|eu|sarl|s\.?a\.?r\.?l\.?|et cie|s\.?c\.?a\.?|ltd|inc|b\.?v\.?|mbh)\b/gi," ").replace(/[*#/\\,;:|·_]+/g," ").replace(/(^|\s)[.\-]+(?=\s|$)/g," ").replace(/\s+/g," ").trim();
 }
 // Anzeigename: eigener Name > bekannter Händler > Händler aus dem Zweck (bei Zahlungsdiensten) > bereinigter Empfänger
 function merchant(t){
@@ -2174,7 +2177,44 @@ function autoCat(t){
   const ai=fin.aicat&&fin.aicat[k]; if(ai&&ai!=="Sonstiges") return ai;   // von Claude, nur wenn es sich sicher war
   return null;
 }
-const catOf=t=>(t.cat&&t.catSrc!=="ai")?t.cat:(autoCat(t)||"Sonstiges");
+/* ---------- PayPal nicht doppelt zählen ----------
+   Mit verbundenem PayPal-Konto taucht jeder PayPal-Einkauf zweimal auf: bei PayPal mit dem vollen Betrag und auf dem Girokonto
+   als Abbuchung „PayPal“ (nur der Rest, wenn PayPal-Guthaben genutzt wurde). Gezählt wird der Einkauf bei PayPal; die passende
+   Abbuchung vom Girokonto und Aufladungen des PayPal-Kontos gelten als Umbuchung. */
+const isPPAcc=a=>!!a&&/paypal/i.test((a.bank||"")+" "+(a.name||""));
+const isPPName=t=>/paypal/i.test(t.name||"")||(!t.name&&/paypal/i.test(t.text||""));
+let ppCache={tx:null,key:"",map:new Map()};
+function ppPairs(){
+  const tx=fin.tx||{}, keep=(fin.meta&&fin.meta.ppKeep)||{}, key=Object.keys(fin.accounts||{}).join(",")+"|"+Object.keys(keep).join(",");
+  if(ppCache.tx===tx&&ppCache.key===key) return ppCache.map;
+  const map=new Map(), from=new Map(), pp=[], bank=[];
+  Object.entries(tx).forEach(([id,t])=>{ if(!t||!t.date||typeof t.amount!=="number"||t.ex) return; const a=fin.accounts[t.acc]; if(!a) return;
+    if(isPPAcc(a)) pp.push({id,...t}); else if(isPPName(t)) bank.push({id,...t}); });
+  if(pp.length&&bank.length){
+    const day=d=>Date.UTC(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8,10))/864e5, used=new Set();
+    const ppOut=pp.filter(t=>t.amount<0), ppIn=pp.filter(t=>t.amount>0);
+    // Abbuchung vom Girokonto → Einkauf bei PayPal (gleicher Händler oder gleicher Betrag, bis 5 Tage auseinander, PayPal-Betrag mindestens so hoch)
+    bank.filter(b=>b.amount<0&&!keep[b.id]).sort((a,b)=>a.date.localeCompare(b.date)).forEach(b=>{
+      const lb=merchKey(b), db=day(b.date); let best=null, score=1e9;
+      ppOut.forEach(p=>{ if(used.has(p.id)) return; const dd=Math.abs(day(p.date)-db); if(dd>5||-p.amount<-b.amount-1) return;
+        const lp=merchKey(p), w1=lb.split(" ")[0], w2=lp.split(" ")[0];
+        const same=!!lb&&lb!=="paypal"&&(lp===lb||(w1.length>=4&&w1===w2)||(lb.length>=5&&lp.includes(lb))||(lp.length>=5&&lb.includes(lp))), exact=p.amount===b.amount; if(!same&&!exact) return;
+        const sc=dd+(exact?0:1)+(same?0:2); if(sc<score){ score=sc; best=p; } });
+      if(best){ used.add(best.id); map.set(b.id,{with:best.id,kind:"bank"}); from.set(best.id,b); } });
+    // Geld vom Girokonto aufs PayPal-Konto (Aufladung): beim PayPal-Konto keine Einnahme
+    ppIn.forEach(p=>{ if(keep[p.id]) return; const s=(p.name||"")+" "+(p.text||"");
+      const m=bank.find(b=>b.amount===-p.amount&&Math.abs(day(b.date)-day(p.date))<=5);
+      if(m||/bankgutschrift|bankkonto|bank account|aufladung|top.?up|einzahlung|transfer from|allgemeine abbuchung|ausgleich|von bank/i.test(s)) map.set(p.id,{with:m?m.id:null,kind:"topup"}); });
+    // Auszahlung von PayPal aufs Girokonto: Eingang auf dem Girokonto ist keine Einnahme
+    bank.filter(b=>b.amount>0&&!keep[b.id]).forEach(b=>{ const m=ppOut.find(p=>!used.has(p.id)&&p.amount===-b.amount&&Math.abs(day(p.date)-day(b.date))<=5);
+      if(m){ used.add(m.id); map.set(b.id,{with:m.id,kind:"payout"}); map.set(m.id,{with:b.id,kind:"payout"}); } });
+  }
+  ppCache={tx,key,map,from}; return map;
+}
+const baseCat=t=>(t.cat&&t.catSrc!=="ai")?t.cat:autoCat(t);
+// der PayPal-Einkauf übernimmt die Kategorie der Bank-Abbuchung, wenn er selbst noch keine hat
+const catOf=t=>{ const pm=ppPairs(); if(pm.has(t.id)) return "Umbuchung"; const c=baseCat(t); if(c) return c;
+  const b=ppCache.from&&ppCache.from.get(t.id); return (b&&baseCat(b))||"Sonstiges"; };
 
 /* ---------- alle Umsätze: Bank/CSV + manuelle Ausgaben (+ manuelle Dauerposten, solange kein Konto da ist) ---------- */
 function allTx(){
@@ -2667,7 +2707,10 @@ function txSheet(id){
   if(t.src==="manual") return openForm("exp",t.mid); if(t.src==="rec") return openForm("rec",t.rid);
   const c=catOf(t), acc=fin.accounts[t.acc], dn=displayName(t), k=merchKey(t), same=Object.values(fin.tx).filter(x=>x&&merchKey(x)===k).length;
   sheetCtx={type:"tx",id,cat:c,key:k,name:dn};
-  openSheet(`<h3>${esc(dn)}</h3><span class="big-amt${t.amount>0?" plus":""}">${t.amount>0?"+":""}${money(t.amount)}</span>
+  const pr=ppPairs().get(id), po=pr&&pr.with?allTx().find(x=>x.id===pr.with):null, keepOn=!!(fin.meta&&fin.meta.ppKeep&&fin.meta.ppKeep[id]);
+  const ppNote=pr?`<div class="pp-note"><b>Wird nicht doppelt gezählt</b><span>${pr.kind==="bank"&&po?`Dieser Betrag ist schon im PayPal-Einkauf „${esc(displayName(po))}“ über ${money(-po.amount)} vom ${fromIso(po.date).toLocaleDateString("de-DE",{day:"numeric",month:"short"})} enthalten${-po.amount>-t.amount?". Den Rest hast du mit PayPal-Guthaben bezahlt":""}.`:pr.kind==="topup"?"Das ist Geld von deinem Bankkonto auf PayPal, keine Einnahme.":"Das ist eine Auszahlung zwischen PayPal und deinem Bankkonto."}</span><button type="button" class="pp-keep" data-ppkeep="${esc(id)}">Trotzdem mitzählen</button></div>`
+    :keepOn?`<div class="pp-note"><span>Wird mitgezählt, obwohl es nach einer doppelten PayPal-Buchung aussieht.</span><button type="button" class="pp-keep" data-ppunkeep="${esc(id)}">Wieder nicht doppelt zählen</button></div>`:"";
+  openSheet(`${ppNote}<h3>${esc(dn)}</h3><span class="big-amt${t.amount>0?" plus":""}">${t.amount>0?"+":""}${money(t.amount)}</span>
     <span class="note">${fromIso(t.date).toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}${acc?` · ${esc(acc.name)}`:""}</span>
     <div class="field"><span class="flabel">Kategorie</span><div class="chips" id="txCats">${catChips(c)}</div></div>
     <div class="field"><span class="flabel">Name</span><input type="text" id="txName" maxlength="40" value="${esc(dn)}"></div>
@@ -2685,6 +2728,11 @@ function rememberMerchant(k,cat,name){
 }
 function saveTx(){
   const id=sheetCtx.id, t=fin.tx[id]; if(!t) return closeSheet(); const cat=sheetCtx.cat, ex=$("#txEx").checked, remember=$("#txRemember").checked, name=($("#txName").value||"").trim().slice(0,40);
+  // doppelte PayPal-Buchung: „Umbuchung“ nicht als Regel für den Händler merken (sonst fiele auch der PayPal-Einkauf weg)
+  if(ppPairs().has(id)){
+    if(cat==="Umbuchung"){ if(ex!==!!t.ex){ t.ex=ex||null; finRef("tx/"+id+"/ex").set(ex||null).catch(showErr); } if(name&&name!==sheetCtx.name) rememberMerchant(sheetCtx.key,null,name); closeSheet(); render(); return; }
+    fin.meta=fin.meta||{}; fin.meta.ppKeep={...(fin.meta.ppKeep||{}),[id]:true}; finRef("meta/ppKeep/"+id).set(true).catch(showErr); ppCache.tx=null;
+    t.cat=cat; t.catSrc="me"; t.ex=ex||null; finRef("tx/"+id).update({cat,catSrc:"me",ex:ex||null}).catch(showErr); closeSheet(); render(); return; }
   if(remember){ rememberMerchant(sheetCtx.key,cat,name||null); t.cat=null; t.catSrc=null; t.ex=ex||null; finRef("tx/"+id).update({cat:null,catSrc:null,ex:ex||null}).catch(showErr); }
   else { t.cat=cat; t.catSrc="me"; t.ex=ex||null; finRef("tx/"+id).update({cat,catSrc:"me",ex:ex||null}).catch(showErr); if(name&&name!==sheetCtx.name) rememberMerchant(sheetCtx.key,null,name); }
   closeSheet(); render();
@@ -3033,6 +3081,9 @@ document.addEventListener("click",e=>{
   const v=t.closest("[data-view]"); if(v){ view=v.dataset.view; try{ localStorage.setItem("budget.view",view); }catch(err){} $("#list").scrollTop=0; render(); return; }
   const n=t.closest("[data-new]"); if(n) return openForm(n.dataset.new);
   const ed=t.closest("[data-edit]"); if(ed) return openForm(ed.dataset.edit,ed.dataset.id);
+  const pk=t.closest("[data-ppkeep],[data-ppunkeep]"); if(pk){ const id=pk.dataset.ppkeep||pk.dataset.ppunkeep, on=!!pk.dataset.ppkeep;
+    fin.meta=fin.meta||{}; fin.meta.ppKeep={...(fin.meta.ppKeep||{})}; if(on) fin.meta.ppKeep[id]=true; else delete fin.meta.ppKeep[id];
+    finRef("meta/ppKeep/"+id).set(on?true:null).catch(showErr); ppCache.tx=null; render(); return txSheet(id); }
   const pcat=t.closest("[data-plancat]"); if(pcat) return planCatSheet(pcat.dataset.plancat);
   const tx=t.closest("[data-tx]"); if(tx){ const back=sheetCtx&&sheetCtx.type==="plancat"&&!$("#sheetModal").hidden?sheetCtx.cat:null; txSheet(tx.dataset.tx);
     if(back&&!$("#sheetModal").hidden&&sheetCtx&&sheetCtx.type!=="plancat") $("#sheet").insertAdjacentHTML("afterbegin",`<button type="button" class="pc-back" data-plancat="${esc(back)}">‹ ${esc(back)}</button>`);
