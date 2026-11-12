@@ -342,6 +342,35 @@ header{border-bottom:0!important}
 .rev{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:.88rem}
 .rev li{display:flex;gap:10px;align-items:flex-start}
 .sorter-h{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;color:var(--muted)}
+.seg{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;flex-wrap:nowrap!important}
+.seg>button{font-size:13px!important;padding:6px 2px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.inc-list{display:flex;flex-direction:column;margin-top:12px;background:var(--surface2,#f2f2f7);border-radius:14px;overflow:hidden}
+.inc-row{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:11px 12px;font:inherit;color:var(--ink);text-align:left;cursor:pointer;position:relative}
+.inc-row+.inc-row::before,.inc-add::before{content:"";position:absolute;left:12px;right:0;top:0;border-top:.5px solid var(--sep,#c6c6c8)}
+.inc-row>span:first-child{flex:1;min-width:0;display:flex;flex-direction:column;font-size:.95rem}
+.inc-row small{font-size:.75rem;color:var(--muted)}
+.inc-row i{font-style:normal;color:var(--muted)}
+.inc-auto .tgl{flex:none;position:relative;width:51px;height:31px}
+.inc-auto .tgl input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;z-index:1;width:100%;height:100%}
+.inc-auto .tgl i{position:absolute;inset:0;border-radius:999px;background:rgba(120,120,128,.16);transition:background .2s;font-style:normal}
+.inc-auto .tgl i::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.25);transition:transform .2s}
+.inc-auto .tgl input:checked+i::after{transform:translateX(20px)}
+.inc-add{position:relative;border:0;background:none;padding:11px 12px;font:inherit;font-weight:600;color:var(--accent);text-align:left;cursor:pointer}
+.plan-hero .plan-sal{border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;text-align:left}
+.plan-hero .plan-sal small{font-size:.45em;color:var(--muted);vertical-align:middle}
+.plan-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.plan-tiles>div{background:var(--surface2,#f2f2f7);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.plan-tiles span{font-size:.74rem;color:var(--muted)}
+.plan-tiles b{font-size:1.02rem}
+.plan-tiles .neg b,.plan-tiles .neg span{color:var(--red,#ff3b30)}
+.plan-bar{height:6px;border-radius:999px;background:var(--surface2,#f2f2f7);overflow:hidden;margin-top:12px}
+.plan-bar i{display:block;height:100%;background:var(--accent);border-radius:999px}
+.plan-intro p{margin:0 0 12px;line-height:1.45;color:var(--muted)}
+.plan-row .of{color:var(--muted);font-weight:500}
+.plan-row.near small{color:#c76a00}
+.plan-row.over small{color:var(--red,#ff3b30)}
+.sug-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.sug-list li{display:flex;justify-content:space-between;align-items:center}
 </style>
 </head>
 <body>
@@ -353,7 +382,7 @@ header{border-bottom:0!important}
   <div class="count foot-count" id="count">Verbindet …</div>
 
   <section class="panel">
-    <div class="seg" role="group" aria-label="Ansicht"><button type="button" data-view="home" aria-pressed="true">Übersicht</button><button type="button" data-view="tx" aria-pressed="false">Umsätze</button><button type="button" data-view="con" aria-pressed="false">Verträge</button><button type="button" data-view="stats" aria-pressed="false">Auswertung</button></div>
+    <div class="seg" role="group" aria-label="Ansicht"><button type="button" data-view="home" aria-pressed="true">Übersicht</button><button type="button" data-view="plan" aria-pressed="false">Budgets</button><button type="button" data-view="tx" aria-pressed="false">Umsätze</button><button type="button" data-view="con" aria-pressed="false">Verträge</button><button type="button" data-view="stats" aria-pressed="false">Analyse</button></div>
     <div class="topbar" id="monthBar">
       <div class="month" role="group" aria-label="Monat wählen">
         <button type="button" id="prevM" aria-label="Vorheriger Monat"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -609,6 +638,9 @@ header{border-bottom:0!important}
   // nach dem Einhängen Größen neu berechnen lassen (z. B. Kalenderwochen, die die Höhe ausfüllen)
   const attach=()=>document.head.appendChild(apple); attach(); addEventListener("DOMContentLoaded",attach);
   window.OursDesign={attach};
+  // Tipp auf den abgedunkelten Hintergrund eines Schnellmenüs schließt es
+  document.addEventListener("click",e=>{ const m=e.target; if(!m||!m.classList||!m.classList.contains("fab-menu")||!m.classList.contains("open")) return;
+    e.stopPropagation(); e.preventDefault(); const f=m.parentElement&&m.parentElement.querySelector(".g-fab,.fab:not(.fab-mid):not(.sp-fab)"); if(f) f.click(); },true);
   // beim Scrollen eine feine Linie unter dem Titel (wie in iOS)
   document.addEventListener("scroll",e=>{ const t=e.target; if(!t||!t.classList||!t.classList.contains("scroll")) return; document.body.classList.toggle("hig-scrolled",t.scrollTop>6); },{capture:true,passive:true});
   // Statusleiste in der Farbe des (jetzt schlichten) Kopfes
@@ -657,7 +689,7 @@ header{border-bottom:0!important}
    Auf dem iPhone nur, wenn Ours vom Home-Bildschirm geöffnet wird (ab iOS 16.4). */
 window.OursPush=(function(){
   const W="https://oursapp.niklasbergnerbus.workers.dev", CATS=[["ev","Termine","Nur bei Terminen, für die du im Kalender einen Hinweis eingestellt hast"],["gym","Training","Nur wenn du im Gym-Plan einen Hinweis eingestellt hast"],["chore","Haushalt","Wenn eine Aufgabe für dich fällig ist"],["trip","Reisen","Packliste, Abreise und Tagesplan"],["partner","Änderungen von anderen","Wenn jemand einen Termin oder eine Reise einträgt"]],
-    ALL=["ev","gym","chore","trip","partner","pay","cancel","tx"], DEF={tx:false};   // Budget-Mitteilungen stellst du auf der Budget-Seite ein
+    ALL=["ev","gym","chore","trip","partner","pay","cancel","tx","budget"], DEF={tx:false};   // Budget-Mitteilungen stellst du auf der Budget-Seite ein
   const u8=s=>Uint8Array.from(atob(s.replace(/-/g,"+").replace(/_/g,"/")+"===".slice((s.length+3)%4)),c=>c.charCodeAt(0));
   const ls=(k,v)=>{ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){ return null; } };
   const supported=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;
@@ -683,9 +715,11 @@ window.OursPush=(function(){
   // Erinnerungen der nächsten Tage an den Helfer geben (nur wenn sich etwas geändert hat)
   async function plan(kind,items){ if(ls("ours.push")!=="1") return; items=(items||[]).filter(x=>x&&x.at>Date.now()).sort((a,b)=>a.at-b.at).slice(0,80);
     const h=JSON.stringify(items); if(ls("ours.pplan."+kind)===h) return; try{ await call({mode:"push-plan",kind,items}); ls("ours.pplan."+kind,h); }catch(e){} }
+  // Budget-Stand an den Helfer (er meldet 80 % / 100 % nur einmal je Zeitraum)
+  async function budget(state){ if(ls("ours.push")!=="1") return; const h=JSON.stringify(state); if(ls("ours.pbud")===h) return; try{ await call({mode:"push-budget",...state}); ls("ours.pbud",h); }catch(e){} }
   function notify(sid,title,body,url){ if(!sid) return; call({mode:"push-notify",sid,title,body,url}).catch(()=>{}); }
   async function setCat(k,on,db,uid){ cats[k]=on; if(db&&uid) await db.ref(`users/${uid}/settings/push/${k}`).set(on); if(ls("ours.push")==="1") await call({mode:"push-sub",cats:catsOut()}).catch(()=>{}); }
-  return {CATS,supported,state,enable,disable,plan,notify,setCat,test:()=>call({mode:"push-test"}),get cats(){ return catsOut(); },_load(v){ cats=v||{}; }};
+  return {CATS,supported,state,enable,disable,plan,budget,notify,setCat,test:()=>call({mode:"push-test"}),get cats(){ return catsOut(); },_load(v){ cats=v||{}; }};
 })();
 /* ---------- Offline: Seiten über den Service Worker, Daten über einen Zwischenspeicher ----------
    Gelesene Daten (on/once "value") werden im localStorage gemerkt und ohne Netz von dort geliefert.
@@ -1057,7 +1091,7 @@ window.OursPush=(function(){
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-12-002314";
+  const APP_VERSION="2026-11-12-004136";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1881,7 +1915,7 @@ function render(){
   $("#count").textContent=nAcc?`${nAcc} ${nAcc===1?"Konto":"Konten"} · ${nTx} Umsätze`:"Budget";
   const sc=$("#list"), top=sc.scrollTop, act=document.activeElement, keepQ=act&&act.id==="txQ";
   homeSummary();
-  sc.innerHTML=view==="tx"?renderTx():view==="con"?renderCon():view==="stats"?renderStats():renderHome();
+  sc.innerHTML=view==="tx"?renderTx():view==="con"?renderCon():view==="stats"?renderStats():view==="plan"?renderPlan():renderHome();
   if(keepQ){ const i=$("#txQ"); if(i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length); } }
   sc.scrollTop=top;
 }
@@ -1952,7 +1986,7 @@ function homeSummary(){
       ins:(()=>{ const from=new Date(t); from.setDate(from.getDate()-120); const fi=iso(from);
         return allTx().filter(x=>x.amount>0&&!x.ex&&x.date>=fi&&!NO_SPEND.has(catOf(x))).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,150).map(x=>({d:x.date,n:displayName(x),a:x.amount,c:catOf(x)})); })(),
       sal:(()=>{ const p=nextPayday(); return p?{d:iso(p.date),a:p.amount,day:p.date.getDate()}:null; })()};
-    planPush();
+    planPush(); budgetPush();
     const js=JSON.stringify(sum); if(js===homeSumLast) return; homeSumLast=js; sum.at=Date.now();
     fdb().ref(`users/${myUid}/home/budget`).set(sum).catch(()=>{});
   }catch(e){} },1500);
@@ -1966,6 +2000,7 @@ function planPush(){ if(!window.OursPush) return; const R=[], now0=Date.now(), a
       [[30,"in 30 Tagen"],[7,"in einer Woche"],[1,"morgen"],[0,"heute"]].forEach(([n,w])=>{ const d=new Date(end); d.setDate(d.getDate()-n); add("cancel",at(d,9),"✂️ Kündigungsfrist "+w+": "+c.name,"Kündigen bis "+end.toLocaleDateString("de-DE")+" – in Ours kannst du das Schreiben erstellen.","cb_"+c.key+"_"+n); }); } });
   OursPush.plan("bud",R); }
 Auth.pageSettings.push(
+  {sec:"Budget-Mitteilungen",label:"Budget fast erreicht / überschritten",get:()=>!window.OursPush||OursPush.cats.budget,note:()=>"Bei 80 % und 100 % eines Budgets aus dem Reiter „Budgets“.",set:async v=>{ await OursPush.setCat("budget",v,fdb(),myUid); }},
   {sec:"Budget-Mitteilungen",label:"Jede Abbuchung & Gutschrift",get:()=>!!(window.OursPush&&OursPush.cats.tx),note:v=>v?"Ours schaut bis zu 4× am Tag bei deiner Bank nach und meldet neue Umsätze.":"Meldet neue Umsätze von deinem Konto (bis zu 4× am Tag geprüft).",
     set:async v=>{ await OursPush.setCat("tx",v,fdb(),myUid); if(v) syncAll().catch(()=>{}); }},
   {sec:"Budget-Mitteilungen",label:"Verträge",get:()=>!window.OursPush||OursPush.cats.pay,note:()=>"Am Vortag einer Vertragsabbuchung, z. B. Miete, Handy, Streaming.",set:async v=>{ await OursPush.setCat("pay",v,fdb(),myUid); }},
@@ -1981,7 +2016,7 @@ function alerts(){
   const byCat={}; allTx().forEach(t=>{ if(t.amount<0&&!t.ex) (byCat[catOf(t)]=byCat[catOf(t)]||[]).push(-t.amount); });
   recent.filter(t=>(today-fromIso(t.date))/864e5<=14).forEach(t=>{ const c=catOf(t); if(NO_SPEND.has(c)||c===SAVE_CAT||c==="Wohnen") return; const l=(byCat[c]||[]).slice().sort((a,b)=>a-b); if(l.length<6) return; const med=l[Math.floor(l.length/2)];
     if(-t.amount>=10000&&-t.amount>med*4) out.push({id:"big_"+t.id,ic:"💸",t:`Ungewöhnlich hoch: <b>${esc(displayName(t))}</b> ${money(-t.amount)} (sonst ca. ${money(med)} bei ${esc(c)})`,tx:t.id}); });
-  const tm=totals(now.getFullYear(),now.getMonth()); Object.entries(fin.budgets||{}).forEach(([c,b])=>{ const v=tm.byCat[c]||0; if(v>b) out.push({id:"bud_"+c+"_"+now.getMonth(),ic:"🎯",t:`Budget überschritten: <b>${esc(c)}</b> ${money(v)} von ${money(b)}`,cat:c}); else if(v>b*.85) out.push({id:"budn_"+c+"_"+now.getMonth(),ic:"🎯",t:`Budget fast aufgebraucht: <b>${esc(c)}</b> ${money(v)} von ${money(b)}`,cat:c}); });
+  { const si=salaryInfo(), ps=periodSpend(si.start,si.end); Object.entries(fin.budgets||{}).forEach(([c,b])=>{ const v=ps.byCat[c]||0; if(v>b) out.push({id:"bud_"+c+"_"+si.start,ic:"🎯",t:`Budget überschritten: <b>${esc(c)}</b> ${money(v)} von ${money(b)}`,cat:c}); else if(v>=b*.8) out.push({id:"budn_"+c+"_"+si.start,ic:"🎯",t:`Budget fast aufgebraucht: <b>${esc(c)}</b> ${money(v)} von ${money(b)}`,cat:c}); }); }
   return out.filter(a=>!dis[a.id.replace(/[.#$\[\]\/]/g,"_")]);
 }
 function alertsHtml(){ const a=alerts(); if(!a.length) return "";
@@ -2191,6 +2226,99 @@ function renderBud(){
   return h;
 }
 
+/* ---------- Budgets: Gehalt einteilen ----------
+   Zeitraum = vom letzten Gehalt bis zum Tag vor dem nächsten (ohne erkanntes Gehalt: Kalendermonat).
+   Budgets gelten pro Kategorie für diesen Zeitraum und zählen alle Ausgaben der Kategorie (auch Verträge). */
+function salaryInfo(){
+  const t0=new Date(); t0.setHours(0,0,0,0); const today=iso(t0);
+  const sal=allTx().filter(t=>t.amount>0&&!t.ex&&catOf(t)==="Gehalt"&&t.date<=today).sort((a,b)=>b.date.localeCompare(a.date));
+  const last=sal[0]&&(t0-fromIso(sal[0].date))/864e5<=40?sal[0]:null, nx=nextPayday();
+  let start, end;
+  if(last){ start=last.date; const ld=fromIso(last.date), e=nx?new Date(nx.date):new Date(ld.getFullYear(),ld.getMonth()+1,ld.getDate()); e.setDate(e.getDate()-1); end=iso(e); }
+  else { start=iso(new Date(t0.getFullYear(),t0.getMonth(),1)); end=iso(new Date(t0.getFullYear(),t0.getMonth()+1,0)); }
+  if(end<today) end=today;
+  const auto=last?last.amount:nx?nx.amount:0, manual=fin.meta&&fin.meta.salaryAmt||0;
+  return {start,end,amount:manual||auto,auto,manual:!!manual,fromSalary:!!last,daysLeft:Math.max(1,Math.round((fromIso(end)-t0)/864e5)+1)};
+}
+function periodSpend(start,end){
+  const byCat={};
+  allTx().forEach(t=>{ if(t.ex||t.amount>=0||t.date<start||t.date>end) return; const c=catOf(t); if(NO_SPEND.has(c)||INCOME_CATS.has(c)) return; byCat[c]=(byCat[c]||0)-t.amount; });
+  return {byCat};
+}
+const budLevel=(v,b)=>!b?0:v>=b?2:v>=b*.8?1:0;
+// alles, was im Zeitraum zum Einteilen da ist: Gehalt + eigene weitere Einnahmen (+ auf Wunsch sonstige Eingänge vom Konto)
+function incomeInfo(si){
+  const ex=Object.entries((fin.meta&&fin.meta.extraInc)||{}).filter(([,x])=>x&&x.a>0&&(x.m||x.p===si.start)).map(([id,x])=>({id,...x}));
+  let other=0; allTx().forEach(t=>{ if(t.ex||t.amount<=0||t.date<si.start||t.date>si.end) return; if(catOf(t)==="Sonstige Einnahmen") other+=t.amount; });
+  const useOther=!!(fin.meta&&fin.meta.countOtherInc);
+  const total=si.amount+ex.reduce((a,x)=>a+x.a,0)+(useOther?other:0);
+  return {ex,other,useOther,total};
+}
+function renderPlan(){
+  const si=salaryInfo(), ps=periodSpend(si.start,si.end), B=fin.budgets||{};
+  const inc=incomeInfo(si), planned=Object.values(B).reduce((a,v)=>a+v,0), spentB=Object.keys(B).reduce((a,c)=>a+(ps.byCat[c]||0),0), free=inc.total-planned;
+  const pm=contracts().reduce((a,c)=>a+c.perMonth,0);
+  const fmt=d=>fromIso(d).toLocaleDateString("de-DE",{day:"numeric",month:"short"});
+  let h=`<div class="hero plan-hero"><span class="lbl">Zum Einteilen</span>
+    <span class="total num">${money(inc.total)}</span>
+    <div class="inc-list"><button type="button" class="inc-row" data-plansal><span>💰 ${si.fromSalary?"Gehalt":"Einkommen"}${si.manual?" (eigener Betrag)":""}</span><b class="num">${si.amount?money(si.amount):"eintragen"}</b><i>›</i></button>
+      ${inc.ex.map(x=>`<button type="button" class="inc-row" data-inc="${esc(x.id)}"><span>➕ ${esc(x.n||"Einnahme")}<small>${x.m?"jeden Monat":"nur dieser Zeitraum"}</small></span><b class="num">${money(x.a)}</b><i>›</i></button>`).join("")}
+      ${inc.other?`<label class="inc-row inc-auto"><span>↘️ Weitere Eingänge auf dem Konto<small>in diesem Zeitraum, z. B. Überweisungen von anderen</small></span><b class="num">${money(inc.other)}</b><span class="tgl"><input type="checkbox" id="incOther"${inc.useOther?" checked":""}><i></i></span></label>`:""}
+      <button type="button" class="inc-add" data-inc="">+ Weitere Einnahme hinzufügen</button></div>
+    <p class="hint">${si.fromSalary?"Zeitraum":"Monat"} ${fmt(si.start)} – ${fmt(si.end)} · noch ${si.daysLeft} ${si.daysLeft===1?"Tag":"Tage"}${si.manual?" · Betrag von dir eingetragen":""}</p>
+    <div class="plan-tiles"><div><span>Eingeteilt</span><b class="num">${money(planned)}</b></div><div><span>Ausgegeben</span><b class="num">${money(spentB)}</b></div>
+      <div class="${free<0?"neg":""}"><span>${free<0?"Zu viel eingeteilt":"Noch frei"}</span><b class="num">${money(Math.abs(free))}</b></div></div>
+    ${inc.total?`<div class="plan-bar" aria-hidden="true"><i style="width:${Math.min(100,planned/inc.total*100)}%"></i></div>`:""}</div>`;
+  const cats=[...new Set([...Object.keys(B),...Object.keys(ps.byCat)])].filter(c=>!INCOME_CATS.has(c)&&!NO_SPEND.has(c));
+  cats.sort((a,b)=>(B[b]?1:0)-(B[a]?1:0)||(ps.byCat[b]||0)-(ps.byCat[a]||0));
+  if(!planned) h+=`<div class="sec plan-intro"><p>Teil dein Gehalt auf: Leg für jede Kategorie fest, wie viel du bis zum nächsten Gehalt ausgeben willst. Jede Abbuchung wird automatisch abgezogen, und du bekommst eine Mitteilung, wenn ein Budget fast aufgebraucht ist.</p>
+    <button class="btn primary" type="button" data-plansug>✨ Vorschlag aus deinen Ausgaben</button></div>`;
+  h+=`<div class="sec-head"><h2>Kategorien</h2>${planned?`<button class="note" type="button" data-plansug style="border:0;background:none;color:var(--accent);font-weight:600">Vorschlag</button>`:""}</div>
+    <div class="sec">${cats.map(c=>{ const b=B[c]||0, v=ps.byCat[c]||0, lv=budLevel(v,b), left=b-v, perDay=left>0?Math.floor(left/si.daysLeft):0;
+      const col=lv===2?"var(--red,#ff3b30)":lv===1?"#ff9500":catColor(c);
+      return `<button type="button" class="bud plan-row${lv===2?" over":lv===1?" near":""}" data-bud="${esc(c)}"><span class="cat-name"><span class="dot" style="background:${catColor(c)}"></span>${esc(c)}</span>
+        <b class="num">${money(v)}${b?` <span class="of">/ ${money(b)}</span>`:""}</b>
+        ${b?`<span class="track"><span style="width:${Math.min(100,v/b*100)}%;background:${col}"></span></span>`:""}
+        <small>${b?(lv===2?`${money(-left)} über dem Budget`:`noch ${money(left)}${perDay?` · ${money(perDay)} pro Tag`:""}${lv===1?" · fast aufgebraucht":""}`):"Kein Budget – antippen zum Festlegen"}</small></button>`; }).join("")||`<div class="empty">Noch keine Ausgaben in diesem Zeitraum.</div>`}</div>
+    <button class="add" type="button" data-bud="">+ Budget für eine Kategorie</button>
+    <p class="note">${pm?`Darin enthalten sind auch deine Verträge (zusammen ${money(pm)} pro Monat), z. B. Miete in „Wohnen“. `:""}Bei 80 % und bei 100 % eines Budgets bekommst du eine Mitteilung (Einstellungen → Budget-Mitteilungen).</p>`;
+  return h;
+}
+function planSugSheet(){
+  const si=salaryInfo(), avg={};
+  for(let i=1;i<=3;i++){ const d=new Date(now.getFullYear(),now.getMonth()-i,1); const st=monthStats(d.getFullYear(),d.getMonth()); Object.entries(st.byCat).forEach(([c,v])=>avg[c]=(avg[c]||0)+v/3); }
+  const list=Object.entries(avg).filter(([c,v])=>v>=500&&!INCOME_CATS.has(c)&&!NO_SPEND.has(c)).map(([c,v])=>[c,Math.ceil(v/1000)*1000]).sort((a,b)=>b[1]-a[1]);
+  sheetCtx={type:"plansug",list}; const sum=list.reduce((a,[,v])=>a+v,0), tot=incomeInfo(si).total;
+  openSheet(`<h3>Vorschlag</h3><p class="note">Aus deinen Ausgaben der letzten 3 Monate, aufgerundet. Du kannst danach jedes Budget einzeln ändern.</p>
+    ${list.length?`<ul class="sug-list">${list.map(([c,v])=>`<li><span class="cat-name"><span class="dot" style="background:${catColor(c)}"></span>${esc(c)}</span><b class="num">${money(v)}</b></li>`).join("")}</ul>
+    <p class="note">Zusammen <b>${money(sum)}</b>${tot?` von ${money(tot)} zum Einteilen · ${sum<=tot?`${money(tot-sum)} bleiben frei, z. B. zum Sparen`:`${money(sum-tot)} mehr als du zur Verfügung hast`}`:""}.</p>`
+      :`<div class="empty">Noch zu wenige Umsätze für einen Vorschlag. Leg die Budgets einfach selbst fest.</div>`}
+    <div class="sheet-actions"><span></span><div class="right"><button class="ghost" type="button" data-close>Abbrechen</button>${list.length?`<button class="btn primary" type="button" id="planSugOk">Übernehmen</button>`:""}</div></div>`);
+}
+function planSalSheet(){
+  const si=salaryInfo(); sheetCtx={type:"plansal"};
+  openSheet(`<h3>Gehalt</h3><p class="note">${si.auto?`Ours hat zuletzt <b>${money(si.auto)}</b> Gehalt erkannt.`:"Ours hat noch kein Gehalt erkannt."} Du kannst einen eigenen Betrag eintragen, z. B. wenn dein Gehalt schwankt.</p>
+    <label class="amount"><input id="salAmt" inputmode="decimal" placeholder="${si.auto?(si.auto/100).toFixed(0):"0"}" value="${si.manual?(si.amount/100).toFixed(2).replace(".",","):""}" aria-label="Gehalt"><span>€</span></label>
+    <div class="sheet-actions">${si.manual?`<button class="del" type="button" id="salAuto">Automatisch erkennen</button>`:"<span></span>"}<div class="right"><button class="ghost" type="button" data-close>Abbrechen</button><button class="btn primary" type="button" id="salSave">Speichern</button></div></div>`);
+}
+function incSheet(id){
+  const x=id?((fin.meta&&fin.meta.extraInc)||{})[id]:null; sheetCtx={type:"inc",id:id||null,m:x?!!x.m:true};
+  openSheet(`<h3>${x?"Einnahme":"Weitere Einnahme"}</h3><p class="note">Zum Beispiel Nebenjob, Kindergeld, Unterhalt oder Geld, das du bekommst. Der Betrag erhöht, was du einteilen kannst.</p>
+    <div class="field"><span class="flabel">Name</span><input id="incName" maxlength="40" placeholder="z. B. Nebenjob" value="${esc(x&&x.n||"")}" autocomplete="off"></div>
+    <label class="amount"><input id="incAmt" inputmode="decimal" placeholder="0" value="${x?(x.a/100).toFixed(2).replace(".",","):""}" aria-label="Betrag"><span>€</span></label>
+    <div class="field"><span class="flabel">Wie oft?</span><div class="chips"><button type="button" class="chip" data-incm="1" aria-pressed="${sheetCtx.m}">Jeden Monat</button><button type="button" class="chip" data-incm="0" aria-pressed="${!sheetCtx.m}">Nur diesen Zeitraum</button></div></div>
+    <div class="sheet-actions">${x?`<button class="del" type="button" id="incDel">Entfernen</button>`:"<span></span>"}<div class="right"><button class="ghost" type="button" data-close>Abbrechen</button><button class="btn primary" type="button" id="incSave">Speichern</button></div></div>`);
+}
+// Stand an den Helfer geben: er schickt bei 80 % / 100 % eine Mitteilung – auch für Abbuchungen, die er selbst bei der Bank findet
+const nameKey=s=>String(s||"").toLowerCase().replace(/[0-9]+/g," ").replace(/[^a-zäöüß]+/g," ").trim().split(" ").filter(Boolean).slice(0,4).join(" ");
+function budgetPush(){
+  if(!window.OursPush||!OursPush.budget) return; const B=fin.budgets||{}; if(!Object.keys(B).length) return;
+  const si=salaryInfo(), ps=periodSpend(si.start,si.end), spent={}; Object.keys(B).forEach(c=>spent[c]=ps.byCat[c]||0);
+  // Händlername → Kategorie (nur eindeutige), damit der Helfer neue Abbuchungen zuordnen kann
+  const seen={}; allTx().slice(-1500).forEach(t=>{ if(t.amount>=0||t.ex) return; const k=nameKey(t.name)||nameKey(t.text); if(!k) return; const c=catOf(t); seen[k]=seen[k]===undefined||seen[k]===c?c:null; });
+  const map={}; Object.entries(seen).forEach(([k,c])=>{ if(c&&B[c]) map[k]=c; });
+  OursPush.budget({start:si.start,end:si.end,budgets:B,spent,map});
+}
 /* ---------- Bögen ---------- */
 const openSheet=html=>{ $("#sheet").innerHTML=html; $("#sheetModal").hidden=false; };
 const closeSheet=()=>{ $("#sheetModal").hidden=true; sheetCtx=null; };
@@ -2544,6 +2672,17 @@ document.addEventListener("click",e=>{
   const tx=t.closest("[data-tx]"); if(tx) return txSheet(tx.dataset.tx);
   const co=t.closest("[data-con]"); if(co) return conSheet(co.dataset.con);
   const bu=t.closest("[data-bud]"); if(bu) return budSheet(bu.dataset.bud);
+  if(t.closest("[data-plansug]")) return planSugSheet();
+  if(t.closest("[data-plansal]")) return planSalSheet();
+  const ic=t.closest("[data-inc]"); if(ic) return incSheet(ic.dataset.inc);
+  const im=t.closest("[data-incm]"); if(im&&sheetCtx&&sheetCtx.type==="inc"){ sheetCtx.m=im.dataset.incm==="1"; document.querySelectorAll("[data-incm]").forEach(b=>b.setAttribute("aria-pressed",(b.dataset.incm==="1")===sheetCtx.m)); return; }
+  if(t.closest("#incSave")&&sheetCtx&&sheetCtx.type==="inc"){ const a=parseMoney($("#incAmt").value), n=$("#incName").value.trim().slice(0,40); if(!a){ say("Gib einen Betrag ein."); return; }
+    const id=sheetCtx.id||("i"+Date.now().toString(36)), v={n:n||"Einnahme",a,m:sheetCtx.m,p:sheetCtx.m?null:salaryInfo().start};
+    fin.meta=fin.meta||{}; fin.meta.extraInc=fin.meta.extraInc||{}; fin.meta.extraInc[id]=v; finRef("meta/extraInc/"+id).set(v).catch(showErr); closeSheet(); render(); return; }
+  if(t.closest("#incDel")&&sheetCtx&&sheetCtx.type==="inc"){ const id=sheetCtx.id; if(fin.meta&&fin.meta.extraInc) delete fin.meta.extraInc[id]; finRef("meta/extraInc/"+id).remove().catch(showErr); closeSheet(); render(); return; }
+  if(t.closest("#planSugOk")&&sheetCtx&&sheetCtx.type==="plansug"){ const upd={}; sheetCtx.list.forEach(([c,v])=>{ fin.budgets[c]=v; upd[c.replace(/[.#$\[\]\/]/g,"_")]=v; }); finRef("budgets").update(upd).catch(showErr); closeSheet(); render(); say("Budgets übernommen."); return; }
+  if(t.closest("#salSave")){ const v=parseMoney($("#salAmt").value); fin.meta=fin.meta||{}; fin.meta.salaryAmt=v||null; finRef("meta/salaryAmt").set(v||null).catch(showErr); closeSheet(); render(); return; }
+  if(t.closest("#salAuto")){ fin.meta=fin.meta||{}; fin.meta.salaryAmt=null; finRef("meta/salaryAmt").remove().catch(showErr); closeSheet(); render(); return; }
   const ac=t.closest("[data-acc]"); if(ac){ txAcc=ac.dataset.acc; txShown=100; view="tx"; try{ localStorage.setItem("budget.view",view); }catch(err){} $("#list").scrollTop=0; render(); return; }
   const as=t.closest("[data-accset]"); if(as) return accSheet(as.dataset.accset);
   const ta=t.closest("[data-txacc]"); if(ta){ txAcc=ta.dataset.txacc||null; txShown=100; render(); return; }
@@ -2599,6 +2738,7 @@ $("#sheetModal").addEventListener("click",e=>{
     fin.accounts[id]=a; finRef("accounts/"+id).set(a).catch(showErr); closeSheet(); render(); return; }
   if(t.closest("#csvGo")) return importCsv();
 });
+document.addEventListener("change",e=>{ if(e.target.id!=="incOther") return; fin.meta=fin.meta||{}; fin.meta.countOtherInc=e.target.checked; finRef("meta/countOtherInc").set(e.target.checked).catch(showErr); render(); });
 document.addEventListener("change",e=>{ if(e.target.id!=="salaryShift") return; fin.meta=fin.meta||{}; fin.meta.salaryShift=e.target.checked; finRef("meta/salaryShift").set(e.target.checked).catch(showErr); render(); });
 $("#sheetModal").addEventListener("change",e=>{ const m=e.target.closest("[data-map]"); if(m&&csv){ csv.map[m.dataset.map]=+m.value; csvSheet(); } });
 $("#csvFile").addEventListener("change",async e=>{

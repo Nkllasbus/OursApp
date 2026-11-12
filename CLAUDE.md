@@ -33,6 +33,7 @@ Ours ist eine private Web-App für ein Paar bzw. eine WG (Niklas, GitHub `Nkllas
   - Reisen: `trips/<id>` mit pack, todo, plan, costs, info.
   - Gym: `workouts/<id>` mit `al` (Hinweise).
 - `users/<uid>/fin/…` privates Budget (Konten, Umsätze `tx`, Regeln, Verträge, Enable-Banking-Sitzungen `eb`).
+  - Reiter „Budgets“ (Gehalt einteilen): `fin.budgets` (Kategorie → Cent je Gehaltszeitraum), `fin.meta.salaryAmt` (eigener Gehaltsbetrag), `fin.meta.extraInc` (weitere Einnahmen {n,a,m: jeden Monat, p: Zeitraum-Start}), `fin.meta.countOtherInc`. Zeitraum = letztes Gehalt bis Tag vor dem nächsten. Warnungen bei 80 %/100 % schickt der Worker (`push-budget`, auch für Abbuchungen aus dem Cron).
 - `users/<uid>/home/{budget,gym}` Kurzinfos für Startseite und Kalender.
 - `users/<uid>/settings` (kcal-Schalter, theme, push-Kategorien).
 

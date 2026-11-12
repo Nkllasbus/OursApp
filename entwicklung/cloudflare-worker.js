@@ -32,6 +32,7 @@
 // - mode "push-plan": Erinnerungen der nächsten Tage hinterlegen (die Seite rechnet sie aus)
 // - mode "push-notify": Personen eines gemeinsamen Bereichs benachrichtigen (z. B. neuer Termin)
 // - mode "push-test": Test-Mitteilung an die eigenen Geräte
+// - mode "push-budget": Stand der Budgets (Zeitraum, Budgets, Ausgaben, Händler→Kategorie); meldet 80 % / 100 % je einmal
 // Braucht einen KV-Speicher mit der Bindung PUSH und einen Cron-Trigger (z. B. alle 15 Minuten).
 // Die Schlüssel für Web Push erzeugt der Helfer selbst und legt sie nur im KV-Speicher ab.
 
@@ -760,6 +761,17 @@ async function pushApi(env, body) {
     const r = await sendTo(env, rec, { t: "Ours", b: "So sehen Mitteilungen aus. 👋", u: "home.html" }); if (r.gone) await kv.put(key, JSON.stringify(rec));
     return { ok: true, sent: r.sent, devices: rec.subs.length, info: r.info, version: "push-2" };
   }
+  if (mode === "push-budget") {
+    const B = {}, S = {}, M = {};
+    Object.entries(body.budgets || {}).slice(0, 40).forEach(([c, v]) => { if (+v > 0) B[clip(c, 40)] = Math.round(+v); });
+    Object.entries(body.spent || {}).slice(0, 40).forEach(([c, v]) => { S[clip(c, 40)] = Math.max(0, Math.round(+v || 0)); });
+    Object.entries(body.map || {}).slice(0, 800).forEach(([k, c]) => { if (B[c]) M[clip(k, 60)] = clip(c, 40); });
+    const start = /^\d{4}-\d{2}-\d{2}$/.test(body.start || "") ? body.start : null, end = /^\d{4}-\d{2}-\d{2}$/.test(body.end || "") ? body.end : null;
+    const old = rec.bud || {};
+    rec.bud = { start, end, budgets: B, spent: S, map: M, sent: old.start === start ? (old.sent || {}) : {} };
+    const n = await budgetCheck(env, rec);
+    await kv.put(key, JSON.stringify(rec)); return { ok: true, sent: n };
+  }
   if (mode === "push-notify") {
     const sid = String(body.sid || ""); if (!/^[\w-]{4,60}$/.test(sid)) throw fail(400, "Bereich fehlt.");
     // Mitglieder mit dem Login der Person lesen, die etwas geändert hat (Firebase-Regeln prüfen die Berechtigung)
@@ -802,10 +814,36 @@ async function pollBank(env, rec) {
     } catch (e) { b.err = (b.err || 0) + 1; if (b.err >= 3 || e.status === 502 && /lehnt|abgelaufen|expired/i.test(e.message)) delete rec.bank[session]; continue; }
     b.seen = [...seen].slice(-600);
     if (!fresh.length) continue;
+    if (budgetAdd(rec, fresh)) await budgetCheck(env, rec);
     const msgs = fresh.length <= 3 ? fresh.map(x => ({ t: `${x.amount < 0 ? "💳" : "💰"} ${eurFmt(x.amount)} · ${x.name || "Umsatz"}`, b: x.text || (x.amount < 0 ? "Abbuchung" : "Gutschrift"), u: "budget.html" }))
       : [{ t: `💳 ${fresh.length} neue Umsätze`, b: fresh.slice(0, 3).map(x => `${x.name || "Umsatz"} ${eurFmt(x.amount)}`).join(" · ") + " …", u: "budget.html" }];
-    for (const m of msgs) await sendTo(env, rec, m);
+    if (rec.cats && rec.cats.tx === true) for (const m of msgs) await sendTo(env, rec, m);
   }
+  return changed;
+}
+// Budgets: bei 80 % und 100 % je Kategorie und Zeitraum genau einmal melden
+const nameKey = s => String(s || "").toLowerCase().replace(/[0-9]+/g, " ").replace(/[^a-zäöüß]+/g, " ").trim().split(" ").filter(Boolean).slice(0, 4).join(" ");
+const eurPlain = c => new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(c / 100);
+async function budgetCheck(env, rec) {
+  const b = rec.bud; if (!b || !b.budgets || !rec.subs || !rec.subs.length || (rec.cats && rec.cats.budget === false)) return 0;
+  b.sent = b.sent || {}; let n = 0;
+  for (const [c, lim] of Object.entries(b.budgets)) {
+    const v = b.spent[c] || 0, lv = v >= lim ? 2 : v >= lim * 0.8 ? 1 : 0, was = b.sent[c] || 0;
+    if (lv > was) {
+      const msg = lv === 2
+        ? { t: `🎯 Budget erreicht: ${c}`, b: v > lim ? `${eurPlain(v - lim)} über deinem Budget von ${eurPlain(lim)}.` : `Du hast dein Budget von ${eurPlain(lim)} aufgebraucht.`, u: "budget.html", id: "bud_" + c }
+        : { t: `🎯 Budget fast erreicht: ${c}`, b: `Noch ${eurPlain(lim - v)} von ${eurPlain(lim)} übrig bis zum nächsten Gehalt.`, u: "budget.html", id: "bud_" + c };
+      await sendTo(env, rec, msg); n++;
+    }
+    if (lv !== was) b.sent[c] = lv;   // sinkt der Stand (z. B. Budget erhöht), wird später wieder gemeldet
+  }
+  return n;
+}
+// neue Abbuchungen (vom Helfer selbst gefunden) den Budgets zurechnen
+function budgetAdd(rec, txs) {
+  const b = rec.bud; if (!b || !b.budgets || !b.map) return false; let changed = false;
+  for (const x of txs) { if (x.amount >= 0 || (b.start && x.date < b.start) || (b.end && x.date > b.end)) continue;
+    const c = b.map[nameKey(x.name)] || b.map[nameKey(x.text)]; if (!c || !b.budgets[c]) continue; b.spent[c] = (b.spent[c] || 0) - x.amount; changed = true; }
   return changed;
 }
 // läuft per Cron: fällige Erinnerungen verschicken, neue Umsätze melden
@@ -815,7 +853,7 @@ async function pushCron(env) {
     const page = await kv.list({ prefix: "u:", cursor }); cursor = page.list_complete ? null : page.cursor;
     for (const k of page.keys) {
       const rec = await kv.get(k.name, "json"); if (!rec) continue; let changed = false;
-      if (rec.cats && rec.cats.tx === true && rec.bank && rec.subs && rec.subs.length) { try { if (await pollBank(env, rec)) changed = true; } catch {} }
+      if (rec.cats && (rec.cats.tx === true || (rec.bud && rec.cats.budget !== false)) && rec.bank && rec.subs && rec.subs.length) { try { if (await pollBank(env, rec)) changed = true; } catch {} }
       for (const kind of Object.keys(rec.rem || {})) {
         const due = rec.rem[kind].filter(x => x.at <= now), rest = rec.rem[kind].filter(x => x.at > now);
         if (!due.length) continue; changed = true; rec.rem[kind] = rest;
