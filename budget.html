@@ -366,13 +366,13 @@ header{border-bottom:0!important}
 .plan-tiles>div{background:var(--surface2,#f2f2f7);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
 .plan-tiles span{font-size:.74rem;color:var(--muted)}
 .plan-tiles b{font-size:1.02rem}
-.plan-tiles .neg b,.plan-tiles .neg span{color:var(--red,#b5544b)}
+.plan-tiles .neg b,.plan-tiles .neg span{color:var(--red,#cf4b42)}
 .plan-bar{height:6px;border-radius:999px;background:var(--surface2,#f2f2f7);overflow:hidden;margin-top:12px}
 .plan-bar i{display:block;height:100%;background:var(--accent);border-radius:999px}
 .plan-intro p{margin:0 0 12px;line-height:1.45;color:var(--muted)}
 .plan-row .of{color:var(--muted);font-weight:500}
-.plan-row.near small{color:#a8742e}
-.plan-row.over small{color:var(--red,#b5544b)}
+.plan-row.near small{color:#b8701c}
+.plan-row.over small{color:var(--red,#cf4b42)}
 .sug-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .sug-list li{display:flex;justify-content:space-between;align-items:center}
 </style>
@@ -470,9 +470,9 @@ header{border-bottom:0!important}
   :root:root{--display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Helvetica Neue",system-ui,sans-serif;--body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Helvetica Neue",system-ui,sans-serif;
     --hig-spring:cubic-bezier(.32,.72,0,1);--hig-bounce:cubic-bezier(.25,1.45,.45,1)}
   :root:root[data-theme="light"]{--page:#f2f2f7;--bg:#f2f2f7;--surface:#ffffff;--surface2:#f2f2f7;--ink:#000000;--muted:#6e6e73;--line:#e3e3e8;--frame-line:#e3e3e8;--btn:#e9e9ee;--dots:transparent;
-    --shadow:rgba(0,0,0,.06);--theirs:#e9e9eb;--accent-soft:color-mix(in srgb,var(--accent) 11%,#fff);--grouped:#f2f2f7;--cell:#fff;--sep:#d1d1d6;--red:#b5544b;--minus:#b5544b;--plus:#4e8b69;color-scheme:light}
+    --shadow:rgba(0,0,0,.06);--theirs:#e9e9eb;--accent-soft:color-mix(in srgb,var(--accent) 11%,#fff);--grouped:#f2f2f7;--cell:#fff;--sep:#d1d1d6;--red:#cf4b42;--minus:#cf4b42;--plus:#3e9e60;color-scheme:light}
   :root:root[data-theme="dark"]{--page:#000;--bg:#000;--surface:#1c1c1e;--surface2:#2c2c2e;--ink:#ffffff;--muted:#98989f;--line:#38383a;--frame-line:#2c2c2e;--btn:#2c2c2e;--dots:transparent;
-    --shadow:rgba(0,0,0,.5);--theirs:#26252a;--accent:color-mix(in srgb,var(--band) 40%,#fff);--accent-soft:color-mix(in srgb,var(--band) 30%,#1c1c1e);--grouped:#000;--cell:#1c1c1e;--sep:#38383a;--red:#b5544b;--minus:#b5544b;--plus:#4e8b69;color-scheme:dark}
+    --shadow:rgba(0,0,0,.5);--theirs:#26252a;--accent:color-mix(in srgb,var(--band) 40%,#fff);--accent-soft:color-mix(in srgb,var(--band) 30%,#1c1c1e);--grouped:#000;--cell:#1c1c1e;--sep:#38383a;--red:#cf4b42;--minus:#cf4b42;--plus:#3e9e60;color-scheme:dark}
   /* Kalender und Reisen: weißer Hintergrund wie die Apple-Apps */
   :root:root[data-theme="light"][data-hig-page="kalender"],:root:root[data-theme="light"][data-hig-page="reise"]{--bg:#ffffff;--surface2:#f2f2f7}
   html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
@@ -516,23 +516,23 @@ header{border-bottom:0!important}
   @keyframes hig-out{to{opacity:0;transform:scale(.985)}}
   @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}.hig-down{scale:1}::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}
   /* Schalter in iOS-Grün */
-  input[type=checkbox][role=switch]:checked+i,.tgl input:checked+i{background:#4e8b69!important}
-  :root[data-theme="dark"] input[type=checkbox][role=switch]:checked+i{background:#4e8b69!important}`;
+  input[type=checkbox][role=switch]:checked+i,.tgl input:checked+i{background:#3e9e60!important}
+  :root[data-theme="dark"] input[type=checkbox][role=switch]:checked+i{background:#3e9e60!important}`;
   const put=()=>{ if(!css.isConnected) document.head.appendChild(css); }; put(); addEventListener("DOMContentLoaded",()=>document.head.appendChild(css));
   // Apple-Gestaltung als letztes Stylesheet (überschreibt die Seiten-Styles)
   const apple=document.createElement("style"); apple.id="ours-apple"; apple.textContent=`  /* ===== Apple-Gestaltung (iOS 26): eine helle Variante, Systemfarben, Glas-Leiste, Kapsel-Knöpfe ===== */
   :root:root:root{--page:#f2f2f7;--bg:#f2f2f7;--surface:#ffffff;--surface2:#f2f2f7;--ink:#000000;--muted:#6c6c70;--line:#e5e5ea;--frame-line:#e5e5ea;--sep:#c6c6c8;
     --fill:rgba(118,118,128,.12);--fill2:rgba(118,118,128,.08);--btn:rgba(118,118,128,.12);--dots:transparent;--shadow:rgba(0,0,0,.04);--theirs:#e9e9eb;--grouped:#f2f2f7;--cell:#ffffff;
-    --red:#b5544b;--minus:#b5544b;--plus:#4e8b69;--on-band:#ffffff;--on-band-muted:rgba(255,255,255,.75);color-scheme:light;
+    --red:#cf4b42;--minus:#cf4b42;--plus:#3e9e60;--on-band:#ffffff;--on-band-muted:rgba(255,255,255,.75);color-scheme:light;
     --accent:var(--tint);--band:var(--tint);--logo-bg:var(--tint);--accent-soft:color-mix(in srgb,var(--tint) 12%,#ffffff);--mine:var(--tint);
-    --tint:#3d6fa3;--glass:rgba(255,255,255,.72);--glass-line:rgba(255,255,255,.65);--glass-shadow:0 10px 30px -8px rgba(0,0,0,.18),0 1px 3px rgba(0,0,0,.08)}
-  :root:root:root[data-hig-page="index"]{--tint:#b4596b}
-  :root:root:root[data-hig-page="rezepte"]{--tint:#c08a45}
-  :root:root:root[data-hig-page="haushalt"]{--tint:#8a6aa6}
-  :root:root:root[data-hig-page="budget"]{--tint:#4e8b69}
-  :root:root:root[data-hig-page="gym"]{--tint:#5b5f9e}
-  :root:root:root[data-hig-page="kalender"]{--tint:#b5544b;--bg:#ffffff;--surface2:#f2f2f7}
-  :root:root:root[data-hig-page="reise"]{--tint:#3f8c88}
+    --tint:#2f72c4;--glass:rgba(255,255,255,.72);--glass-line:rgba(255,255,255,.65);--glass-shadow:0 10px 30px -8px rgba(0,0,0,.18),0 1px 3px rgba(0,0,0,.08)}
+  :root:root:root[data-hig-page="index"]{--tint:#d04d66}
+  :root:root:root[data-hig-page="rezepte"]{--tint:#d98e30}
+  :root:root:root[data-hig-page="haushalt"]{--tint:#9a60bd}
+  :root:root:root[data-hig-page="budget"]{--tint:#3e9e60}
+  :root:root:root[data-hig-page="gym"]{--tint:#5a5bb8}
+  :root:root:root[data-hig-page="kalender"]{--tint:#cf4b42;--bg:#ffffff;--surface2:#f2f2f7}
+  :root:root:root[data-hig-page="reise"]{--tint:#25a199}
   html,body{background:var(--bg)!important}
   body{font-size:17px;line-height:1.35;letter-spacing:-.022em}
   .wrap{background:var(--bg)!important;border:0!important}
@@ -812,14 +812,14 @@ window.OursPush=(function(){
   const SOON = [];
   // Raster im Tab „Seiten“
   const GRID = [
-    {type:"dates",file:"index.html",label:"Dateideen",color:"#b4596b",ic:"💡"},
-    {type:"recipes",file:"rezepte.html",label:"Rezepte",color:"#c08a45",ic:"🍝"},
-    {type:"chores",file:"haushalt.html",label:"Haushalt",color:"#8a6aa6",ic:"🧹"},
-    {type:"budget",file:"budget.html",label:"Budget",color:"#4e8b69",ic:"💶"},
-    {type:"gym",file:"gym.html",label:"Gym",color:"#5b5f9e",ic:"🏋️"},
-    {type:"calendar",file:"kalender.html",label:"Kalender",color:"#b5544b",ic:"📅"},
-    {type:"trips",file:"reise.html",label:"Reisen",color:"#3f8c88",ic:"✈️"},
-    {type:"mail",file:"mail.html",label:"Mail",color:"#3d6fa3",ic:"✉️"},
+    {type:"dates",file:"index.html",label:"Dateideen",color:"#d04d66",ic:"💡"},
+    {type:"recipes",file:"rezepte.html",label:"Rezepte",color:"#d98e30",ic:"🍝"},
+    {type:"chores",file:"haushalt.html",label:"Haushalt",color:"#9a60bd",ic:"🧹"},
+    {type:"budget",file:"budget.html",label:"Budget",color:"#3e9e60",ic:"💶"},
+    {type:"gym",file:"gym.html",label:"Gym",color:"#5a5bb8",ic:"🏋️"},
+    {type:"calendar",file:"kalender.html",label:"Kalender",color:"#cf4b42",ic:"📅"},
+    {type:"trips",file:"reise.html",label:"Reisen",color:"#25a199",ic:"✈️"},
+    {type:"mail",file:"mail.html",label:"Mail",color:"#2f72c4",ic:"✉️"},
   ];
   // Symbole der Leiste unten: Umriss, aktiv ausgefüllt
   const svg=(b,on)=>`<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="${on?2:1.8}" stroke-linecap="round" stroke-linejoin="round">${b}</svg>`;
@@ -829,32 +829,34 @@ window.OursPush=(function(){
     all:on=>svg(["4,4","13.5,4","4,13.5","13.5,13.5"].map(xy=>{ const [x,y]=xy.split(","); return `<rect x="${x}" y="${y}" width="6.5" height="6.5" rx="1.9"${on?' fill="currentColor"':""}/>`; }).join(""),on),
     chat:on=>svg(`<path d="M12 3.8c4.7 0 8.3 3.3 8.3 7.5s-3.6 7.5-8.3 7.5c-1 0-2-.15-2.9-.45L4.6 19.6l1.2-3.6a7.1 7.1 0 0 1-2.1-4.7c0-4.2 3.6-7.5 8.3-7.5z"${on?' fill="currentColor"':""}/>`,on),
     me:svg(`<circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/>`,false),
+    feed:on=>svg(`<rect x="4" y="3.5" width="16" height="17" rx="3.4"${on?' fill="currentColor"':""}/><path d="M8 8.5h8M8 12h8M8 15.5h5"${on?' stroke="#fff"':""}/>`,on),
   };
   const PAGES = [
-    {type:"home",    file:"home.html",     label:"Home",  color:"#3d6fa3", noSpace:true, menu:true},
-    {type:"dates",   file:"index.html",    label:"Dateideen", color:"#b4596b", noun:"Dateideen-Liste",
+    {type:"home",    file:"home.html",     label:"Home",  color:"#2f72c4", noSpace:true, menu:true},
+    {type:"dates",   file:"index.html",    label:"Dateideen", color:"#d04d66", noun:"Dateideen-Liste",
      empty:"Noch keine Dateideen-Liste", hint:"Leg eine Liste an und lad danach deine Freundin oder deinen Freund ein. Nur eingeladene Personen sehen sie.",
      keys:["ideas"]},
-    {type:"recipes", file:"rezepte.html",  label:"Rezepte",   color:"#c08a45", noun:"Rezeptsammlung",
+    {type:"recipes", file:"rezepte.html",  label:"Rezepte",   color:"#d98e30", noun:"Rezeptsammlung",
      empty:"Noch keine Rezeptsammlung", hint:"Leg eine Sammlung an und lad Freunde oder Familie ein. Nur eingeladene Personen sehen sie.",
      keys:["recipes","people","swipe"]},
-    {type:"chores",  file:"haushalt.html", label:"Haushalt",  color:"#8a6aa6", noun:"Haushalt",
+    {type:"chores",  file:"haushalt.html", label:"Haushalt",  color:"#9a60bd", noun:"Haushalt",
      empty:"Noch kein Haushalt", hint:"Leg einen Haushalt an und lad deine Mitbewohner ein.",
      keys:["chores","choreLog","members","rooms","people"]},
-    {type:"budget",  file:"budget.html",   label:"Budget",    color:"#4e8b69", noun:"Budget",
+    {type:"budget",  file:"budget.html",   label:"Budget",    color:"#3e9e60", noun:"Budget",
      empty:"Noch kein Budget", hint:"Dein Budget ist privat. Später kannst du jemanden dazuholen, zum Beispiel deine Freundin oder deinen Freund.",
      keys:null},
-    {type:"gym",     file:"gym.html",      label:"Gym", color:"#5b5f9e", noun:"Trainingsplan",
+    {type:"gym",     file:"gym.html",      label:"Gym", color:"#5a5bb8", noun:"Trainingsplan",
      empty:"Noch kein Trainingsplan", hint:"Leg deinen Plan an: Übungen nach Muskelgruppen und ein Wochenplan. Später kannst du deinen Trainingspartner dazuholen.",
      keys:[]},
-    {type:"calendar",file:"kalender.html", label:"Kalender", color:"#b5544b", noun:"Kalender",
+    {type:"calendar",file:"kalender.html", label:"Kalender", color:"#cf4b42", noun:"Kalender",
      empty:"Noch kein Kalender", hint:"Leg einen Kalender an und lad deine Freundin oder deinen Freund ein. Ihr seht und bearbeitet dieselben Termine. Gym, Dateideen und Budget kommen automatisch dazu – die siehst nur du.",
      keys:["events"]},
-    {type:"trips",   file:"reise.html",    label:"Reisen", color:"#3f8c88", noun:"Reiseplanung",
+    {type:"trips",   file:"reise.html",    label:"Reisen", color:"#25a199", noun:"Reiseplanung",
      empty:"Noch keine Reiseplanung", hint:"Leg eine Reiseplanung an und lad deine Freundin oder deinen Freund ein. Ihr plant zusammen: Packliste, Ablauf, Buchungen und Kosten.",
      keys:["trips"]},
-    {type:"chat",    file:"chat.html",     label:"Chats", color:"#3d6fa3", noSpace:true},
-    {type:"mail",    file:"mail.html",     label:"Mail",  color:"#3d6fa3", noSpace:true, menu:true},
+    {type:"feed",    file:"feed.html",     label:"Feed",  color:"#2f72c4", noSpace:true},
+    {type:"chat",    file:"chat.html",     label:"Chats", color:"#2f72c4", noSpace:true},
+    {type:"mail",    file:"mail.html",     label:"Mail",  color:"#2f72c4", noSpace:true, menu:true},
   ];
   const CSS = `
   .auth-screen{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow-y:auto;background:var(--page);
@@ -1003,13 +1005,13 @@ window.OursPush=(function(){
   .ours-tab>svg,.ours-tab .tab-av svg{width:26px;height:26px;display:block}
   .ours-tab>span:not(.cb):not(.tab-av){font-size:.64rem;font-weight:600;letter-spacing:.01em;line-height:1.2}
   .ours-tab[aria-current="page"],.ours-tab[aria-expanded="true"],.tab-me[data-open]{color:var(--ink)}
-  .ours-tab .cb{position:absolute;top:3px;left:calc(50% + 5px);min-width:17px;height:17px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:var(--red,#b5544b);color:#fff;
+  .ours-tab .cb{position:absolute;top:3px;left:calc(50% + 5px);min-width:17px;height:17px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:var(--red,#cf4b42);color:#fff;
     font-size:.66rem;font-weight:700;display:grid;place-items:center;box-shadow:0 0 0 2px var(--bg)}
   .ours-tab .cb[hidden]{display:none}
   .ours-tabs .pf-btn{position:relative;top:auto;right:auto;z-index:auto;width:27px;height:27px;border:0;background:none;color:inherit;box-shadow:0 0 0 1.5px transparent;transition:box-shadow .2s}
   .ours-tabs .pf-btn .ours-av{background:var(--band);color:var(--on-band)}
   .tab-me[data-open] .pf-btn{box-shadow:0 0 0 1.5px var(--bg),0 0 0 3px var(--ink)}
-  .ours-tabs .pf-dot{top:-2px;right:-3px;width:11px;height:11px;background:var(--red,#b5544b);border:2px solid var(--bg)}
+  .ours-tabs .pf-dot{top:-2px;right:-3px;width:11px;height:11px;background:var(--red,#cf4b42);border:2px solid var(--bg)}
   .ours-tabs .pf-btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
   /* Bögen über der Leiste: Seiten und Profil */
   .ours-sheet{position:fixed!important;top:auto!important;left:max(8px,env(safe-area-inset-left,0px))!important;right:max(8px,env(safe-area-inset-right,0px))!important;transform:none!important;
@@ -1095,13 +1097,13 @@ window.OursPush=(function(){
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-12-010407";
+  const APP_VERSION="2026-11-12-010829";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
       const k="ours.reload."+v.v; try{ if(sessionStorage.getItem(k)) return; sessionStorage.setItem(k,"1"); }catch(e){}
-      (async()=>{ try{ if(window.caches){ const c=await caches.open("ours-v8"), here=location.pathname.split("/").pop()||"index.html";
-          await Promise.all(["home.html","index.html","rezepte.html","haushalt.html","budget.html","chat.html","gym.html","mail.html","kalender.html","reise.html"].map(f=>
+      (async()=>{ try{ if(window.caches){ const c=await caches.open("ours-v9"), here=location.pathname.split("/").pop()||"index.html";
+          await Promise.all(["home.html","index.html","rezepte.html","haushalt.html","budget.html","chat.html","gym.html","mail.html","kalender.html","reise.html","feed.html"].map(f=>
             fetch(f+"?v="+v.v,{cache:"no-store"}).then(r=>{ if(r.ok) return c.put(new URL(f,location.href).href,r); }).catch(()=>{}))); } }catch(e){}
         location.reload(); })();
     }).catch(()=>{}); }catch(e){}
@@ -1138,13 +1140,13 @@ window.OursPush=(function(){
     // Name der App oben in jeder Seite
     const hd=document.querySelector("header");
     if(hd && !document.getElementById("oursTabs")){
-      // Navigation unten wie bei Instagram/YouTube: Home · Kalender · Seiten · Chats · Du
+      // Navigation unten wie bei Instagram/YouTube: Home · Feed · Seiten · Chats · Du
       document.body.classList.add("ours-tabbed");
-      const tabOn=type==="home"?"home":type==="calendar"?"calendar":type==="chat"?"chat":"all";
+      const tabOn=type==="home"?"home":type==="feed"?"feed":type==="chat"?"chat":"all";
       const cur=t=>t===tabOn?' aria-current="page"':"";
       document.body.insertAdjacentHTML("beforeend",`<nav class="ours-tabs" id="oursTabs" aria-label="Navigation">
           <a href="home.html" class="ours-tab" data-tab="home"${cur("home")}>${TAB_IC.home(tabOn==="home")}<span>Home</span></a>
-          <a href="kalender.html" class="ours-tab" data-tab="calendar"${cur("calendar")}>${TAB_IC.calendar(tabOn==="calendar")}<span>Kalender</span></a>
+          <a href="feed.html" class="ours-tab" data-tab="feed"${cur("feed")}>${TAB_IC.feed(tabOn==="feed")}<span>Feed</span></a>
           <button type="button" class="ours-tab" id="pgBtn" data-tab="all"${cur("all")} aria-haspopup="true" aria-expanded="false" aria-controls="pgMenu">${TAB_IC.all(tabOn==="all")}<span>Seiten</span></button>
           <a href="chat.html?from=${type}" class="ours-tab" data-tab="chat"${cur("chat")}>${TAB_IC.chat(tabOn==="chat")}<span>Chats</span><span class="cb" id="oursChatN" hidden></span></a>
           <div class="ours-tab tab-me" id="tabMe" data-tab="me"><span class="tab-av" aria-hidden="true">${TAB_IC.me}</span><span>Du</span></div>
@@ -1762,7 +1764,7 @@ const PER_MONTH={week:52/12,month:1,quarter:1/3,half:1/6,year:1/12};
 const KINDS=[["abo","Abo"],["fix","Fixkosten"],["income","Einnahme"]];
 const CATS=["Lebensmittel","Essen gehen","Wohnen","Mobilität","Shopping","Freizeit","Medien & Abos","Versicherung","Gesundheit","Bildung","Bargeld","Sparen & Investieren","Gebühren & Zinsen","Umbuchung","Gehalt","Sonstige Einnahmen","Rückzahlung","Sonstiges"];
 const NO_SPEND=new Set(["Umbuchung"]), SAVE_CAT="Sparen & Investieren", BACK_CAT="Rückzahlung", INCOME_CATS=new Set(["Gehalt","Sonstige Einnahmen","Rückzahlung"]);
-const PALETTE=["#4f6f9c","#5a8a6a","#b8824e","#7f6a9e","#4f8b95","#b05e57","#a8924f","#a8607e","#5f6596","#4d8a80","#7c9150","#86709f","#a96f4b","#557f9f","#9aa2ad","#8f7a4e"];
+const PALETTE=["#3f70b8","#3f9a5e","#d08440","#8a63b5","#3a93a3","#c7514a","#c09a35","#c25a86","#5a5fb0","#2f9488","#7a9a3e","#8a67b8","#c0703c","#3d82b3","#98a1ad","#a07c3e"];
 const ago=t=>{ if(!t) return "noch nie"; const m=Math.round((Date.now()-t)/60000); return m<1?"gerade eben":m<60?`vor ${m} Min.`:m<1440?`vor ${Math.round(m/60)} Std.`:`vor ${Math.round(m/1440)} Tagen`; };
 const maskIban=i=>i?String(i).replace(/\s/g,"").replace(/^(.{4}).*(.{4})$/,"$1 •••• $2"):"";
 
@@ -2276,7 +2278,7 @@ function renderPlan(){
     <button class="btn primary" type="button" data-plansug>✨ Vorschlag aus deinen Ausgaben</button></div>`;
   h+=`<div class="sec-head"><h2>Kategorien</h2>${planned?`<button class="note" type="button" data-plansug style="border:0;background:none;color:var(--accent);font-weight:600">Vorschlag</button>`:""}</div>
     <div class="sec">${cats.map(c=>{ const b=B[c]||0, v=ps.byCat[c]||0, lv=budLevel(v,b), left=b-v, perDay=left>0?Math.floor(left/si.daysLeft):0;
-      const col=lv===2?"var(--red,#b5544b)":lv===1?"#c08a45":catColor(c);
+      const col=lv===2?"var(--red,#cf4b42)":lv===1?"#d98e30":catColor(c);
       return `<button type="button" class="bud plan-row${lv===2?" over":lv===1?" near":""}" data-bud="${esc(c)}"><span class="cat-name"><span class="dot" style="background:${catColor(c)}"></span>${esc(c)}</span>
         <b class="num">${money(v)}${b?` <span class="of">/ ${money(b)}</span>`:""}</b>
         ${b?`<span class="track"><span style="width:${Math.min(100,v/b*100)}%;background:${col}"></span></span>`:""}

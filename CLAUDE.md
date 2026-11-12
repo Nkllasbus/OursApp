@@ -18,10 +18,10 @@ Ours ist eine private Web-App für ein Paar bzw. eine WG (Niklas, GitHub `Nkllas
 - iPhone-App (unsigniert, Installation mit Sideloadly): https://github.com/Nkllasbus/OursApp/releases/download/app-neueste/Ours.ipa
 
 ## Aufbau
-- Jede Seite ist eine einzelne HTML-Datei im Hauptordner: `home` (Start), `index` (Dateideen), `rezepte`, `haushalt`, `budget`, `gym`, `kalender`, `reise`, `mail`, `chat`, `datenschutz`. (Räume und Smart Home sind vorerst entfernt und kommen später.)
+- Jede Seite ist eine einzelne HTML-Datei im Hauptordner: `home` (Start), `index` (Dateideen), `rezepte`, `haushalt`, `budget`, `gym`, `kalender`, `reise`, `mail`, `chat`, `feed`, `datenschutz`. (Räume und Smart Home sind vorerst entfernt und kommen später.)
 - **`entwicklung/auth.js`** ist der gemeinsame Kern und steckt eingebettet in jeder Seite: Anmeldung, Bereiche (`spaces/<id>`), Seitenmenü, Einstellungen, Hell/Dunkel (`OursTheme`), Apple-Design-Schicht (Schrift, Farben, Drück-Gefühl, Haptik `OursHaptic`, Bögen, Seitenübergänge), Offline-Schicht (Zwischenspeicher `ofl:c:` + Warteschlange `ofl:outbox`, Daten sofort aus dem Speicher), Mitteilungen (`OursPush`), Kurzbefehle-Links, Freunde/Chat.
   - Nach Änderungen an `auth.js`: `python3 entwicklung/build.py` (baut es in alle Seiten ein und setzt eine neue Version in `version.json`).
-  - **Navigation (seit 12.11.2026, Stil wie Instagram/YouTube):** Leiste unten `#oursTabs` mit Home · Kalender · Seiten (Raster `#pgMenu`, Liste `GRID`) · Chats (Zähler `#oursChatN`) · Du (Profilbild `#pfBtn`, Menü `#pfMenu` als Bogen). Kopfzeile schlicht (Hintergrund `--bg`, Titel links). `.wrap` endet über der Leiste (`--tab-h`). Kein Logo und kein schwebender Chat-Knopf mehr.
+  - **Navigation (seit 12.11.2026, Stil wie Instagram/YouTube):** Leiste unten `#oursTabs` mit Home · Feed · Seiten (Raster `#pgMenu`, Liste `GRID`) · Chats (Zähler `#oursChatN`) · Du (Profilbild `#pfBtn`, Menü `#pfMenu` als Bogen). Kopfzeile schlicht (Hintergrund `--bg`, Titel links). `.wrap` endet über der Leiste (`--tab-h`). Kein Logo und kein schwebender Chat-Knopf mehr.
 - `sw.js`: Service Worker. Seiten zuerst aus dem Speicher, im Hintergrund aktualisieren. Bei Bild-/Dateiänderungen `CACHE` (z. B. `ours-v7`) hochzählen und denselben Namen in `auth.js` (Versionsprüfung, `caches.open(...)`) anpassen.
 - `entwicklung/cloudflare-worker.js`: aktueller Worker-Code (Rezept-Import, Nährwerte, Raumdesign mit Gemini, Bank über Enable Banking `fin-*`, Mitteilungen `push-*`, Cron für Erinnerungen und neue Umsätze).
 - `entwicklung/firebase/regeln.json`: aktuelle Firebase-Regeln (Bereiche generisch über `spaces/$sid/access`).
@@ -35,6 +35,7 @@ Ours ist eine private Web-App für ein Paar bzw. eine WG (Niklas, GitHub `Nkllas
 - `users/<uid>/fin/…` privates Budget (Konten, Umsätze `tx`, Regeln, Verträge, Enable-Banking-Sitzungen `eb`).
   - Reiter „Budgets“ (Gehalt einteilen): `fin.budgets` (Kategorie → Cent je Gehaltszeitraum), `fin.meta.salaryAmt` (eigener Gehaltsbetrag), `fin.meta.extraInc` (weitere Einnahmen {n,a,m: jeden Monat, p: Zeitraum-Start}), `fin.meta.countOtherInc`. Zeitraum = letztes Gehalt bis Tag vor dem nächsten. Warnungen bei 80 %/100 % schickt der Worker (`push-budget`, auch für Abbuchungen aus dem Cron).
 - `users/<uid>/home/{budget,gym}` Kurzinfos für Startseite und Kalender.
+- Feed (`feed.html`, Tab in der Leiste): zeigt nur Freunde-Aktivität – Rezepte (`posts/<uid>`), abgeschlossene Trainings (`shelf/<uid>/gym` → `sessions`) und neue Termine anderer im geteilten Kalender (nur wenn `access` > 1 Person). Budget, Mail, Haushalt und der Rest erscheinen bewusst nicht.
 - `users/<uid>/settings` (kcal-Schalter, theme, push-Kategorien).
 
 ## Cloudflare-Einstellungen (macht Niklas)

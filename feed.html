@@ -1,0 +1,1428 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ours · Feed</title>
+<link rel="icon" href="ours-logo.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ours">
+<style>
+/* Feed: was Freunde seitenübergreifend Neues machen (Rezepte, Trainings, geteilte Termine) */
+:root{--page:#f2f2f7;--bg:#f2f2f7;--surface:#fff;--ink:#000;--muted:#6c6c70;--line:#e5e5ea;--band:#2f72c4;--on-band:#fff;--accent:#2f72c4;
+  --display:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif;--body:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;overflow:hidden;color:var(--ink);font-family:var(--body);background:var(--bg)}
+button{font:inherit;cursor:pointer;color:inherit}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:720px;height:100vh;height:100dvh;margin:0 auto;display:flex;flex-direction:column;background:var(--bg);overflow:hidden;position:relative;padding:0 16px}
+header{flex:none;margin:0 -16px}
+header.brand .wordmark{font-weight:800}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;margin:0 -16px;padding:4px 16px 120px}
+.status{flex:none;font-size:.82rem;color:var(--muted)}
+.status:empty{display:none}
+.filters{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:2px 0 10px}
+.filters::-webkit-scrollbar{display:none}
+.post{display:block;background:var(--surface);border-radius:20px;padding:14px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.ph{display:flex;align-items:center;gap:10px}
+.ph .who{flex:1;min-width:0;display:flex;flex-direction:column}
+.ph b{font-weight:600;font-size:.98rem}
+.ph small{color:var(--muted);font-size:.8rem}
+.src{flex:none;display:inline-flex;align-items:center;gap:5px;font-size:.75rem;font-weight:600;color:var(--c);background:color-mix(in srgb,var(--c) 12%,#fff);border-radius:999px;padding:4px 9px}
+.pt{margin:10px 0 0;font-size:1rem;line-height:1.4}
+.pt strong{font-weight:600}
+.pimg{margin-top:10px;border-radius:14px;overflow:hidden;aspect-ratio:4/3;background:#e9e9ee;display:grid;place-items:center;font-size:2.4rem}
+.pimg img{width:100%;height:100%;object-fit:cover;display:block}
+.pmeta{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;color:var(--muted);font-size:.85rem}
+.empty{text-align:center;padding:40px 16px;color:var(--muted)}
+.empty .big{font-size:3rem}
+.empty h3{color:var(--ink);margin:8px 0 6px;font-size:1.2rem}
+.empty p{margin:0 auto 16px;max-width:330px;line-height:1.45}
+.btn{border:0;border-radius:999px;background:var(--accent);color:#fff;font-weight:600;padding:11px 18px}
+.day{margin:14px 4px 8px;font-size:.8rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.skel{height:120px;border-radius:20px;background:linear-gradient(90deg,#ececf1,#f6f6f9,#ececf1);background-size:200% 100%;animation:sk 1.2s infinite;margin-bottom:12px}
+@keyframes sk{to{background-position:-200% 0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="brand" id="head"><div class="wordmark" aria-hidden="true">Feed</div><h1 class="sr-only">Feed</h1></header>
+  <main class="scroll" id="list" aria-live="polite"><div class="skel"></div><div class="skel"></div></main>
+  <div class="status" id="status"></div>
+</div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+/* Anmeldung, Profil und Bereiche für alle Seiten
+   - E-Mail und Passwort über Firebase Authentication
+   - Jede Seite hat ihren eigenen Bereich unter spaces/<id> mit eigenen Personen (access/<uid>)
+   - users/<uid>/spaces/<typ> merkt sich, welcher Bereich zu welcher Seite gehört
+   Seiten rufen Auth.start(firebaseConfig, "dates" | "recipes" | "chores" | "budget" | "gym", (ref, info) => { ... }) auf. */
+/* ---------- Darstellung: Automatisch / Hell / Dunkel – gilt für alle Seiten ----------
+   Seiten mit eigenem Dunkel-Design (@media prefers-color-scheme) werden umgeschaltet,
+   alle anderen bekommen ein allgemeines dunkles Farbschema. */
+(function(){
+  const KEY="ours.theme", mq=matchMedia("(prefers-color-scheme: dark)");
+  // Vorerst nur ein (heller) Modus – der Dunkelmodus kommt später wieder
+  let pref="light";
+  let rules=null;
+  const find=()=>{ if(rules) return rules; rules=[]; for(const ss of document.styleSheets){ let rs; try{ rs=ss.cssRules; }catch(e){ continue; }
+    for(const r of rs){ if(r.media&&/prefers-color-scheme:\s*dark/.test(r.media.mediaText)) rules.push({r,orig:r.media.mediaText}); } } return rules; };
+  const css=document.createElement("style"); css.id="ours-theme-css";
+  css.textContent=`html.ours-dark{color-scheme:dark;--page:#000;--bg:#121214;--surface:#1c1c1f;--surface2:#26262b;--ink:#ececf1;--muted:#9b9ba5;--line:#2f2f35;--btn:#2a2a30;--frame-line:#1a1a1e;--dots:rgba(255,255,255,.03);
+      --accent:color-mix(in srgb,var(--band) 45%,#fff);--accent-soft:color-mix(in srgb,var(--band) 38%,#1c1c1f);--theirs:#26262b;--mine:color-mix(in srgb,var(--band) 45%,#1c1c1f);--shadow:rgba(0,0,0,.6)}
+    html.ours-dark body{background-color:#000!important;background-image:none!important}
+    html.ours-dark input,html.ours-dark textarea,html.ours-dark select{color-scheme:dark}`;
+  function apply(){
+    const dark=pref==="dark"||(pref==="auto"&&mq.matches), list=find(), root=document.documentElement;
+    list.forEach(x=>{ try{ x.r.media.mediaText=pref==="auto"?x.orig:pref==="dark"?"all":"not all"; }catch(e){} });
+    if(!css.isConnected) document.head.appendChild(css);
+    root.classList.toggle("ours-dark",dark&&!list.some(x=>/--(bg|surface)\s*:/.test(x.r.cssText))); root.dataset.theme=dark?"dark":"light"; root.style.colorScheme=dark?"dark":"light";
+    document.dispatchEvent(new CustomEvent("ours-theme",{detail:{pref,dark}}));
+  }
+  mq.addEventListener?mq.addEventListener("change",apply):mq.addListener(apply);
+  window.OursTheme={get pref(){ return pref; },set(){ /* vorerst immer hell */ },apply};
+  apply();
+})();
+/* ---------- Apple-Design für alle Seiten ----------
+   Systemschrift (SF Pro), Systemfarben in Hell und Dunkel, gruppierte Flächen, weiches Federn beim Drücken,
+   Haptik beim Umschalten (iPhone ab iOS 18), Bögen mit Feder-Animation, sanfte Übergänge zwischen den Seiten. */
+(function(){
+  const root=document.documentElement, pg=(location.pathname.split("/").pop()||"index.html").replace(/\.html$/,"")||"index";
+  root.dataset.higPage=pg;
+  const css=document.createElement("style"); css.id="ours-hig";
+  css.textContent=`
+  :root:root{--display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Helvetica Neue",system-ui,sans-serif;--body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Helvetica Neue",system-ui,sans-serif;
+    --hig-spring:cubic-bezier(.32,.72,0,1);--hig-bounce:cubic-bezier(.25,1.45,.45,1)}
+  :root:root[data-theme="light"]{--page:#f2f2f7;--bg:#f2f2f7;--surface:#ffffff;--surface2:#f2f2f7;--ink:#000000;--muted:#6e6e73;--line:#e3e3e8;--frame-line:#e3e3e8;--btn:#e9e9ee;--dots:transparent;
+    --shadow:rgba(0,0,0,.06);--theirs:#e9e9eb;--accent-soft:color-mix(in srgb,var(--accent) 11%,#fff);--grouped:#f2f2f7;--cell:#fff;--sep:#d1d1d6;--red:#cf4b42;--minus:#cf4b42;--plus:#3e9e60;color-scheme:light}
+  :root:root[data-theme="dark"]{--page:#000;--bg:#000;--surface:#1c1c1e;--surface2:#2c2c2e;--ink:#ffffff;--muted:#98989f;--line:#38383a;--frame-line:#2c2c2e;--btn:#2c2c2e;--dots:transparent;
+    --shadow:rgba(0,0,0,.5);--theirs:#26252a;--accent:color-mix(in srgb,var(--band) 40%,#fff);--accent-soft:color-mix(in srgb,var(--band) 30%,#1c1c1e);--grouped:#000;--cell:#1c1c1e;--sep:#38383a;--red:#cf4b42;--minus:#cf4b42;--plus:#3e9e60;color-scheme:dark}
+  /* Kalender und Reisen: weißer Hintergrund wie die Apple-Apps */
+  :root:root[data-theme="light"][data-hig-page="kalender"],:root:root[data-theme="light"][data-hig-page="reise"]{--bg:#ffffff;--surface2:#f2f2f7}
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  body{font-family:var(--body)!important;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;letter-spacing:-.01em;background-image:none!important}
+  *{-webkit-tap-highlight-color:transparent}
+  ::selection{background:color-mix(in srgb,var(--accent) 30%,transparent)}
+  h1,h2,h3,h4,.wordmark,.auth-head h2,.auth-setup h3{font-family:var(--display)!important;font-weight:700!important;letter-spacing:-.022em!important}
+  header.brand .wordmark{font-weight:800!important;letter-spacing:-.03em!important}
+  button,input,select,textarea{font-family:inherit}
+  button,[role=button],a{touch-action:manipulation}
+  button,[role=button],label.auth-sw,.tile{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  @media (pointer:coarse){input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{font-size:max(16px,1em)!important}}
+  /* Drücken: kleine Elemente federn, breite Zeilen werden hinterlegt */
+  .hig-down{scale:.955;transition:scale .14s var(--hig-spring),filter .14s,opacity .14s!important}
+  .hig-down.hig-wide{scale:.985}
+  .hig-down.hig-row{scale:1;filter:brightness(.93)}
+  :root[data-theme="dark"] .hig-down.hig-row{filter:brightness(1.4)}
+  .hig-up{transition:scale .55s var(--hig-bounce),filter .3s ease-out!important}
+  /* Bögen und Dialoge */
+  .modal:not([hidden]),.auth-screen.dim{animation:hig-fade .28s ease-out backwards;-webkit-backdrop-filter:blur(8px) saturate(140%);backdrop-filter:blur(8px) saturate(140%)}
+  .modal{background:rgba(0,0,0,.34)!important}
+  .modal:not([hidden])>*,.auth-screen .auth-card{animation:hig-sheet .52s var(--hig-spring) backwards}
+  .sheet,.auth-card{border-radius:20px!important}
+  .sheet.ios{border-radius:16px!important}
+  /* große Bögen kommen wie in iOS von unten */
+  @media (max-width:600px){.modal:has(>.sheet.ios){place-items:end center!important;padding:max(44px,env(safe-area-inset-top,0px)) 0 0!important}
+    .sheet.ios{max-width:none!important;width:100%!important;border-radius:14px 14px 0 0!important;max-height:100%!important;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))!important}
+    .modal:not([hidden])>.sheet.ios{animation:hig-rise .55s var(--hig-spring) backwards}}
+  @keyframes hig-rise{from{transform:translateY(100%)}}
+  .dt input{padding:6px 7px!important}
+  .ours-native .modal:not([hidden]),.ours-native .auth-screen.dim{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  @keyframes hig-fade{from{opacity:0}}
+  @keyframes hig-sheet{from{opacity:0;transform:translateY(48px) scale(.96)}}
+  /* Seitenwechsel wie in iOS */
+  @view-transition{navigation:auto}
+  header.brand{view-transition-name:hig-head}
+  ::view-transition-old(root){animation:.22s ease-in both hig-out}
+  ::view-transition-new(root){animation:.42s var(--hig-spring) both hig-in}
+  ::view-transition-group(hig-head){animation-duration:.42s;animation-timing-function:var(--hig-spring)}
+  @keyframes hig-in{from{opacity:0;transform:translateY(14px) scale(.985)}}
+  @keyframes hig-out{to{opacity:0;transform:scale(.985)}}
+  @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}.hig-down{scale:1}::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}
+  /* Schalter in iOS-Grün */
+  input[type=checkbox][role=switch]:checked+i,.tgl input:checked+i{background:#3e9e60!important}
+  :root[data-theme="dark"] input[type=checkbox][role=switch]:checked+i{background:#3e9e60!important}`;
+  const put=()=>{ if(!css.isConnected) document.head.appendChild(css); }; put(); addEventListener("DOMContentLoaded",()=>document.head.appendChild(css));
+  // Apple-Gestaltung als letztes Stylesheet (überschreibt die Seiten-Styles)
+  const apple=document.createElement("style"); apple.id="ours-apple"; apple.textContent=`  /* ===== Apple-Gestaltung (iOS 26): eine helle Variante, Systemfarben, Glas-Leiste, Kapsel-Knöpfe ===== */
+  :root:root:root{--page:#f2f2f7;--bg:#f2f2f7;--surface:#ffffff;--surface2:#f2f2f7;--ink:#000000;--muted:#6c6c70;--line:#e5e5ea;--frame-line:#e5e5ea;--sep:#c6c6c8;
+    --fill:rgba(118,118,128,.12);--fill2:rgba(118,118,128,.08);--btn:rgba(118,118,128,.12);--dots:transparent;--shadow:rgba(0,0,0,.04);--theirs:#e9e9eb;--grouped:#f2f2f7;--cell:#ffffff;
+    --red:#cf4b42;--minus:#cf4b42;--plus:#3e9e60;--on-band:#ffffff;--on-band-muted:rgba(255,255,255,.75);color-scheme:light;
+    --accent:var(--tint);--band:var(--tint);--logo-bg:var(--tint);--accent-soft:color-mix(in srgb,var(--tint) 12%,#ffffff);--mine:var(--tint);
+    --tint:#2f72c4;--glass:rgba(255,255,255,.72);--glass-line:rgba(255,255,255,.65);--glass-shadow:0 10px 30px -8px rgba(0,0,0,.18),0 1px 3px rgba(0,0,0,.08)}
+  :root:root:root[data-hig-page="index"]{--tint:#d04d66}
+  :root:root:root[data-hig-page="rezepte"]{--tint:#d98e30}
+  :root:root:root[data-hig-page="haushalt"]{--tint:#9a60bd}
+  :root:root:root[data-hig-page="budget"]{--tint:#3e9e60}
+  :root:root:root[data-hig-page="gym"]{--tint:#5a5bb8}
+  :root:root:root[data-hig-page="kalender"]{--tint:#cf4b42;--bg:#ffffff;--surface2:#f2f2f7}
+  :root:root:root[data-hig-page="reise"]{--tint:#25a199}
+  html,body{background:var(--bg)!important}
+  body{font-size:17px;line-height:1.35;letter-spacing:-.022em}
+  .wrap{background:var(--bg)!important;border:0!important}
+  /* Großer Titel wie in iOS */
+  body.ours-tabbed :is(header,#head){padding:calc(10px + env(safe-area-inset-top,0px)) 20px 6px!important;margin-top:0!important;height:auto!important;overflow:visible!important;border:0!important}
+  body.ours-tabbed :is(header,#head) .wordmark{font-size:34px!important;line-height:41px!important;font-weight:700!important;letter-spacing:-.02em!important}
+  body.ours-tabbed :is(header,#head) .wordmark.pg-title::after{opacity:.35;border-width:0 .06em .06em 0}
+  body.hig-scrolled :is(header,#head){box-shadow:0 .5px 0 var(--sep)!important}
+  /* Schwebende Glas-Leiste unten (iOS 26) */
+  :root:root:root,body.ours-tabbed{--tab-h:64px;--tab-gap:max(10px,env(safe-area-inset-bottom,0px));--tab-total:calc(var(--tab-h) + var(--tab-gap) + 8px)}
+  .ours-tabs{left:16px!important;right:16px!important;bottom:var(--tab-gap)!important;height:var(--tab-h)!important;max-width:440px!important;margin:0 auto!important;padding:4px!important;
+    border-radius:999px!important;border:.5px solid var(--glass-line)!important;background:var(--glass)!important;box-shadow:var(--glass-shadow)!important;
+    -webkit-backdrop-filter:blur(24px) saturate(180%)!important;backdrop-filter:blur(24px) saturate(180%)!important;view-transition-name:ours-tabs}
+  .ours-native .ours-tabs{background:rgba(255,255,255,.94)!important}
+  .ours-tab{border-radius:999px!important;color:#1c1c1e!important;gap:2px!important;padding:0!important;transition:background-color .25s,color .25s}
+  .ours-tab>svg,.ours-tab .tab-av svg{width:25px!important;height:25px!important}
+  .ours-tab>span:not(.cb):not(.tab-av){font-size:10px!important;font-weight:600!important;letter-spacing:0!important}
+  .ours-tab[aria-current="page"],.ours-tab[aria-expanded="true"],.tab-me[data-open]{color:var(--tint)!important;background:rgba(118,118,128,.13)!important}
+  .ours-tabs .pf-btn .ours-av{background:var(--tint)!important;color:#fff!important}
+  .ours-tab .cb{box-shadow:0 0 0 2px #fff!important}
+  .ours-sheet{bottom:calc(var(--tab-total) + 4px)!important;left:max(16px,env(safe-area-inset-left,0px))!important;right:max(16px,env(safe-area-inset-right,0px))!important;max-width:440px!important;
+    max-height:calc(100dvh - var(--tab-total) - 80px)!important;border-radius:28px!important;background:rgba(255,255,255,.92)!important;-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);
+    box-shadow:0 0 0 100vmax rgba(0,0,0,.18),var(--glass-shadow)!important}
+  /* Inhalt läuft unter der Leiste durch und endet darüber */
+  body.ours-tabbed .wrap{height:100dvh!important;max-height:100dvh!important}
+  body.ours-tabbed .wrap :is(.scroll,main.scroll,.rscroll,.msgs){padding-bottom:calc(var(--tab-total) + 84px)!important;scroll-padding-bottom:calc(var(--tab-total) + 20px)}
+  /* Kalender: Wochen füllen genau den sichtbaren Bereich über der Leiste */
+  :root[data-hig-page="kalender"] .wrap{height:calc(100dvh - var(--tab-total))!important;max-height:calc(100dvh - var(--tab-total))!important}
+  :root[data-hig-page="kalender"] body.ours-tabbed .wrap .scroll{padding-bottom:12px!important}
+  :root[data-hig-page="kalender"] body.ours-tabbed :is(.fab,.todaypill){bottom:12px!important}
+  body.ours-tabbed .foot-count{display:none!important}
+  body.ours-tabbed .wrap>.status{position:fixed!important;left:50%;translate:-50% 0;bottom:calc(var(--tab-total) + 76px);z-index:46;max-width:min(88vw,420px);width:max-content;margin:0!important;
+    padding:9px 16px!important;border-radius:999px;background:rgba(28,28,30,.88);color:#fff!important;font-size:14px!important;font-weight:500;text-align:center;pointer-events:none;
+    -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:var(--glass-shadow)}
+  body.ours-tabbed .wrap>.status:empty{display:none!important}
+  body.ours-tabbed .toast{bottom:calc(var(--tab-total) + 76px)!important}
+  /* runder Hauptknopf über der Leiste (Glas, getönt) */
+  body.ours-tabbed :is(.fab,.g-fab,.sp-fab){bottom:calc(var(--tab-total) + 12px)!important;translate:none!important;right:max(20px,env(safe-area-inset-right,0px))!important;
+    width:56px!important;height:56px!important;border-radius:50%!important;border:0!important;background:var(--tint)!important;color:#fff!important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 8px 22px -6px color-mix(in srgb,var(--tint) 70%,transparent),0 2px 6px rgba(0,0,0,.12)!important}
+  body.ours-tabbed .fab.fab-mid{right:calc(max(20px,env(safe-area-inset-right,0px)) + 68px)!important;background:var(--glass)!important;color:var(--tint)!important;
+    -webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);box-shadow:var(--glass-shadow)!important;border:.5px solid var(--glass-line)!important}
+  body.ours-tabbed :is(.todaypill,.rest-bar,.sp-card){bottom:calc(var(--tab-total) + 12px)!important;translate:none!important}
+  body.ours-tabbed .fab-menu{bottom:calc(var(--tab-total) + 80px)!important;translate:none!important}
+  .fab-opt{background:var(--glass)!important;color:var(--ink)!important;border:.5px solid var(--glass-line)!important;border-radius:999px!important;box-shadow:var(--glass-shadow)!important;
+    -webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);font-weight:500!important}
+  /* geöffnetes Schnellmenü: Hintergrund abdunkeln und unscharf wie bei iOS-Kontextmenüs */
+  .fab-menu.open::before{content:"";position:fixed;inset:0;z-index:-1;background:rgba(242,242,247,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);pointer-events:auto;animation:hig-fadein .2s ease-out}
+  body:has(.fab-menu.open) :is(.fab,.g-fab){z-index:8!important}
+  /* Einstellungen und Anmeldung: heller Kopf mit großem Titel */
+  .auth-head{background:#ffffff!important;color:var(--ink)!important;padding:20px 22px 6px!important}
+  .auth-head::after{display:none!important}
+  .auth-head h2{font-size:28px!important;font-weight:700!important}
+  .auth-head p{color:var(--muted)!important;opacity:1!important}
+  .auth-card{border:0!important;box-shadow:0 20px 50px -18px rgba(0,0,0,.35)!important}
+  .auth-sec{color:var(--muted)!important;font-size:13px!important;font-weight:400!important;letter-spacing:0!important;text-transform:uppercase}
+  #stOut{color:var(--red)!important}
+  /* Knöpfe: Kapseln wie in iOS */
+  .btn{border:0!important;border-radius:999px!important;background:var(--fill)!important;color:var(--tint)!important;font-weight:600!important;box-shadow:none!important}
+  .btn.primary,.btn.big.primary,.auth-btn:not(.alt):not(.auth-google){background:var(--tint)!important;color:#fff!important;border:0!important;border-radius:999px!important;box-shadow:none!important}
+  .auth-btn.alt{background:var(--fill)!important;color:var(--tint)!important;border:0!important;border-radius:999px!important}
+  .btn.ghost,.ghost,.linkish,.auth-link{background:none!important;border:0!important;color:var(--tint)!important;box-shadow:none!important}
+  .btn:disabled,.btn[disabled]{opacity:.4!important}
+  .del,.danger,.btn.danger{color:var(--red)!important}
+  /* Segmente wie das iOS-Segmented-Control */
+  :is(.seg,.toggle,.tabs:not(nav)){background:var(--fill)!important;border:0!important;border-radius:999px!important;padding:2px!important;box-shadow:none!important;gap:0!important}
+  :is(.seg,.toggle,.tabs:not(nav))>button{background:none!important;color:var(--ink)!important;border:0!important;border-radius:999px!important;box-shadow:none!important;font-weight:500!important;
+    font-size:14px!important;min-height:30px;transition:background-color .2s,box-shadow .2s}
+  :is(.seg,.toggle,.tabs:not(nav))>button:is([aria-pressed="true"],[aria-selected="true"]){background:#ffffff!important;color:var(--ink)!important;font-weight:600!important;
+    box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04),0 0 0 .5px rgba(0,0,0,.04)!important}
+  :is(.seg,.toggle,.tabs:not(nav))>button::after{display:none!important}
+  /* Auswahl-Chips */
+  .chip,.fl,.fchip{border:0!important;border-radius:999px!important;background:var(--fill)!important;color:var(--ink)!important;box-shadow:none!important;font-weight:500!important}
+  .chip[aria-pressed="true"],.fl[aria-pressed="true"]{background:var(--tint)!important;color:#fff!important}
+  .chip.sug{background:var(--accent-soft)!important;color:var(--tint)!important}
+  /* Eingabefelder */
+  :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]),textarea,select):not(.cell):not(.inp):not(.r):not(:is(.igrp,.list,.dt,.auth-screen,.composer,.search) *){
+    background:var(--fill)!important;border:0!important;border-radius:12px!important;box-shadow:none!important;color:var(--ink)!important}
+  :is(input,textarea,select):focus-visible{outline:none!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--tint) 30%,transparent)!important}
+  /* Karten: weiß, ohne Rahmen, größere Rundung */
+  :is(.card,.chart-card,.sec,.pg-card,.me-card,.hero,.empty,.list,.igrp,.box):not(button){border-color:transparent!important}
+  /* Bögen kommen von unten, mit Griff (iOS-Sheet) */
+  .modal{z-index:55!important;background:rgba(0,0,0,.25)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  .lightbox,.frx{z-index:56!important}
+  @media (max-width:600px){
+    .modal:not(.auth-screen){place-items:end center!important;align-items:end!important;justify-content:center!important;padding:max(48px,env(safe-area-inset-top,0px)) 0 0!important}
+    .modal:not(.auth-screen)>:is(.sheet,form.sheet,[role=dialog]){width:100%!important;max-width:none!important;max-height:100%!important;border-radius:26px 26px 0 0!important;border:0!important;
+      padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))!important;box-shadow:0 -6px 30px rgba(0,0,0,.12)!important;position:relative;animation:hig-rise .5s var(--hig-spring) backwards!important}
+    .modal:not(.auth-screen)>:is(.sheet,form.sheet):not(.ios)::before{content:"";position:sticky;top:0;display:block;width:36px;height:5px;border-radius:3px;background:#c7c7cc;margin:-12px auto 6px;flex:none}
+  }
+  .sheet:not(.ios),.auth-card{background:#ffffff!important}
+  .sheet-actions{gap:10px!important}
+  /* Drücken wie in iOS: Knöpfe leicht kleiner und gedimmt, Zeilen grau hinterlegt */
+  .hig-down{scale:.96!important;opacity:.75;transition:scale .12s var(--hig-spring),opacity .12s,filter .12s!important}
+  .hig-down.hig-wide{scale:.98!important;opacity:1}
+  .hig-down.hig-row{scale:1!important;opacity:1;filter:brightness(.92)}
+  .ours-tab.hig-down{scale:.92!important;opacity:1}
+  .hig-up{transition:scale .5s var(--hig-bounce),opacity .3s ease-out,filter .3s ease-out!important}
+  /* Seitenwechsel: wie Tabs in iOS, ruhig überblenden, Leiste bleibt stehen */
+  header.brand{view-transition-name:none!important}
+  ::view-transition-old(root){animation:.16s ease-out both hig-fadeout!important}
+  ::view-transition-new(root){animation:.24s ease-out both hig-fadein!important}
+  ::view-transition-group(ours-tabs){animation:none!important}
+  @keyframes hig-fadeout{to{opacity:0}}
+  @keyframes hig-fadein{from{opacity:0}}
+`;
+  // nach dem Einhängen Größen neu berechnen lassen (z. B. Kalenderwochen, die die Höhe ausfüllen)
+  const attach=()=>document.head.appendChild(apple); attach(); addEventListener("DOMContentLoaded",attach);
+  window.OursDesign={attach};
+  // Tipp auf den abgedunkelten Hintergrund eines Schnellmenüs schließt es
+  document.addEventListener("click",e=>{ const m=e.target; if(!m||!m.classList||!m.classList.contains("fab-menu")||!m.classList.contains("open")) return;
+    e.stopPropagation(); e.preventDefault(); const f=m.parentElement&&m.parentElement.querySelector(".g-fab,.fab:not(.fab-mid):not(.sp-fab)"); if(f) f.click(); },true);
+  // beim Scrollen eine feine Linie unter dem Titel (wie in iOS)
+  document.addEventListener("scroll",e=>{ const t=e.target; if(!t||!t.classList||!t.classList.contains("scroll")) return; document.body.classList.toggle("hig-scrolled",t.scrollTop>6); },{capture:true,passive:true});
+  // Statusleiste in der Farbe des (jetzt schlichten) Kopfes
+  const tint=()=>{ let m=document.querySelector('meta[name="theme-color"]'); if(!m){ m=document.createElement("meta"); m.name="theme-color"; document.head.appendChild(m); }
+    const c=getComputedStyle(root).getPropertyValue("--bg").trim()||getComputedStyle(root).getPropertyValue("--band").trim(); if(c) m.content=c; };
+  tint(); document.addEventListener("ours-theme",()=>setTimeout(tint,0));
+  // Haptik: iPhone (iOS 18+) über einen versteckten Schalter, Android über vibrate
+  let hl=null, busy=false;
+  function haptic(){ if(busy) return; busy=true; try{
+    if(navigator.vibrate&&!/iPhone|iPad|iPod/.test(navigator.userAgent)) navigator.vibrate(8);
+    else { if(!hl){ hl=document.createElement("label"); hl.setAttribute("aria-hidden","true"); hl.style.cssText="position:fixed;left:-200px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none";
+      const i=document.createElement("input"); i.type="checkbox"; i.setAttribute("switch",""); i.tabIndex=-1; hl.appendChild(i); document.body.appendChild(hl); } hl.click(); }
+  }catch(e){} busy=false; }
+  window.OursHaptic=haptic;
+  // iPhone-App (WKWebView): nach dem Schließen der Tastatur die Ansicht zurücksetzen, damit Tippen wieder genau trifft
+  if(window.Capacitor){ root.classList.add("ours-native");
+    // Eingabefelder per Tipp sicher fokussieren (WKWebView verliert sonst nach der Tastatur manchmal den Fokus-Tipp)
+    const FIELD='input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=range]):not([type=file]),textarea,select';
+    // Tipp auf ein Textfeld: iOS-Verarbeitung abfangen und selbst fokussieren (öffnet die Tastatur zuverlässig)
+    const TEXTY=el=>el.tagName==="TEXTAREA"||(el.tagName==="INPUT"&&!/^(date|time|datetime-local|month|week|color)$/.test(el.type));
+    let tStart=null;
+    document.addEventListener("touchstart",e=>{ const t=e.touches[0]; tStart=t?{x:t.clientX,y:t.clientY,at:Date.now()}:null; },{capture:true,passive:true});
+    document.addEventListener("touchend",e=>{ let el=e.target.closest(FIELD); if(!el){ const lb=e.target.closest("label"); el=lb&&lb.querySelector(FIELD); }
+      if(!el||el.disabled||el.readOnly||document.activeElement===el||!TEXTY(el)) return;
+      const t=e.changedTouches[0]; if(tStart&&t&&(Math.abs(t.clientX-tStart.x)>10||Math.abs(t.clientY-tStart.y)>10)) return;   // war ein Wischen
+      e.preventDefault(); el.focus(); try{ const n=el.value.length; if(el.setSelectionRange&&el.type!=="email"&&el.type!=="number") el.setSelectionRange(n,n); }catch(err){} },{capture:true,passive:false});
+    document.addEventListener("focusout",()=>setTimeout(()=>{ const a=document.activeElement; if(!a||!/INPUT|TEXTAREA|SELECT/.test(a.tagName)) window.scrollTo(0,0); },60));
+    if(window.visualViewport) visualViewport.addEventListener("resize",()=>{ if(visualViewport.height>=innerHeight*.9) window.scrollTo(0,0); }); }
+  // abgebrochene Seitenübergänge (z. B. beim Zurückwischen) still schlucken
+  ["pagereveal","pageswap"].forEach(t=>addEventListener(t,e=>{ const v=e.viewTransition; if(v){ v.ready.catch(()=>{}); v.finished.catch(()=>{}); if(v.updateCallbackDone) v.updateCallbackDone.catch(()=>{}); } }));
+  // Drück-Gefühl
+  const SEL='button,a[href],[role=button],[role=checkbox],[role=switch],[role=tab],summary,label.auth-sw,.tile,.chip';
+  let pressed=null, t0=0;
+  const release=()=>{ const el=pressed; if(!el) return; pressed=null; const wait=Math.max(0,90-(Date.now()-t0));
+    setTimeout(()=>{ el.classList.remove("hig-down"); el.classList.add("hig-up"); setTimeout(()=>el.classList.remove("hig-up","hig-wide","hig-row"),560); },wait); };
+  document.addEventListener("pointerdown",e=>{ if(e.button>0) return; const el=e.target.closest(SEL); if(!el||el.disabled||el.getAttribute("aria-disabled")==="true"||el===hl||el.closest(".hig-off")) return;
+    const r=el.getBoundingClientRect(), wide=r.width>window.innerWidth*.7, rad=parseFloat(getComputedStyle(el).borderTopLeftRadius)||0;
+    pressed=el; t0=Date.now(); el.classList.remove("hig-up"); el.classList.toggle("hig-wide",wide&&rad>=12); el.classList.toggle("hig-row",wide&&rad<12); el.classList.add("hig-down"); },{passive:true});
+  ["pointerup","pointercancel","dragstart"].forEach(t=>document.addEventListener(t,release,{passive:true}));
+  document.addEventListener("scroll",release,{passive:true,capture:true});
+  // Haptik bei Auswahl und Umschaltern
+  document.addEventListener("change",e=>{ const t=e.target; if(t&&t!==(hl&&hl.firstChild)&&(t.type==="checkbox"||t.type==="radio")) haptic(); },true);
+  document.addEventListener("click",e=>{ if(busy) return; const el=e.target.closest('[role=checkbox],[role=tab],[aria-pressed],[aria-checked],.ck,[data-theme]'); if(el&&!el.closest("label")) haptic(); },true);
+})();
+/* ---------- Mitteilungen aufs Handy (Web Push über den Helfer in Cloudflare) ----------
+   Auf dem iPhone nur, wenn Ours vom Home-Bildschirm geöffnet wird (ab iOS 16.4). */
+window.OursPush=(function(){
+  const W="https://oursapp.niklasbergnerbus.workers.dev", CATS=[["ev","Termine","Nur bei Terminen, für die du im Kalender einen Hinweis eingestellt hast"],["gym","Training","Nur wenn du im Gym-Plan einen Hinweis eingestellt hast"],["chore","Haushalt","Wenn eine Aufgabe für dich fällig ist"],["trip","Reisen","Packliste, Abreise und Tagesplan"],["partner","Änderungen von anderen","Wenn jemand einen Termin oder eine Reise einträgt"]],
+    ALL=["ev","gym","chore","trip","partner","pay","cancel","tx","budget"], DEF={tx:false};   // Budget-Mitteilungen stellst du auf der Budget-Seite ein
+  const u8=s=>Uint8Array.from(atob(s.replace(/-/g,"+").replace(/_/g,"/")+"===".slice((s.length+3)%4)),c=>c.charCodeAt(0));
+  const ls=(k,v)=>{ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){ return null; } };
+  const supported=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;
+  const standaloneNeeded=()=>/iPhone|iPad|iPod/.test(navigator.userAgent)&&!(navigator.standalone||matchMedia("(display-mode: standalone)").matches);
+  async function call(body){ const u=window.firebase&&firebase.auth&&firebase.auth().currentUser; const token=u?await u.getIdToken():null;
+    const r=await fetch(W,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...body,token})}); const d=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(d.error||"Der Helfer antwortet nicht."); return d; }
+  const reg=()=>Promise.race([navigator.serviceWorker.ready,new Promise((_,rej)=>setTimeout(()=>rej(new Error("Der Hintergrunddienst läuft noch nicht. Lade die Seite einmal neu.")),6000))]);
+  let cats={}; const catsOut=()=>Object.fromEntries(ALL.map(k=>[k,k in cats?cats[k]!==false:DEF[k]!==false]));
+  async function state(){ if(!supported()) return standaloneNeeded()?"homescreen":"na"; if(Notification.permission==="denied") return "denied";
+    try{ const r=await reg(), s=await r.pushManager.getSubscription(); return s&&ls("ours.push")==="1"?"on":"off"; }catch(e){ return "off"; } }
+  async function enable(){
+    if(!supported()) throw new Error(standaloneNeeded()?"Öffne Ours vom Home-Bildschirm, dann geht es.":"Dieser Browser kann keine Mitteilungen.");
+    const p=await Notification.requestPermission(); if(p!=="granted") throw new Error("Mitteilungen wurden nicht erlaubt. Du kannst sie in den iPhone-Einstellungen bei Ours einschalten.");
+    let key; try{ key=(await call({mode:"push-key"})).key; }catch(e){ throw new Error(/Link|Video|TikTok/.test(e.message||"")?"Der Cloudflare-Worker hat noch den alten Code. Füg den neuen Code aus cloudflare-worker.txt ein und drück auf Deploy.":e.message); }
+    if(!key) throw new Error("Der Cloudflare-Worker hat noch den alten Code. Füg den neuen Code aus cloudflare-worker.txt ein und drück auf Deploy.");
+    const r=await reg();
+    let s=await r.pushManager.getSubscription(); if(!s) s=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(key)});
+    await call({mode:"push-sub",sub:s.toJSON(),cats:catsOut()}); ls("ours.push","1"); Object.keys(localStorage).filter(k=>k.startsWith("ours.pplan.")).forEach(k=>ls(k,null));
+    document.dispatchEvent(new CustomEvent("ours-push",{detail:{on:true}}));
+  }
+  async function disable(){ try{ const r=await reg(), s=await r.pushManager.getSubscription(); if(s){ await call({mode:"push-sub",off:true,sub:s.toJSON()}).catch(()=>{}); await s.unsubscribe(); } }finally{ ls("ours.push",null); } }
+  // Erinnerungen der nächsten Tage an den Helfer geben (nur wenn sich etwas geändert hat)
+  async function plan(kind,items){ if(ls("ours.push")!=="1") return; items=(items||[]).filter(x=>x&&x.at>Date.now()).sort((a,b)=>a.at-b.at).slice(0,80);
+    const h=JSON.stringify(items); if(ls("ours.pplan."+kind)===h) return; try{ await call({mode:"push-plan",kind,items}); ls("ours.pplan."+kind,h); }catch(e){} }
+  // Budget-Stand an den Helfer (er meldet 80 % / 100 % nur einmal je Zeitraum)
+  async function budget(state){ if(ls("ours.push")!=="1") return; const h=JSON.stringify(state); if(ls("ours.pbud")===h) return; try{ await call({mode:"push-budget",...state}); ls("ours.pbud",h); }catch(e){} }
+  function notify(sid,title,body,url){ if(!sid) return; call({mode:"push-notify",sid,title,body,url}).catch(()=>{}); }
+  async function setCat(k,on,db,uid){ cats[k]=on; if(db&&uid) await db.ref(`users/${uid}/settings/push/${k}`).set(on); if(ls("ours.push")==="1") await call({mode:"push-sub",cats:catsOut()}).catch(()=>{}); }
+  return {CATS,supported,state,enable,disable,plan,budget,notify,setCat,test:()=>call({mode:"push-test"}),get cats(){ return catsOut(); },_load(v){ cats=v||{}; }};
+})();
+/* ---------- Offline: Seiten über den Service Worker, Daten über einen Zwischenspeicher ----------
+   Gelesene Daten (on/once "value") werden im localStorage gemerkt und ohne Netz von dort geliefert.
+   Schreibvorgänge kommen in eine Warteschlange und werden nachgereicht, sobald wieder Netz da ist. */
+(function(){
+  try{ if("serviceWorker" in navigator && !/claude|anthropic|usercontent/.test(location.hostname) && /^https?:$/.test(location.protocol)) addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{})); }catch(e){}
+  const F=window.firebase; if(!F||!F.database||!F.database.Query||!F.database.Reference) return;
+  const Q=F.database.Query.prototype, R=F.database.Reference.prototype;
+  const oOn=Q.on, oOff=Q.off, oOnce=Q.once, oSet=R.set, oUpdate=R.update, oRemove=R.remove;
+  const PRE="ofl:c:", OUT="ofl:outbox", t0=Date.now(), PAGE=t0.toString(36)+Math.random().toString(36).slice(2,6);
+  let conn=null, watching=false;
+  const pathOf=ref=>{ try{ return decodeURIComponent(String(ref.toString()).replace(/^[a-z]+:\/\/[^/]+\/?/i,"")).replace(/\/+$/,""); }catch(e){ return null; } };
+  const plain=q=>{ try{ return !q.ref||q.isEqual(q.ref); }catch(e){ return false; } };   // keine sortierten/gefilterten Abfragen
+  const okPath=p=>p!=null&&p!==""&&!p.startsWith(".info");
+  const lsGet=k=>{ try{ const v=localStorage.getItem(k); return v==null?undefined:JSON.parse(v); }catch(e){ return undefined; } };
+  const lsSet=(k,v)=>{ try{ const s=JSON.stringify(v===undefined?null:v); if(s.length>1500000) return; localStorage.setItem(k,s); }catch(e){} };
+  const watch=()=>{ if(watching) return; try{ if(!F.apps||!F.apps.length) return; watching=true;
+    oOn.call(F.database().ref(".info/connected"),"value",s=>{ conn=s.val()===true; if(conn) setTimeout(replay,500); }); }catch(e){ watching=false; } };
+  const offline=()=>conn!==true&&(navigator.onLine===false||Date.now()-t0>3500);
+  const wait=()=>conn===true?null:navigator.onLine===false?0:Math.max(0,3500-(Date.now()-t0));
+  function snap(v,ref){ const val=v===undefined?null:v;
+    return {key:ref&&ref.key,ref,val:()=>val==null?null:JSON.parse(JSON.stringify(val)),exportVal(){ return this.val(); },toJSON:()=>val,exists:()=>val!=null,
+      child:k=>snap(val&&typeof val==="object"?val[k]:null,ref&&ref.child(k)),hasChild:k=>!!(val&&typeof val==="object"&&val[k]!=null),
+      hasChildren:()=>!!(val&&typeof val==="object"&&Object.keys(val).length),numChildren:()=>val&&typeof val==="object"?Object.keys(val).length:0,
+      forEach(fn){ if(!val||typeof val!=="object") return false; for(const k of Object.keys(val)) if(fn(snap(val[k],ref&&ref.child(k)))===true) return true; return false; }};
+  }
+  const cbMap=new WeakMap();
+  const BOOT=/^(users\/[^/]+\/(profile|spaces(\/[^/]+)?|friendCode|settings)|pub\/[^/]+|spaces\/[^/]+\/meta)$/;
+  Q.on=function(ev,cb,...rest){
+    watch(); const p=pathOf(this);
+    if(ev!=="value"||typeof cb!=="function"||!okPath(p)||!plain(this)) return oOn.call(this,ev,cb,...rest);
+    let real=false; const ref=this.ref||this;
+    const w=function(s){ real=true; if(conn===true) lsSet(PRE+p,s.val()); return cb.apply(this,arguments); };
+    cbMap.set(cb,w); oOn.call(this,ev,w,...rest);
+    const c=lsGet(PRE+p);
+    if(c!==undefined) setTimeout(()=>{ if(!real) try{ cb(snap(c,ref)); }catch(e){ console.error(e); } },0);   // sofort aus dem Speicher
+    return cb;
+  };
+  Q.off=function(ev,cb,...rest){ return oOff.call(this,ev,cb&&cbMap.get(cb)||cb,...rest); };
+  Q.once=function(ev,...rest){
+    watch(); const p=pathOf(this);
+    if(ev!=="value"||rest.some(x=>typeof x==="function")||!okPath(p)||!plain(this)) return oOnce.call(this,ev,...rest);
+    const pr=oOnce.call(this,ev,...rest).then(s=>{ if(conn===true) lsSet(PRE+p,s.val()); return s; }), ref=this.ref||this;
+    const c=lsGet(PRE+p), ms=wait();
+    if(c===undefined) return pr;
+    // Startdaten (Profil, Bereich, Einstellungen) sofort aus dem Speicher – frische Werte kommen im Hintergrund
+    if(BOOT.test(p)){ pr.catch(()=>{}); return Promise.resolve(snap(c,ref)); }
+    if(ms==null) return pr;
+    return Promise.race([pr,new Promise(res=>setTimeout(()=>res(snap(c,ref)),ms))]);
+  };
+  // Schreiben: Warteschlange + gemerkte Daten sofort anpassen
+  const getIn=(o,ks)=>{ for(const k of ks){ if(o==null||typeof o!=="object") return undefined; o=o[k]; } return o; };
+  function setIn(o,ks,v){ if(!ks.length) return v; o=o&&typeof o==="object"?o:{}; const k=ks[0], r=setIn(o[k],ks.slice(1),v); if(r==null) delete o[k]; else o[k]=r; return o; }
+  function patchCache(path,val){
+    try{ for(let i=0;i<localStorage.length;i++){ const key=localStorage.key(i); if(!key||!key.startsWith(PRE)) continue; const cp=key.slice(PRE.length);
+      if(path===cp) lsSet(key,val);
+      else if(path.startsWith(cp+"/")) lsSet(key,setIn(lsGet(key),path.slice(cp.length+1).split("/"),val));
+      else if(cp.startsWith(path+"/")) lsSet(key,getIn(val,cp.slice(path.length+1).split("/"))??null); } }catch(e){}
+  }
+  const outbox=()=>lsGet(OUT)||[];
+  function track(type,path,data,promise){
+    if(!okPath(path)) return promise;
+    const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6); let ok=true;
+    try{ const ob=outbox(); ob.push({id,type,path,data:data===undefined?null:data,page:PAGE}); if(JSON.stringify(ob).length<1500000) lsSet(OUT,ob); else ok=false; }catch(e){ ok=false; }
+    if(type==="update"&&data&&typeof data==="object") Object.keys(data).forEach(k=>patchCache(path+"/"+k,data[k])); else patchCache(path,type==="remove"?null:data);
+    if(ok) Promise.resolve(promise).then(()=>{ lsSet(OUT,outbox().filter(o=>o.id!==id)); },()=>{});
+    return promise;
+  }
+  R.set=function(v,...rest){ watch(); return track("set",pathOf(this),v,oSet.call(this,v,...rest)); };
+  R.update=function(v,...rest){ watch(); return track("update",pathOf(this),v,oUpdate.call(this,v,...rest)); };
+  R.remove=function(...rest){ watch(); return track("remove",pathOf(this),null,oRemove.call(this,...rest)); };
+  let replaying=false;
+  function replay(){
+    if(replaying) return; const ob=outbox().filter(o=>o.page!==PAGE); if(!ob.length) return;
+    try{ if(!F.auth||!F.auth().currentUser){ setTimeout(replay,2000); return; } }catch(e){ return; }
+    replaying=true; const db=F.database();
+    (async()=>{ for(const o of ob){ const r=db.ref(o.path);
+      try{ await (o.type==="set"?oSet.call(r,o.data):o.type==="update"?oUpdate.call(r,o.data):oRemove.call(r)); }catch(e){ if(!/permission/i.test(String(e&&(e.code||e.message)))) continue; }
+      lsSet(OUT,outbox().filter(x=>x.id!==o.id)); } replaying=false; })();
+  }
+  addEventListener("online",()=>setTimeout(replay,1500));
+  window.OursOffline={get connected(){ return conn; },pending:()=>outbox().length,replay};
+})();
+(function(){
+  // Zukunftsprojekte: stehen im Menü, sind aber noch nicht anklickbar
+  const SOON = [];
+  // Raster im Tab „Seiten“
+  const GRID = [
+    {type:"dates",file:"index.html",label:"Dateideen",color:"#d04d66",ic:"💡"},
+    {type:"recipes",file:"rezepte.html",label:"Rezepte",color:"#d98e30",ic:"🍝"},
+    {type:"chores",file:"haushalt.html",label:"Haushalt",color:"#9a60bd",ic:"🧹"},
+    {type:"budget",file:"budget.html",label:"Budget",color:"#3e9e60",ic:"💶"},
+    {type:"gym",file:"gym.html",label:"Gym",color:"#5a5bb8",ic:"🏋️"},
+    {type:"calendar",file:"kalender.html",label:"Kalender",color:"#cf4b42",ic:"📅"},
+    {type:"trips",file:"reise.html",label:"Reisen",color:"#25a199",ic:"✈️"},
+    {type:"mail",file:"mail.html",label:"Mail",color:"#2f72c4",ic:"✉️"},
+  ];
+  // Symbole der Leiste unten: Umriss, aktiv ausgefüllt
+  const svg=(b,on)=>`<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="${on?2:1.8}" stroke-linecap="round" stroke-linejoin="round">${b}</svg>`;
+  const TAB_IC = {
+    home:on=>svg(`<path d="M4 10.4 12 4l8 6.4V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.2a.8.8 0 0 0-.8-.8H9.8a.8.8 0 0 0-.8.8v5.2H5.5A1.5 1.5 0 0 1 4 19z"${on?' fill="currentColor"':""}/>`,on),
+    calendar:on=>svg(`<rect x="3.5" y="5" width="17" height="15.5" rx="3.2"/>${on?'<path d="M3.5 8.2A3.2 3.2 0 0 1 6.7 5h10.6a3.2 3.2 0 0 1 3.2 3.2V10h-17z" fill="currentColor"/>':'<path d="M3.5 10h17"/>'}<path d="M8 3v4M16 3v4"/>${on?'<circle cx="12" cy="15.2" r="1.4" fill="currentColor" stroke="none"/>':""}`,on),
+    all:on=>svg(["4,4","13.5,4","4,13.5","13.5,13.5"].map(xy=>{ const [x,y]=xy.split(","); return `<rect x="${x}" y="${y}" width="6.5" height="6.5" rx="1.9"${on?' fill="currentColor"':""}/>`; }).join(""),on),
+    chat:on=>svg(`<path d="M12 3.8c4.7 0 8.3 3.3 8.3 7.5s-3.6 7.5-8.3 7.5c-1 0-2-.15-2.9-.45L4.6 19.6l1.2-3.6a7.1 7.1 0 0 1-2.1-4.7c0-4.2 3.6-7.5 8.3-7.5z"${on?' fill="currentColor"':""}/>`,on),
+    me:svg(`<circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/>`,false),
+    feed:on=>svg(`<rect x="4" y="3.5" width="16" height="17" rx="3.4"${on?' fill="currentColor"':""}/><path d="M8 8.5h8M8 12h8M8 15.5h5"${on?' stroke="#fff"':""}/>`,on),
+  };
+  const PAGES = [
+    {type:"home",    file:"home.html",     label:"Home",  color:"#2f72c4", noSpace:true, menu:true},
+    {type:"dates",   file:"index.html",    label:"Dateideen", color:"#d04d66", noun:"Dateideen-Liste",
+     empty:"Noch keine Dateideen-Liste", hint:"Leg eine Liste an und lad danach deine Freundin oder deinen Freund ein. Nur eingeladene Personen sehen sie.",
+     keys:["ideas"]},
+    {type:"recipes", file:"rezepte.html",  label:"Rezepte",   color:"#d98e30", noun:"Rezeptsammlung",
+     empty:"Noch keine Rezeptsammlung", hint:"Leg eine Sammlung an und lad Freunde oder Familie ein. Nur eingeladene Personen sehen sie.",
+     keys:["recipes","people","swipe"]},
+    {type:"chores",  file:"haushalt.html", label:"Haushalt",  color:"#9a60bd", noun:"Haushalt",
+     empty:"Noch kein Haushalt", hint:"Leg einen Haushalt an und lad deine Mitbewohner ein.",
+     keys:["chores","choreLog","members","rooms","people"]},
+    {type:"budget",  file:"budget.html",   label:"Budget",    color:"#3e9e60", noun:"Budget",
+     empty:"Noch kein Budget", hint:"Dein Budget ist privat. Später kannst du jemanden dazuholen, zum Beispiel deine Freundin oder deinen Freund.",
+     keys:null},
+    {type:"gym",     file:"gym.html",      label:"Gym", color:"#5a5bb8", noun:"Trainingsplan",
+     empty:"Noch kein Trainingsplan", hint:"Leg deinen Plan an: Übungen nach Muskelgruppen und ein Wochenplan. Später kannst du deinen Trainingspartner dazuholen.",
+     keys:[]},
+    {type:"calendar",file:"kalender.html", label:"Kalender", color:"#cf4b42", noun:"Kalender",
+     empty:"Noch kein Kalender", hint:"Leg einen Kalender an und lad deine Freundin oder deinen Freund ein. Ihr seht und bearbeitet dieselben Termine. Gym, Dateideen und Budget kommen automatisch dazu – die siehst nur du.",
+     keys:["events"]},
+    {type:"trips",   file:"reise.html",    label:"Reisen", color:"#25a199", noun:"Reiseplanung",
+     empty:"Noch keine Reiseplanung", hint:"Leg eine Reiseplanung an und lad deine Freundin oder deinen Freund ein. Ihr plant zusammen: Packliste, Ablauf, Buchungen und Kosten.",
+     keys:["trips"]},
+    {type:"feed",    file:"feed.html",     label:"Feed",  color:"#2f72c4", noSpace:true},
+    {type:"chat",    file:"chat.html",     label:"Chats", color:"#2f72c4", noSpace:true},
+    {type:"mail",    file:"mail.html",     label:"Mail",  color:"#2f72c4", noSpace:true, menu:true},
+  ];
+  const CSS = `
+  .auth-screen{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow-y:auto;background:var(--page);
+    padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+  .auth-screen.dim{background:rgba(10,12,14,.55)}
+  .auth-card{width:100%;max-width:390px;background:var(--bg);color:var(--ink);border:1px solid var(--frame-line,var(--line));border-radius:24px;overflow:hidden;
+    box-shadow:0 18px 40px -18px var(--shadow,rgba(0,0,0,.4))}
+  .auth-head{background:var(--band);color:var(--on-band);padding:18px 22px 22px;position:relative}
+  .auth-head::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:14px;background:var(--bg);border-radius:14px 14px 0 0}
+  .auth-head h2{margin:0;font-family:var(--display);font-weight:400;font-size:1.8rem;line-height:1.1}
+  .auth-head p{margin:4px 0 0;font-size:.88rem;opacity:.8}
+  .auth-body{padding:10px 22px 22px;display:flex;flex-direction:column;gap:12px}
+  .auth-tabs{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:2px}
+  .auth-tabs button{flex:1;border:0;background:none;border-radius:8px;padding:7px 10px;font:inherit;font-size:.9rem;font-weight:600;color:var(--muted);cursor:pointer}
+  .auth-tabs button[aria-pressed="true"]{background:var(--band);color:var(--on-band)}
+  .auth-body label{display:flex;flex-direction:column;gap:5px;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .auth-body input[type=email],.auth-body input[type=password],.auth-body input[type=text]{font:inherit;font-size:1rem;text-transform:none;letter-spacing:0;padding:11px 12px;
+    border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);min-width:0}
+  .auth-body input:focus{outline:none;border-color:var(--accent)}
+  .auth-btn{border:0;border-radius:10px;padding:12px 16px;font:inherit;font-weight:700;cursor:pointer;background:var(--band);color:var(--on-band)}
+  .auth-btn.alt{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+  .auth-btn:disabled{opacity:.6;cursor:progress}
+  .auth-or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.8rem;margin:2px 0}
+  .auth-or::before,.auth-or::after{content:"";flex:1;height:1px;background:var(--line)}
+  .auth-google{display:flex;align-items:center;justify-content:center;gap:10px}
+  .auth-link{align-self:center;background:none;border:0;padding:4px;font:inherit;font-size:.85rem;color:var(--muted);text-decoration:underline;cursor:pointer}
+  .auth-link.danger{color:#c0533f}
+  .auth-msg{margin:0;font-size:.88rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .auth-msg.err{border-color:#c0533f;color:#c0533f}
+  .auth-note{margin:0;font-size:.88rem;color:var(--muted)}
+  .auth-check{flex-direction:row!important;align-items:center;gap:8px!important;text-transform:none!important;letter-spacing:0!important;font-size:.9rem!important;color:var(--ink)!important;font-weight:500!important}
+  .auth-check input{accent-color:var(--band);width:18px;height:18px}
+  .auth-copy{display:flex;gap:6px}
+  .auth-copy input{flex:1;font-size:.82rem!important;padding:9px 10px!important}
+  .auth-people{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .auth-people li{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+  .auth-people .av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.85rem;background:var(--band);color:var(--on-band);flex:none}
+  .auth-people .nm{flex:1;min-width:0;display:flex;flex-direction:column}
+  .auth-people .nm b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .auth-people .nm small{font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .auth-people .rm{border:1px solid var(--line);background:none;color:var(--muted);border-radius:999px;padding:3px 10px;font:inherit;font-size:.8rem;cursor:pointer}
+  .auth-people .rm.sure{color:#c0533f;border-color:#c0533f;font-weight:600}
+  .auth-sw{display:flex!important;flex-direction:row!important;align-items:center;gap:12px!important;text-transform:none!important;letter-spacing:0!important;color:var(--ink)!important;
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer}
+  .auth-sw span{flex:1;display:flex;flex-direction:column;gap:2px;font-size:.92rem;font-weight:600}
+  .auth-sw small{font-size:.78rem;font-weight:400;color:var(--muted);line-height:1.35}
+  .auth-sw input{position:absolute;opacity:0;width:1px;height:1px}
+  .auth-sw i{flex:none;position:relative;width:42px;height:25px;border-radius:999px;background:var(--line);transition:background .2s}
+  .auth-sw i::after{content:"";position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+  .auth-sw input:checked+i{background:var(--band)}
+  .auth-sw input:checked+i::after{transform:translateX(17px)}
+  .auth-sw input:focus-visible+i{outline:2px solid var(--accent);outline-offset:2px}
+  .auth-sw.row{cursor:default}
+  .auth-mini{flex:none;border:0;border-radius:999px;padding:8px 14px;font:inherit;font-size:.85rem;font-weight:700;cursor:pointer;background:var(--band);color:var(--on-band)}
+  .auth-mini.alt{background:none;border:1px solid var(--line);color:var(--ink)}
+  .auth-mini:disabled{opacity:.5;cursor:default}
+  .auth-sw .sel{user-select:all;word-break:break-all;font-family:ui-monospace,monospace;font-size:.72rem;color:var(--ink)}
+  .auth-theme{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:3px}
+  .auth-theme button{border:0;background:none;border-radius:9px;padding:8px 4px;font:inherit;font-size:.86rem;font-weight:600;color:var(--muted);cursor:pointer}
+  .auth-theme button[aria-pressed="true"]{background:var(--band);color:var(--on-band)}
+  .auth-sec{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:4px 0 -4px}
+
+  /* Profilbilder */
+  .ours-av{flex:none;display:inline-grid;place-items:center;border-radius:50%;overflow:hidden;background:var(--band);color:var(--on-band);font-weight:700;line-height:1}
+  .ours-av img{width:100%;height:100%;object-fit:cover;display:block}
+  .pf-btn{padding:0;overflow:visible}
+  #pfInit{position:absolute;inset:0;display:block;border-radius:50%;overflow:hidden}
+  .pf-btn .ours-av{width:100%!important;height:100%!important;font-size:1rem!important;background:none;color:inherit;display:grid}
+  .pf-photo{display:flex;align-items:center;gap:14px}
+  .pf-photo .ours-av{width:72px;height:72px;font-size:1.6rem}
+  .pf-photo div{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+  .auth-card textarea{font:inherit;font-size:1rem;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface,#fff);color:var(--ink);resize:vertical;min-height:64px;width:100%;box-sizing:border-box}
+
+  /* Profil-Knopf und Menü */
+  header{padding-right:64px!important}
+  .pf-btn{position:absolute;top:14px;right:16px;z-index:31;width:40px;height:40px;border-radius:50%;cursor:pointer;
+    border:1.5px solid color-mix(in srgb,var(--on-band) 40%,transparent);background:color-mix(in srgb,var(--on-band) 16%,transparent);
+    color:var(--on-band);font:inherit;font-weight:700;font-size:1rem;display:grid;place-items:center}
+  .pf-btn:focus-visible{outline:2px solid var(--on-band);outline-offset:2px}
+  .pf-menu{position:absolute;top:60px;right:12px;z-index:32;min-width:230px;display:flex;flex-direction:column;gap:2px;padding:6px;
+    background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 36px -14px rgba(0,0,0,.4)}
+  .pf-menu a,.pf-menu button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border:0;border-radius:10px;background:none;
+    color:inherit;font:inherit;font-weight:500;text-decoration:none;cursor:pointer}
+  .pf-menu a:hover,.pf-menu button:hover{background:var(--accent-soft)}
+  .pf-menu a[aria-current="page"]{background:var(--accent-soft);font-weight:600}
+  .pf-menu .pg-soon{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:var(--muted);cursor:default;user-select:none}
+  .pf-menu .pg-soon .dot{opacity:.45}
+  .pf-menu .pg-soon small{margin-left:auto;font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:1px 7px}
+  .pf-menu .dot{width:10px;height:10px;border-radius:50%;flex:none;box-shadow:0 0 0 1px rgba(128,128,128,.4) inset}
+  .pf-menu svg{width:17px;height:17px;flex:none;opacity:.75}
+  .pf-sep{height:1px;background:var(--line);margin:4px 6px}
+  .pf-who{padding:6px 12px 4px;display:flex;flex-direction:column}
+  .pf-who b{font-weight:600}
+  .pf-who small{font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pf-menu button:disabled{opacity:.45;cursor:not-allowed}
+
+  /* Freunde */
+  .pf-badge{margin-left:auto;min-width:20px;height:20px;border-radius:10px;padding:0 6px;background:#d9534f;color:#fff;font-size:.72rem;font-weight:700;display:inline-grid;place-items:center}
+  .pf-dot{position:absolute;top:-1px;right:-1px;width:12px;height:12px;border-radius:50%;background:#d9534f;border:2px solid var(--band)}
+  .ours-mark{display:none!important}
+  /* Logo: Hintergrund passt sich der Seitenfarbe an (etwas dunkler als der Kopf) */
+  .ours-logo{position:absolute;left:16px;top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2);z-index:31;width:40px;height:40px;border-radius:11px;overflow:hidden;padding:0;border:0;cursor:pointer;
+    background:var(--logo-bg,color-mix(in srgb,var(--band) 62%,#000));
+    box-shadow:0 0 0 1.5px color-mix(in srgb,var(--on-band) 26%,transparent),0 4px 10px -4px rgba(0,0,0,.4);display:block}
+  .ours-logo img{width:100%;height:100%;display:block}
+  .ours-logo:focus-visible{outline:2px solid var(--on-band);outline-offset:2px}
+  .pf-menu.pg-menu{left:50%;right:auto;transform:translateX(-50%)}
+  /* Überschrift im Kopf öffnet die Seitenliste */
+  header .wordmark.pg-title{pointer-events:auto!important;cursor:pointer;-webkit-tap-highlight-color:transparent;border-radius:12px;outline-offset:4px}
+  header .wordmark.pg-title::after{content:"";display:inline-block;width:.28em;height:.28em;border-right:.07em solid currentColor;border-bottom:.07em solid currentColor;transform:translateY(-.3em) rotate(45deg);margin-left:.32em;opacity:.55;transition:transform .2s}
+  header .wordmark.pg-title[aria-expanded="true"]::after{transform:translateY(-.05em) rotate(225deg)}
+  /* Chat-Knopf unten links, in der Farbe der Seite */
+  .ours-chat{position:absolute;left:var(--chat-x,16px);bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 22px);z-index:6;width:56px;height:56px;border-radius:50%;
+    background:var(--logo-bg,var(--band));color:var(--on-band);display:grid;place-items:center;text-decoration:none;box-shadow:0 6px 16px -8px var(--shadow,rgba(0,0,0,.5)),0 0 0 1px color-mix(in srgb,var(--on-band) 14%,transparent)}
+  .ours-chat svg{width:26px;height:26px}
+  .ours-chat:active{transform:scale(.94)}
+  .ours-chat .cb{position:absolute;top:-2px;right:-2px;min-width:20px;height:20px;border-radius:999px;background:#e8a33d;color:#2b1e21;font-size:.72rem;font-weight:700;display:grid;place-items:center;padding:0 5px;border:2px solid var(--bg)}
+  .ours-chat .cb[hidden]{display:none}
+  body.has-chat .scroll{padding-bottom:84px!important}
+  .pf-menu.pg-menu .pf-who{flex-direction:row;align-items:center;justify-content:flex-start;gap:10px;text-align:left;padding:8px 10px 6px}
+  .pf-menu.pg-menu .pf-logo{margin:0;background:var(--logo-bg,color-mix(in srgb,var(--band) 62%,#000))}
+  .pf-menu.pg-menu .pf-brand{margin:0}
+  header{padding-left:64px!important}
+  .pf-menu .pf-logo{width:34px;height:34px;border-radius:9px;margin:0 auto 4px;display:block}
+  #pfBig{display:flex;justify-content:center;margin-bottom:4px}
+  .pf-brand{font-family:var(--display);font-size:1.15rem;line-height:1;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+  .fr-code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.5rem;font-weight:700;letter-spacing:.18em;text-align:center;padding:10px;border-radius:12px;
+    background:var(--surface);border:1.5px dashed var(--line);color:var(--ink)}
+  .auth-people .rm.yes{background:var(--band);color:var(--on-band);border-color:var(--band);font-weight:600}
+  .auth-people .rm.done{opacity:.6;cursor:default}
+
+  /* Seite ohne Bereich */
+  .auth-setup{position:absolute;left:0;right:0;bottom:0;z-index:20;background:var(--bg);overflow-y:auto;padding:18px 22px 22px;display:flex;flex-direction:column;align-items:stretch}
+  .auth-setup .box{margin:auto 0;display:flex;flex-direction:column;gap:12px;max-width:420px;align-self:center;width:100%;color:var(--ink)}
+  .auth-setup h3{margin:0;font-family:var(--display);font-weight:400;font-size:1.6rem;line-height:1.15}
+
+  /* ---------- Leiste unten wie bei Instagram/YouTube ---------- */
+  body.ours-tabbed{--tab-h:calc(50px + env(safe-area-inset-bottom,0px))}
+  .ours-tabs{position:fixed;left:0;right:0;bottom:0;z-index:45;height:var(--tab-h);box-sizing:border-box;display:grid;grid-template-columns:repeat(5,1fr);max-width:720px;margin:0 auto;
+    padding:0 max(4px,env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) max(4px,env(safe-area-inset-left,0px));
+    background:color-mix(in srgb,var(--bg) 84%,transparent);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+    border-top:.5px solid var(--sep,var(--line))}
+  .ours-native .ours-tabs{background:var(--bg)}
+  .ours-tab{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:0;border:0;background:none;padding:2px 0 0;margin:0;
+    font:inherit;color:var(--muted);text-decoration:none;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  .ours-tab>svg,.ours-tab .tab-av svg{width:26px;height:26px;display:block}
+  .ours-tab>span:not(.cb):not(.tab-av){font-size:.64rem;font-weight:600;letter-spacing:.01em;line-height:1.2}
+  .ours-tab[aria-current="page"],.ours-tab[aria-expanded="true"],.tab-me[data-open]{color:var(--ink)}
+  .ours-tab .cb{position:absolute;top:3px;left:calc(50% + 5px);min-width:17px;height:17px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:var(--red,#cf4b42);color:#fff;
+    font-size:.66rem;font-weight:700;display:grid;place-items:center;box-shadow:0 0 0 2px var(--bg)}
+  .ours-tab .cb[hidden]{display:none}
+  .ours-tabs .pf-btn{position:relative;top:auto;right:auto;z-index:auto;width:27px;height:27px;border:0;background:none;color:inherit;box-shadow:0 0 0 1.5px transparent;transition:box-shadow .2s}
+  .ours-tabs .pf-btn .ours-av{background:var(--band);color:var(--on-band)}
+  .tab-me[data-open] .pf-btn{box-shadow:0 0 0 1.5px var(--bg),0 0 0 3px var(--ink)}
+  .ours-tabs .pf-dot{top:-2px;right:-3px;width:11px;height:11px;background:var(--red,#cf4b42);border:2px solid var(--bg)}
+  .ours-tabs .pf-btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  /* Bögen über der Leiste: Seiten und Profil */
+  .ours-sheet{position:fixed!important;top:auto!important;left:max(8px,env(safe-area-inset-left,0px))!important;right:max(8px,env(safe-area-inset-right,0px))!important;transform:none!important;
+    bottom:calc(var(--tab-h) + 8px)!important;z-index:44!important;max-width:480px;min-width:0!important;margin:0 auto;box-sizing:border-box;max-height:calc(100dvh - var(--tab-h) - 90px);overflow-y:auto;
+    background:var(--surface)!important;color:var(--ink);border:0!important;border-radius:22px!important;padding:10px!important;
+    box-shadow:0 0 0 100vmax rgba(0,0,0,.3),0 18px 40px -16px rgba(0,0,0,.5)!important;animation:ours-pop .42s var(--hig-spring) backwards}
+  .ours-sheet[hidden]{display:none!important}
+  @keyframes ours-pop{from{opacity:0;translate:0 18px;scale:.98}}
+  .sheet-t{margin:6px 10px 12px;font-family:var(--display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em}
+  .pg-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 4px;padding:0 2px 8px}
+  .pg-tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;text-decoration:none;color:var(--ink);padding:2px 0}
+  .pg-ic{width:58px;height:58px;border-radius:16px;display:grid;place-items:center;font-size:1.65rem;background:var(--c);
+    box-shadow:inset 0 0 0 .5px rgba(255,255,255,.2),0 6px 14px -8px rgba(0,0,0,.55)}
+  .pg-tile b{font-size:.74rem;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pg-tile[aria-current="page"] .pg-ic{box-shadow:0 0 0 2.5px var(--surface),0 0 0 5px var(--ink)}
+  .pg-tile.soon{opacity:.55;cursor:default}
+  .pg-tile small{position:absolute;top:-4px;right:calc(50% - 36px);font-size:.56rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;background:var(--ink);color:var(--surface);border-radius:999px;padding:2px 6px}
+  .pf-menu.ours-sheet{display:flex;flex-direction:column}
+  .pf-menu.ours-sheet a,.pf-menu.ours-sheet button{padding:12px}
+  .pf-menu.ours-sheet .pf-who{flex-direction:row;align-items:center;gap:12px;padding:6px 10px 8px}
+  .pf-menu.ours-sheet #pfBig{margin:0}
+  .pf-menu.ours-sheet .pf-who b{font-size:1.05rem}
+  .pf-menu.ours-sheet .pf-who>span+b{margin-top:0}
+  /* Inhalt endet über der Leiste */
+  body.ours-tabbed .wrap{height:calc(100dvh - var(--tab-h))!important;max-height:calc(100dvh - var(--tab-h))!important;min-height:0!important}
+  body.ours-tabbed #chatBtn,body.ours-tabbed .ours-logo{display:none!important}
+  /* schwebende Knöpfe: der Abstand zum unteren Rand übernimmt jetzt die Leiste */
+  :root:not([data-hig-page="rezepte"]) body.ours-tabbed :is(.fab,.g-fab,.fab-menu,.todaypill,.rest-bar,.sp-card){translate:0 calc(max(12px,env(safe-area-inset-bottom,0px)) - 6px)}
+  body.ours-tabbed .toast{bottom:calc(var(--tab-h) + 14px)!important}
+  /* Kopf schlicht wie bei Instagram: Seitenfarbe raus, Titel groß und links */
+  body.ours-tabbed :is(header,#head){background:var(--bg)!important;color:var(--ink)!important;--on-band:var(--ink);--on-band-muted:var(--muted);box-shadow:none!important;
+    padding:calc(6px + env(safe-area-inset-top,0px)) var(--hdr-x,16px) 4px!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:flex-end!important;text-align:left!important;min-height:0!important}
+  body.ours-tabbed :is(header,#head)::after,body.ours-tabbed :is(header,#head)::before{display:none!important}
+  body.ours-tabbed :is(header,#head) .wordmark{font-family:var(--display)!important;font-size:1.9rem!important;font-weight:800!important;letter-spacing:-.03em!important;line-height:1.2!important;
+    color:var(--ink)!important;text-shadow:none!important;margin:0!important;opacity:1!important;pointer-events:auto!important}
+  body.ours-tabbed :is(header,#head) .wordmark.pg-title::after{width:.24em;height:.24em;margin-left:.3em;opacity:.45}
+  `;
+  const IC = {
+    people:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M16.5 6.2a2.8 2.8 0 0 1 0 5.4M17 14.3c2 .5 3.2 2 3.5 4.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    gear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    heart:'<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    chat:'<svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4h0A1.5 1.5 0 0 1 4 14.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    out:'<svg viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 16l4-4-4-4M14 12H4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  };
+  const ERR = {
+    "auth/invalid-email":"Die E-Mail-Adresse sieht nicht richtig aus.",
+    "auth/user-not-found":"E-Mail oder Passwort stimmt nicht.",
+    "auth/wrong-password":"E-Mail oder Passwort stimmt nicht.",
+    "auth/invalid-credential":"E-Mail oder Passwort stimmt nicht.",
+    "auth/invalid-login-credentials":"E-Mail oder Passwort stimmt nicht.",
+    "auth/email-already-in-use":"Mit dieser E-Mail gibt es schon ein Konto. Melde dich an.",
+    "auth/weak-password":"Das Passwort ist zu kurz.",
+    "auth/too-many-requests":"Zu viele Versuche. Warte ein paar Minuten und versuch es dann noch einmal.",
+    "auth/network-request-failed":"Keine Verbindung. Prüf dein Internet.",
+    "auth/operation-not-allowed":"Diese Anmeldeart ist in Firebase noch nicht eingeschaltet.",
+    "auth/unauthorized-domain":"Diese Seite ist in Firebase noch nicht als erlaubte Domain eingetragen (Authentication → Einstellungen → Autorisierte Domains).",
+    "auth/account-exists-with-different-credential":"Mit dieser E-Mail gibt es schon ein Konto mit Passwort. Melde dich mit E-Mail und Passwort an.",
+    "auth/popup-blocked":"Das Anmeldefenster wurde blockiert. Erlaube Pop-ups für diese Seite und versuch es noch einmal.",
+  };
+  const errText = e => ERR[e && e.code] || "Das hat nicht geklappt. Versuch es noch einmal.";
+  const rand = n => { const a="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    return [...crypto.getRandomValues(new Uint8Array(n))].map(x=>a[x%a.length]).join(""); };
+  const esc = t => String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const parseJoin = () => { const m=location.hash.match(/^#join-([A-Za-z0-9]{12,40})-([A-Za-z0-9]{12,40})$/); return m?{sid:m[1],code:m[2]}:null; };
+  const clearHash = () => history.replaceState(history.state,"",location.pathname);
+  const initial = n => (String(n||"?").trim()[0]||"?").toUpperCase();
+  // Öffentliches Profil (Name, Bild, Über mich) unter pub/<uid>; Bilder werden nachgeladen und überall ausgetauscht
+  const pubCache = new Map(), pubWait = new Set();
+  let pubDb = null;
+  function loadPub(uid){
+    if(!uid || !pubDb || pubCache.has(uid) || pubWait.has(uid)) return;
+    pubWait.add(uid);
+    pubDb.ref("pub/"+uid).once("value").then(s=>{ pubCache.set(uid,s.val()||{}); paintAv(uid); document.dispatchEvent(new CustomEvent("ours-pub",{detail:uid})); })
+      .catch(()=>pubCache.set(uid,{})).finally(()=>pubWait.delete(uid));
+  }
+  const okPhoto = p => typeof p==="string" && /^data:image\/(jpeg|png|webp);base64,/.test(p);
+  function avInner(uid,name){ const p=pubCache.get(uid), ph=p&&okPhoto(p.photo)?p.photo:null;
+    return ph?`<img src="${ph}" alt="">`:esc(initial((p&&p.name)||name)); }
+  function avatar(uid,name,size,extra){ loadPub(uid); const z=size||32;
+    return `<span class="ours-av${extra?" "+extra:""}" data-av="${esc(uid||"")}" data-avname="${esc(name||"")}" style="width:${z}px;height:${z}px;font-size:${Math.round(z*.42)}px">${avInner(uid,name)}</span>`; }
+  function paintAv(uid){ document.querySelectorAll(`[data-av="${uid}"]`).forEach(el=>{ el.innerHTML=avInner(uid,el.dataset.avname); }); }
+  const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
+
+  // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
+  const APP_VERSION="2026-11-12-010829";
+  function checkVersion(){
+    try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
+      if(!v || !v.v || v.v===APP_VERSION) return;
+      const k="ours.reload."+v.v; try{ if(sessionStorage.getItem(k)) return; sessionStorage.setItem(k,"1"); }catch(e){}
+      (async()=>{ try{ if(window.caches){ const c=await caches.open("ours-v9"), here=location.pathname.split("/").pop()||"index.html";
+          await Promise.all(["home.html","index.html","rezepte.html","haushalt.html","budget.html","chat.html","gym.html","mail.html","kalender.html","reise.html","feed.html"].map(f=>
+            fetch(f+"?v="+v.v,{cache:"no-store"}).then(r=>{ if(r.ok) return c.put(new URL(f,location.href).href,r); }).catch(()=>{}))); } }catch(e){}
+        location.reload(); })();
+    }).catch(()=>{}); }catch(e){}
+  }
+  checkVersion();
+  addEventListener("pageshow",e=>{ if(e.persisted) checkVersion(); });
+  // Was beim Zusammenlegen und Austreten mitgenommen wird
+  const DATA = {
+    dates:   {keys:["ideas"], word:["Idee","Ideen"]},
+    recipes: {keys:["recipes"], word:["Rezept","Rezepte"]},
+    chores:  {keys:["chores","rooms","choreLog"], word:["Aufgabe","Aufgaben"]},
+    budget:  {keys:["recurring","expenses","cats"], word:["Eintrag","Einträge"]},
+    gym:     {keys:["exercises","templates","workouts","sessions","bw","week","log"], word:["Übung","Übungen"]},
+    calendar:{keys:["events"], word:["Termin","Termine"]},
+    trips:   {keys:["trips"], word:["Reise","Reisen"]},
+  };
+  function pgToggle(open){ const m=document.getElementById("pgMenu"); if(!m) return; m.hidden=!open;
+    ["pgBtn"].map(id=>document.getElementById(id)).concat([document.querySelector("header .wordmark.pg-title")]).forEach(b=>b&&b.setAttribute("aria-expanded",open)); }
+  // Schalter in den Einstellungen, getrennt pro Seite (standardmäßig aus):
+  // Rezepte → Kalorien & Nährwerte, Gym → Essen-Tagebuch
+  const KC_KEY={recipes:"kcalRecipes",gym:"kcalGym"}, kcalOn={recipes:false,gym:false};
+  try{ Object.keys(KC_KEY).forEach(t=>kcalOn[t]=localStorage.getItem("ours.kcal."+t)==="1"); }catch(e){}
+  function applyKcal(t,on){ on=!!on; if(on===kcalOn[t]) return; kcalOn[t]=on; try{ localStorage.setItem("ours.kcal."+t,on?"1":"0"); }catch(e){}
+    document.dispatchEvent(new CustomEvent("ours-kcal",{detail:{type:t,on}})); }
+  window.Auth = {
+    kcalFor(t){ return !!kcalOn[t]; },
+    pageSettings:[],   // weitere Schalter, die eine Seite in den Einstellungen zeigen will
+    avatar, pub:uid=>{ loadPub(uid); return pubCache.get(uid)||null; },
+    refreshPub(uid){ pubCache.delete(uid); loadPub(uid); },
+    editProfile(){ if(window.Auth._profileView) window.Auth._profileView(); },
+    start(config, type, cb){
+    const PAGE = PAGES.find(p=>p.type===type);
+    const st=document.createElement("style"); st.textContent=CSS; document.head.appendChild(st); if(window.OursDesign) OursDesign.attach();
+    // Name der App oben in jeder Seite
+    const hd=document.querySelector("header");
+    if(hd && !document.getElementById("oursTabs")){
+      // Navigation unten wie bei Instagram/YouTube: Home · Feed · Seiten · Chats · Du
+      document.body.classList.add("ours-tabbed");
+      const tabOn=type==="home"?"home":type==="feed"?"feed":type==="chat"?"chat":"all";
+      const cur=t=>t===tabOn?' aria-current="page"':"";
+      document.body.insertAdjacentHTML("beforeend",`<nav class="ours-tabs" id="oursTabs" aria-label="Navigation">
+          <a href="home.html" class="ours-tab" data-tab="home"${cur("home")}>${TAB_IC.home(tabOn==="home")}<span>Home</span></a>
+          <a href="feed.html" class="ours-tab" data-tab="feed"${cur("feed")}>${TAB_IC.feed(tabOn==="feed")}<span>Feed</span></a>
+          <button type="button" class="ours-tab" id="pgBtn" data-tab="all"${cur("all")} aria-haspopup="true" aria-expanded="false" aria-controls="pgMenu">${TAB_IC.all(tabOn==="all")}<span>Seiten</span></button>
+          <a href="chat.html?from=${type}" class="ours-tab" data-tab="chat"${cur("chat")}>${TAB_IC.chat(tabOn==="chat")}<span>Chats</span><span class="cb" id="oursChatN" hidden></span></a>
+          <div class="ours-tab tab-me" id="tabMe" data-tab="me"><span class="tab-av" aria-hidden="true">${TAB_IC.me}</span><span>Du</span></div>
+        </nav>
+        <nav class="ours-sheet pg-menu" id="pgMenu" hidden aria-label="Alle Seiten">
+          <p class="sheet-t">Alle Seiten</p>
+          <div class="pg-grid">
+          ${GRID.map(p=>`<a href="${p.file}" class="pg-tile" data-page="${p.type}" style="--c:${p.color}"${p.type===type?' aria-current="page"':""}><span class="pg-ic" aria-hidden="true">${p.ic}</span><b>${p.label}</b></a>`).join("")}
+          ${SOON.map(p=>`<span class="pg-tile soon" aria-disabled="true" title="Kommt bald" style="--c:${p.color}"><span class="pg-ic" aria-hidden="true">${p.ic||"✨"}</span><b>${p.label}</b><small>bald</small></span>`).join("")}
+          </div>
+        </nav>`);
+      const pgBtn=document.getElementById("pgBtn"), pgMenu=document.getElementById("pgMenu");
+      pgBtn.addEventListener("click",e=>{ e.stopPropagation(); if(window.Auth._closePf) window.Auth._closePf(); pgToggle(pgMenu.hidden); });
+      const wm=hd.querySelector(".wordmark");
+      if(wm){ wm.classList.add("pg-title"); wm.setAttribute("role","button"); wm.setAttribute("tabindex","0"); wm.removeAttribute("aria-hidden"); wm.setAttribute("aria-haspopup","true"); wm.setAttribute("aria-expanded","false"); wm.setAttribute("aria-controls","pgMenu"); wm.setAttribute("aria-label",(PAGE?PAGE.label:"Seite")+" – Seiten anzeigen");
+        const tgl=e=>{ e.preventDefault(); e.stopPropagation(); if(window.Auth._closePf) window.Auth._closePf(); pgToggle(pgMenu.hidden); };
+        wm.addEventListener("click",tgl); wm.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" ") tgl(e); }); }
+      document.addEventListener("click",e=>{ if(!pgMenu.hidden && !pgMenu.contains(e.target)) pgToggle(false); });
+      document.addEventListener("keydown",e=>{ if(e.key==="Escape") pgToggle(false); });
+      pgMenu.addEventListener("click",e=>{ if(e.target.closest("a")) pgToggle(false); });
+      // Titel im Kopf bündig mit dem Inhalt
+      const wrap=document.querySelector(".wrap");
+      const placeHead=()=>{ const px=wrap?parseFloat(getComputedStyle(wrap).paddingLeft)||0:0; hd.style.setProperty("--hdr-x",Math.max(16,px)+"px"); };
+      placeHead(); addEventListener("resize",placeHead);
+      document.getElementById("oursTabs").addEventListener("click",e=>{ if(e.target.closest(".ours-tab")&&window.OursHaptic) OursHaptic(); });
+      // Zurück-Geste: Seite kommt aus dem Zwischenspeicher, Menüs dann zu
+      addEventListener("pageshow",()=>{ pgToggle(false); if(window.Auth._closePf) window.Auth._closePf(); });
+    }
+    let auth, db;
+    try{ if(!firebase.apps.length) firebase.initializeApp(config); auth=firebase.auth(); db=firebase.database(); }
+    catch(e){ cb(null); return; }
+    let user=null, profile={}, sid=null, started=false, setupEl=null;
+    const pubSet=v=>{ pubCache.set(user.uid,{...(pubCache.get(user.uid)||{}),...v}); paintAv(user.uid); document.dispatchEvent(new CustomEvent("ours-pub",{detail:user.uid})); };
+
+    /* ---------- Fenster (Anmelden und Pop-ups) ---------- */
+    let screen=null;
+    let bootT=null;
+    function show(title,sub,html,dim){ if(bootT){ clearTimeout(bootT); bootT=null; }
+      if(!screen){ screen=document.createElement("div"); screen.className="auth-screen"; document.body.appendChild(screen);
+        screen.addEventListener("click",e=>{ if(e.target===screen && screen.classList.contains("dim")) hide(); }); }
+      screen.classList.toggle("dim",!!dim);
+      screen.innerHTML=`<div class="auth-card" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="auth-head"><h2>${esc(title)}</h2>${sub?`<p>${esc(sub)}</p>`:""}</div><div class="auth-body">${html}</div></div>`;
+      screen.hidden=false; return screen;
+    }
+    function hide(){ if(bootT){ clearTimeout(bootT); bootT=null; } if(screen) screen.hidden=true; }
+    const $a = s => screen.querySelector(s);
+    function msg(t,err,root){ const m=(root||screen).querySelector("#authMsg"); if(!m) return; m.textContent=t||""; m.hidden=!t; m.classList.toggle("err",!!err); }
+    document.addEventListener("keydown",e=>{ if(e.key==="Escape" && screen && !screen.hidden && screen.classList.contains("dim")) hide(); });
+
+    /* ---------- Anmelden / Konto erstellen ---------- */
+    function loginView(mode){
+      const reg=mode==="register", join=parseJoin();
+      show("Ours",
+        join?`Du wurdest zu ${PAGE.label} eingeladen. Melde dich an oder erstell ein Konto.`:/^#friend-/.test(location.hash)?"Du wurdest als Freund eingeladen. Melde dich an oder erstell ein Konto.":reg?"Neues Konto erstellen.":"Bitte melde dich an.",
+        `<div class="auth-tabs" role="group"><button type="button" data-mode="login" aria-pressed="${!reg}">Anmelden</button><button type="button" data-mode="register" aria-pressed="${reg}">Konto erstellen</button></div>
+        <form id="authForm" style="display:flex;flex-direction:column;gap:12px" novalidate>
+          ${reg?`<label>Dein Name<input type="text" id="authName" autocomplete="given-name" maxlength="30" placeholder="So sehen dich die anderen"></label>`:""}
+          <label>E-Mail<input type="email" id="authMail" autocomplete="email"></label>
+          <label>Passwort<input type="password" id="authPw" autocomplete="${reg?"new-password":"current-password"}"></label>
+          ${reg?`<label>Passwort wiederholen<input type="password" id="authPw2" autocomplete="new-password"></label>
+            <p class="auth-note">Mindestens 10 Zeichen. Am besten ein Passwort, das du nirgends sonst benutzt.</p>`:""}
+          <p class="auth-msg" id="authMsg" hidden></p>
+          <button class="auth-btn" type="submit" id="authGo">${reg?"Konto erstellen":"Anmelden"}</button>
+        </form>
+        ${reg?"":`<button class="auth-link" type="button" id="authForgot">Passwort vergessen?</button>`}
+        <div class="auth-or"><span>oder</span></div>
+        <button class="auth-btn alt auth-google" type="button" id="authGoogle">${GOOGLE}Mit Google ${reg?"registrieren":"anmelden"}</button>`);
+      screen.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>loginView(b.dataset.mode));
+      // in der iPhone-App nicht automatisch fokussieren (sonst verrutschen die Felder unter der Tastatur)
+      if(!window.Capacitor) (reg?$a("#authName"):$a("#authMail")).focus();
+      // Eingabetaste springt zum nächsten Feld
+      const flds=[...screen.querySelectorAll("#authForm input")]; flds.forEach((el,i)=>{ el.setAttribute("enterkeyhint",i<flds.length-1?"next":"go");
+        el.addEventListener("keydown",ev=>{ if(ev.key==="Enter"&&i<flds.length-1){ ev.preventDefault(); flds[i+1].focus(); } }); });
+      $a("#authForm").onsubmit=async e=>{
+        e.preventDefault();
+        const mail=$a("#authMail").value.trim(), pw=$a("#authPw").value;
+        if(!mail || !pw) return msg("Gib E-Mail und Passwort ein.",true);
+        if(reg){
+          if(pw.length<10) return msg("Das Passwort braucht mindestens 10 Zeichen.",true);
+          if(pw!==$a("#authPw2").value) return msg("Die beiden Passwörter sind nicht gleich.",true);
+          try{ sessionStorage.setItem("auth.newName",$a("#authName").value.trim().slice(0,30)); }catch(err){}
+        }
+        $a("#authGo").disabled=true; msg("");
+        try{ reg ? await auth.createUserWithEmailAndPassword(mail,pw) : await auth.signInWithEmailAndPassword(mail,pw); }
+        catch(err){ msg(errText(err),true); $a("#authGo").disabled=false; }
+      };
+      $a("#authGoogle").onclick=async()=>{
+        msg(""); const prov=new firebase.auth.GoogleAuthProvider(); prov.setCustomParameters({prompt:"select_account"});
+        try{ await auth.signInWithPopup(prov); }
+        catch(err){
+          if(err && (err.code==="auth/popup-closed-by-user"||err.code==="auth/cancelled-popup-request")) return;
+          if(err && err.code==="auth/popup-blocked"){ try{ await auth.signInWithRedirect(prov); return; }catch(e){} }
+          msg(errText(err),true);
+        }
+      };
+      const f=$a("#authForgot");
+      if(f) f.onclick=async()=>{
+        const mail=$a("#authMail").value.trim();
+        if(!mail) return msg("Trag oben deine E-Mail ein, dann schicken wir dir einen Link zum Zurücksetzen.",true);
+        try{ await auth.sendPasswordResetEmail(mail); msg("Wenn es ein Konto mit dieser E-Mail gibt, ist eine Mail zum Zurücksetzen unterwegs. Schau auch im Spam nach."); }
+        catch(err){ msg(errText(err),true); }
+      };
+    }
+
+    /* ---------- Profil-Knopf mit Menü ---------- */
+    function installMenu(){
+      const head=document.querySelector("header"); if(!head || document.getElementById("pfBtn")) { updateMenu(); return; }
+      head.insertAdjacentHTML("beforeend",`<button class="pf-btn" type="button" id="pfBtn" aria-haspopup="true" aria-expanded="false" aria-controls="pfMenu" aria-label="Profil und Seiten"><span id="pfInit"></span><span class="pf-dot" id="pfDot" hidden></span></button>
+        <nav class="pf-menu" id="pfMenu" hidden aria-label="Profil und Seiten">
+          <div class="pf-who"><span id="pfBig"></span><b id="pfName"></b><small id="pfMail"></small></div>
+          <div class="pf-sep"></div>
+          <button type="button" data-pf="people">${IC.people}Personen bei ${esc(PAGE.label)}</button>
+          <a href="chat.html?from=${type}" class="pf-chat"${type==="chat"?' aria-current="page"':""}>${IC.chat}Chats<span class="pf-badge" id="pfChatBadge" hidden></span></a>
+          <button type="button" data-pf="friends">${IC.heart}Freunde<span class="pf-badge" id="pfFriendBadge" hidden></span></button>
+          <button type="button" data-pf="profile">${IC.user}Mein Profil</button>
+          <button type="button" data-pf="settings">${IC.gear}Einstellungen</button>
+          <button type="button" data-pf="logout">${IC.out}Abmelden</button>
+        </nav>`);
+      const btn=document.getElementById("pfBtn"), menu=document.getElementById("pfMenu");
+      // mit Leiste unten: Profilbild sitzt im Tab „Du“, das Menü kommt als Bogen von unten
+      const me=document.getElementById("tabMe");
+      if(me){ const av=me.querySelector(".tab-av"); av.replaceWith(btn); menu.classList.add("ours-sheet"); document.body.appendChild(menu);
+        me.addEventListener("click",e=>{ if(e.target.closest("#pfBtn")) return; e.stopPropagation(); btn.click(); }); }
+      const toggle=open=>{ menu.hidden=!open; btn.setAttribute("aria-expanded",open); if(me) me.toggleAttribute("data-open",!!open); };
+      btn.onclick=e=>{ e.stopPropagation(); pgToggle(false); toggle(menu.hidden); };
+      window.Auth._closePf=()=>toggle(false);
+      document.addEventListener("click",e=>{ if(!menu.hidden && !menu.contains(e.target)) toggle(false); });
+      document.addEventListener("keydown",e=>{ if(e.key==="Escape") toggle(false); });
+      menu.querySelectorAll("[data-pf]").forEach(b=>b.onclick=()=>{ toggle(false);
+        ({people:peopleView,friends:()=>friendsView(),profile:()=>window.Auth.profileHandler?window.Auth.profileHandler(user.uid):profileView(),settings:settingsView,logout:()=>auth.signOut()})[b.dataset.pf](); });
+      updateMenu();
+    }
+    function updateMenu(){
+      const name=profile.name||user.email.split("@")[0];
+      const b=document.getElementById("pfBtn"); if(!b) return;
+      document.getElementById("pfInit").innerHTML=avatar(user.uid,name,document.getElementById("tabMe")?26:37); updateFriendBadge();
+      const big=document.getElementById("pfBig"); if(big) big.innerHTML=avatar(user.uid,name,48);
+      document.getElementById("pfName").textContent=name;
+      document.getElementById("pfMail").textContent=user.email;
+      const pp=document.querySelector('[data-pf="people"]'); pp.disabled=!sid; pp.hidden=!!PAGE.noSpace;
+    }
+
+    /* ---------- Profil, Einstellungen ---------- */
+    function profileView(){
+      const pb=pubCache.get(user.uid)||{}; let photo=okPhoto(pb.photo)?pb.photo:null;
+      show("Mein Profil","Name, Bild und ein paar Worte über dich sehen deine Freunde.",`
+        <div class="pf-photo"><span class="ours-av" id="pfPrev">${photo?`<img src="${photo}" alt="">`:esc(initial(profile.name))}</span>
+          <div><button class="auth-btn alt" type="button" id="pfPick">${photo?"Bild ändern":"Profilbild wählen"}</button>
+          <button class="auth-link" type="button" id="pfDrop"${photo?"":" hidden"}>Bild entfernen</button></div></div>
+        <input type="file" id="pfFile" accept="image/*" hidden>
+        <label>Dein Name<input type="text" id="pfIn" maxlength="30" value="${esc(profile.name||"")}"></label>
+        <label>Über mich <small>(optional)</small><textarea id="pfBio" maxlength="140" placeholder="z.B. Koche am liebsten Asiatisch, backe sonntags">${esc(pb.bio||"")}</textarea></label>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <button class="auth-btn" type="button" id="pfSave">Speichern</button>
+        <button class="auth-link" type="button" id="pfClose">Abbrechen</button>`,true);
+      $a("#pfClose").onclick=hide;
+      $a("#pfPick").onclick=()=>$a("#pfFile").click();
+      $a("#pfDrop").onclick=()=>{ photo=null; $a("#pfPrev").textContent=initial($a("#pfIn").value||profile.name); $a("#pfDrop").hidden=true; $a("#pfPick").textContent="Profilbild wählen"; };
+      $a("#pfFile").onchange=async e=>{
+        const f=e.target.files[0]; e.target.value=""; if(!f) return;
+        try{ // quadratisch zuschneiden, klein halten
+          const bmp=await createImageBitmap(f), m=Math.min(bmp.width,bmp.height), c=document.createElement("canvas"); c.width=c.height=256;
+          c.getContext("2d").drawImage(bmp,(bmp.width-m)/2,(bmp.height-m)/2,m,m,0,0,256,256);
+          photo=c.toDataURL("image/jpeg",.82); $a("#pfPrev").innerHTML=`<img src="${photo}" alt="">`; $a("#pfDrop").hidden=false; $a("#pfPick").textContent="Bild ändern";
+        }catch(err){ msg("Das Bild konnte nicht gelesen werden. Nimm ein JPG oder PNG.",true); }
+      };
+      $a("#pfSave").onclick=async()=>{
+        const name=$a("#pfIn").value.trim().slice(0,30), bio=$a("#pfBio").value.trim().slice(0,140); if(!name) return msg("Gib einen Namen ein.",true);
+        $a("#pfSave").disabled=true;
+        try{
+          await db.ref(`pub/${user.uid}`).set({name,bio:bio||null,photo:photo||null,at:Date.now()});
+          pubSet({name,bio:bio||null,photo:photo||null});
+          if(name!==profile.name){
+            await db.ref(`users/${user.uid}/profile/name`).set(name); profile.name=name;
+            const ptr=(await db.ref(`users/${user.uid}/spaces`).once("value")).val()||{};
+            for(const s of Object.values(ptr)) await db.ref(`spaces/${s}/profiles/${user.uid}/name`).set(name).catch(()=>{});
+          }
+          updateMenu(); hide();
+        }catch(err){ $a("#pfSave").disabled=false; msg("Speichern hat nicht geklappt. Prüf die Regeln in Firebase.",true); }
+      };
+    }
+    // Direkt-Links für Kurzbefehle und Siri
+    function linksView(){
+      const base=location.href.replace(/[#?].*$/,"").replace(/[^/]*$/,"");
+      const L=[["☀️","Heute","home.html#heute"],["📅","Neuer Termin","kalender.html?neu=1"],["✈️","Aktuelle Reise","reise.html?jetzt=1"],["🧳","Neue Reise","reise.html?neu=1"],["🏋️","Training","gym.html"],["💶","Budget","budget.html"],["🧹","Haushalt","haushalt.html"]];
+      show("Kurzbefehle & Siri","",`<p class="auth-note">So legst du einen Kurzbefehl an:<br>1. App <b>Kurzbefehle</b> öffnen → <b>+</b><br>2. Aktion <b>„URL öffnen“</b> wählen und einen Link unten einfügen<br>3. Oben einen Namen geben, z. B. „Neuer Termin“<br>Dann reicht „Hey Siri, Neuer Termin“. Über <b>Teilen → Zum Home-Bildschirm</b> oder als Widget hast du ihn mit einem Tipp.</p>
+        ${L.map(([e,l,p],i)=>`<div class="auth-sw row"><span>${e} ${l}<small style="word-break:break-all">${esc(base+p)}</small></span><button type="button" class="auth-mini alt" data-copy="${esc(base+p)}">Kopieren</button></div>`).join("")}
+        <p class="auth-note">Profi-Tipp: <b>kalender.html?neu=1&amp;titel=Zahnarzt&amp;datum=2026-12-01</b> füllt Titel und Datum schon aus. Mit „Nach Eingabe fragen“ in Kurzbefehle kann Siri dich nach dem Titel fragen.<br>Hinweis: Kurzbefehle öffnen Links in Safari. Dort musst du dich einmal anmelden.</p>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <button class="auth-link" type="button" id="lkBack">Zurück</button>`,true);
+      $a("#lkBack").onclick=settingsView;
+      screen.querySelectorAll("[data-copy]").forEach(b=>b.onclick=async()=>{ try{ await navigator.clipboard.writeText(b.dataset.copy); b.textContent="Kopiert ✓"; }catch(e){ msg("Kopieren ging nicht. Halte den Link gedrückt.",true); } });
+    }
+    function settingsView(){
+      show("Einstellungen","",`<p class="auth-sec">Konto</p>
+        <p class="auth-note">Angemeldet als <b>${esc(user.email)}</b></p>
+        <button class="auth-btn alt" type="button" id="stPw">Passwort ändern</button>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        ${KC_KEY[type]?`<p class="auth-sec">Funktionen</p>
+        <label class="auth-sw" for="stKcal"><span>${type==="gym"?"Essen-Tagebuch":"Kalorien & Nährwerte"}<small>${type==="gym"?"Zeigt den Reiter „Essen“: Mahlzeiten eintragen, Kalorien und Nährwerte zählen.":"Zeigt kcal und Nährwerte pro Portion bei deinen Rezepten."}</small></span><input type="checkbox" id="stKcal" role="switch"${kcalOn[type]?" checked":""}><i aria-hidden="true"></i></label>`:""}
+        ${(()=>{ let last=""; return (window.Auth.pageSettings||[]).map((x,i)=>{ const h=x.sec&&x.sec!==last?`<p class="auth-sec">${esc(x.sec)}</p>`:""; last=x.sec||last;
+          if(x.button) return h+`<div class="auth-sw row"><span>${esc(x.label)}<small id="stX${i}n">${x.noteHtml?x.noteHtml():esc(x.note())}</small></span><button type="button" class="auth-mini${x.alt&&x.alt()?" alt":""}" id="stX${i}"${x.disabled&&x.disabled()?" disabled":""}>${esc(x.button())}</button></div>`;
+          return h+`<label class="auth-sw" for="stX${i}"><span>${esc(x.label)}<small id="stX${i}n">${esc(x.note(x.get()))}</small></span><input type="checkbox" id="stX${i}" role="switch"${x.get()?" checked":""}${x.disabled&&x.disabled()?" disabled":""}><i aria-hidden="true"></i></label>`; }).join(""); })()}
+        <p class="auth-sec">Mitteilungen</p>
+        <div class="auth-sw row"><span>Mitteilungen aufs Handy<small id="psNote">Wird geprüft …</small></span><button type="button" class="auth-mini" id="psBtn" hidden></button></div>
+        <div id="psCats" hidden>${OursPush.CATS.map(([k,l,n])=>`<label class="auth-sw" for="ps_${k}"><span>${l}<small>${n}</small></span><input type="checkbox" id="ps_${k}" data-pcat="${k}" role="switch"${OursPush.cats[k]?" checked":""}><i aria-hidden="true"></i></label>`).join("")}
+          <button class="auth-link" type="button" id="psTest">Test-Mitteilung schicken</button></div>
+        <p class="auth-sec">Kurzbefehle &amp; Siri</p>
+        <div class="auth-sw row"><span>Direkt-Links<small>Für die Kurzbefehle-App, Siri oder ein Widget auf dem Home-Bildschirm.</small></span><button type="button" class="auth-mini alt" id="stLinks">Ansehen</button></div>
+        <p class="auth-sec">Diese Seite</p>
+        <p class="auth-note">${sid?(type==="gym"?`Das ist dein eigener Trainingsplan. Freunde können ihn ansehen, aber nicht ändern.`:`Du bist in ${type==="chores"||type==="budget"?"einem":"einer"} ${esc(PAGE.noun)}. Wer ${type==="chores"?"ihn":type==="budget"?"es":"sie"} sieht, steht unter „Personen bei ${esc(PAGE.label)}“.`):`Für ${esc(PAGE.label)} gibt es noch keine Liste.`}</p>
+        <button class="auth-btn alt" type="button" id="stOut">Abmelden</button>
+        <button class="auth-link" type="button" id="stClose">Schließen</button>`,true);
+      $a("#stClose").onclick=hide;
+      const kc=$a("#stKcal"); if(kc) kc.onchange=()=>{ applyKcal(type,kc.checked); db.ref(`users/${user.uid}/settings/${KC_KEY[type]}`).set(kc.checked).catch(()=>{ msg("Speichern hat nicht geklappt. Prüf die Internetverbindung.",true); }); };
+      (window.Auth.pageSettings||[]).forEach((x,i)=>{ const el=$a("#stX"+i); if(!el) return;
+        if(x.button){ el.onclick=async()=>{ try{ await x.action(); }catch(err){ msg(err&&err.message||"Das hat nicht geklappt.",true); } if($a("#stX"+i)) settingsView(); }; return; }
+        el.onchange=async()=>{ const n=$a("#stX"+i+"n");
+        try{ await x.set(el.checked); }catch(err){ msg("Speichern hat nicht geklappt. Prüf die Internetverbindung.",true); } if(n) n.textContent=x.note(x.get()); }; });
+      $a("#stOut").onclick=()=>auth.signOut();
+      $a("#stLinks").onclick=linksView;
+      const paintPush=async()=>{ const st=await OursPush.state(), b=$a("#psBtn"), n=$a("#psNote"), c=$a("#psCats"); if(!b) return;
+        n.textContent={on:"Auf diesem Gerät eingeschaltet.",off:"Erinnerungen zu Terminen, Zahlungen, Training, Haushalt und Reisen.",denied:"Blockiert. Erlaube Mitteilungen für Ours in den Einstellungen deines Handys.",homescreen:"Auf dem iPhone: Ours über Teilen → „Zum Home-Bildschirm“ hinzufügen und von dort öffnen. Dann kannst du sie hier einschalten.",na:"Dieser Browser kann keine Mitteilungen."}[st];
+        b.hidden=!(st==="on"||st==="off"); b.textContent=st==="on"?"Ausschalten":"Einschalten"; b.classList.toggle("alt",st==="on"); c.hidden=st!=="on"; b.dataset.st=st; };
+      paintPush();
+      $a("#psBtn").onclick=async()=>{ const b=$a("#psBtn"); b.disabled=true; try{ if(b.dataset.st==="on") await OursPush.disable(); else{ await OursPush.enable(); msg("Mitteilungen sind an. Deine Erinnerungen werden beim nächsten Öffnen der Startseite geplant."); } }catch(err){ msg(err&&err.message||"Das hat nicht geklappt.",true); } b.disabled=false; paintPush(); };
+      screen.querySelectorAll("[data-pcat]").forEach(el=>el.onchange=()=>OursPush.setCat(el.dataset.pcat,el.checked,db,user.uid).catch(()=>msg("Speichern hat nicht geklappt.",true)));
+      $a("#psTest").onclick=async()=>{ try{ const r=await OursPush.test();
+          if(r.sent){ msg(`Gesendet an ${r.sent} ${r.sent===1?"Gerät":"Geräte"}. Sie sollte gleich ankommen. Falls nicht: iPhone-Einstellungen → Mitteilungen → Ours → „Mitteilungen erlauben“ prüfen und Fokus/Nicht stören ausschalten.`); return; }
+          const d=(r.info||[]).map(x=>`${x.host}: ${x.status||"keine Verbindung"}${x.text?" – "+x.text:""}`).join(" · ");
+          msg(r.version?`Apple hat die Mitteilung nicht angenommen (${d||"kein Gerät gespeichert"}). Schick mir diesen Text.`:"Der Cloudflare-Worker hat noch eine ältere Version. Füg den neuesten Code ein und drück auf Deploy.",true);
+        }catch(err){ msg(err.message,true); } };
+      screen.querySelectorAll("[data-theme]").forEach(b=>b.onclick=()=>{ if(window.OursTheme) OursTheme.set(b.dataset.theme); screen.querySelectorAll("[data-theme]").forEach(x=>x.setAttribute("aria-pressed",x===b)); });
+      $a("#stPw").onclick=async()=>{
+        try{ await auth.sendPasswordResetEmail(user.email); msg(`Wir haben dir eine Mail an ${user.email} geschickt. Darüber legst du ein neues Passwort fest.`); }
+        catch(err){ msg(errText(err),true); }
+      };
+    }
+
+    /* ---------- Personen und Einladungen für diese Seite ---------- */
+    let rmConfirm=null;
+    async function peopleView(){
+      if(!sid) return;
+      let profiles={}, access={}, meta={}, invites={};
+      try{
+        [profiles,access,meta,invites]=(await Promise.all(["profiles","access","meta","invites"].map(k=>db.ref(`spaces/${sid}/${k}`).once("value")))).map(s=>s.val()||{});
+      }catch(err){ return; }
+      const coOwn=id=>meta.owner===id || (meta.owners&&meta.owners[id]);
+      const owner=!!coOwn(user.uid), ids=Object.keys(access);
+      const list=ids.map(id=>({id,name:(profiles[id]&&profiles[id].name)||"Ohne Namen",mail:profiles[id]&&profiles[id].email||"",own:!!coOwn(id)}))
+        .sort((a,b)=>(b.own-a.own)||(a.id===user.uid?-1:b.id===user.uid?1:0));
+      const nInv=Object.keys(invites).length;
+      show(`Personen bei ${PAGE.label}`,
+        PAGE.type==="gym"?"Nur du kannst deinen Gymplan bearbeiten.":PAGE.type==="budget"&&ids.length<=1?"Im Moment siehst nur du dein Budget.":`${ids.length} ${ids.length===1?"Person sieht":"Personen sehen"} diese ${PAGE.noun}.`,
+        `<ul class="auth-people">${list.map(p=>`<li>${avatar(p.id,p.name,30)}
+            <span class="nm"><b>${esc(p.name)}${p.id===user.uid?" (du)":""}</b><small>${p.own?(type==="recipes"&&ids.length>1?"Besitzer":"Hat die Liste angelegt"):esc(p.mail)}</small></span>
+            ${owner&&p.id!==user.uid?`<button type="button" class="rm${rmConfirm===p.id?" sure":""}" data-rm="${esc(p.id)}">${rmConfirm===p.id?"Entfernen?":"Entfernen"}</button>`:""}</li>`).join("")}</ul>
+        ${type==="gym"?`<p class="auth-note">Dein Gymplan gehört nur dir. Deine Freunde können ihn im Gym unter „Freunde“ ansehen und Workouts kopieren, aber nichts ändern.</p>`:""}
+        <div${type==="gym"?" hidden":""}>
+        ${(()=>{ const fl=Object.entries(friends).filter(([id])=>!access[id]); return fl.length?`<p class="auth-sec">Freunde einladen</p>
+          <ul class="auth-people">${fl.map(([id,f])=>`<li>${avatar(id,f.name,30)}<span class="nm"><b>${esc(f.name||"Freund")}</b><small>bekommt die Einladung unter „Freunde“</small></span>
+          <button type="button" class="rm yes" data-fr-inv="${esc(id)}">Einladen</button></li>`).join("")}</ul>`:""; })()}
+        <p class="auth-sec">Per Link einladen</p>
+        <p class="auth-note">Der Link gilt nur für ${esc(PAGE.label)} und nur für eine Person. Wer ihn öffnet, tritt mit eigenem Konto bei. Deine anderen Seiten sieht die Person nicht.</p>
+        <button class="auth-btn" type="button" id="invNew">Einladungslink erstellen</button>
+        <div class="auth-copy" id="invBox" hidden><input type="text" id="invLink" readonly aria-label="Einladungslink"><button class="auth-btn" type="button" id="invCopy">Kopieren</button></div>
+        </div>
+        <p class="auth-msg" id="authMsg" hidden></p>
+        ${nInv?`<button class="auth-link" type="button" id="invRevoke">${nInv} offene${nInv===1?"r Link":" Links"} · alle zurückziehen</button>`:""}
+        ${ids.length>1&&DATA[type]?`<button class="auth-link danger" type="button" id="leave">Austreten und alles mitnehmen</button>`:""}
+        <button class="auth-btn alt" type="button" id="ppClose">Fertig</button>`,true);
+      $a("#ppClose").onclick=()=>{ rmConfirm=null; hide(); };
+      $a("#invNew").onclick=async()=>{
+        const code=rand(20);
+        try{
+          await db.ref(`spaces/${sid}/invites/${code}`).set({by:user.uid,at:Date.now()});
+          const base=location.href.split("#")[0].replace(/[^/]*$/,"");
+          $a("#invLink").value=`${base}${PAGE.file}#join-${sid}-${code}`; $a("#invBox").hidden=false; msg("");
+        }catch(err){ msg("Der Link konnte nicht erstellt werden.",true); }
+      };
+      $a("#invCopy").onclick=async()=>{
+        try{ await navigator.clipboard.writeText($a("#invLink").value); msg("Kopiert. Jetzt per WhatsApp oder Mail verschicken."); }
+        catch(e){ $a("#invLink").select(); msg("Markiert. Jetzt kopieren und verschicken."); }
+      };
+      screen.querySelectorAll("[data-fr-inv]").forEach(b=>b.onclick=async()=>{
+        b.disabled=true; b.textContent="…";
+        try{ await inviteFriend(b.dataset.frInv); b.textContent="Eingeladen ✓"; b.classList.remove("yes"); b.classList.add("done"); }
+        catch(err){ b.disabled=false; b.textContent="Einladen"; msg("Die Einladung hat nicht geklappt. Prüf die Regeln in Firebase.",true); }
+      });
+      const rv=$a("#invRevoke"); if(rv) rv.onclick=async()=>{ await db.ref(`spaces/${sid}/invites`).remove().catch(()=>{}); peopleView(); };
+      screen.querySelectorAll("[data-rm]").forEach(b=>b.onclick=async()=>{
+        const id=b.dataset.rm;
+        if(rmConfirm!==id){ rmConfirm=id; peopleView(); return; }
+        rmConfirm=null;
+        await db.ref(`spaces/${sid}/access/${id}`).remove().catch(()=>{});
+        await db.ref(`spaces/${sid}/profiles/${id}`).remove().catch(()=>{});
+        peopleView();
+      });
+      const lv=$a("#leave"); if(lv) lv.onclick=async()=>{
+        const w=(DATA[type]||{}).word||["Eintrag","Einträge"];
+        if(lv.dataset.sure!=="1"){ lv.dataset.sure="1"; lv.textContent=`Wirklich austreten? Du nimmst alle ${w[1]} als eigene ${PAGE.noun} mit. Neue teilt ihr dann nicht mehr.`; return; }
+        lv.textContent=`${w[1]} werden mitgenommen …`; lv.disabled=true;
+        const nid=rand(20);
+        try{
+          await db.ref(`spaces/${nid}/access/${user.uid}`).set("owner");
+          await db.ref(`spaces/${nid}/meta`).set({type,owner:user.uid,createdAt:Date.now()});
+          await copyData(sid,nid);
+          await db.ref(`users/${user.uid}/spaces/${type}`).set(nid);
+          if(type==="recipes"){
+            const rd=(await db.ref(`spaces/${sid}/readers`).once("value")).val()||{};
+            for(const [k,v] of Object.entries(rd)) if(v&&v.by===user.uid) await db.ref(`spaces/${sid}/readers/${k}`).remove().catch(()=>{});
+            await db.ref(`spaces/${sid}/share/${user.uid}`).remove().catch(()=>{});
+          }
+          // die anderen behalten die Liste; wer übrig bleibt, darf sie weiter verwalten
+          const acc=(await db.ref(`spaces/${sid}/access`).once("value")).val()||{};
+          for(const id of Object.keys(acc)) if(id!==user.uid) await db.ref(`spaces/${sid}/meta/owners/${id}`).set(true).catch(()=>{});
+          await db.ref(`spaces/${sid}/meta/owners/${user.uid}`).remove().catch(()=>{});
+          await db.ref(`spaces/${sid}/profiles/${user.uid}`).remove().catch(()=>{});
+          await db.ref(`spaces/${sid}/access/${user.uid}`).remove().catch(()=>{});
+        }catch(err){ lv.disabled=false; lv.textContent="Austreten hat nicht geklappt. Versuch es noch einmal."; return; }
+        location.reload();
+      };
+    }
+
+
+    /* ---------- Freunde ---------- */
+    let friends={}, requestsIn={}, inbox={}, friendCode=null, friendsOpen=false, frConfirm=null;
+    const frBadge=()=>Object.keys(requestsIn).length+Object.keys(inbox).length;
+    let chatUnread=0;
+    function updateFriendBadge(){
+      const n=frBadge(), b=document.getElementById("pfFriendBadge"), d=document.getElementById("pfDot"), c=document.getElementById("pfChatBadge");
+      if(b){ b.textContent=n; b.hidden=!n; } if(c){ c.textContent=chatUnread; c.hidden=!chatUnread; } if(d) d.hidden=!(n||chatUnread);
+      const cb=document.getElementById("oursChatN"); if(cb){ cb.textContent=chatUnread>99?"99+":chatUnread; cb.hidden=!chatUnread; }
+    }
+    function watchChats(){
+      db.ref(`chatIndex/${user.uid}`).on("value",s=>{ const v=s.val()||{}; chatUnread=Object.values(v).reduce((a,x)=>a+(x&&+x.unread>0?+x.unread:0),0);
+        updateFriendBadge(); document.dispatchEvent(new CustomEvent("ours-chat",{detail:{unread:chatUnread,index:v}})); },()=>{});
+    }
+    async function ensureFriendCode(){
+      friendCode=(await db.ref(`users/${user.uid}/friendCode`).once("value")).val();
+      if(friendCode) return;
+      for(let i=0;i<5 && !friendCode;i++){
+        const c=rand(8).toUpperCase().replace(/[^A-Z0-9]/g,"X");
+        try{ await db.ref(`friendCodes/${c}`).set(user.uid); await db.ref(`users/${user.uid}/friendCode`).set(c); friendCode=c; }catch(e){}
+      }
+    }
+    function watchFriends(){
+      db.ref(`friends/${user.uid}`).on("value",s=>{ friends=s.val()||{}; if(friendsOpen) friendsView(); },()=>{});
+      db.ref(`requests/${user.uid}`).on("value",s=>{ requestsIn=s.val()||{}; updateFriendBadge(); if(friendsOpen) friendsView(); },()=>{});
+      db.ref(`inbox/${user.uid}`).on("value",s=>{ inbox=s.val()||{}; updateFriendBadge(); if(friendsOpen) friendsView(); },()=>{});
+    }
+    const myName=()=>profile.name||user.email.split("@")[0];
+    async function sendRequest(code){
+      code=String(code||"").trim().toUpperCase().replace(/^.*#FRIEND-/,"").replace(/[^A-Z0-9]/g,"");
+      if(code.length<6) return {err:"Gib einen Freundescode ein. Er hat 8 Zeichen."};
+      const uid=(await db.ref(`friendCodes/${code}`).once("value")).val();
+      if(!uid) return {err:"Zu diesem Code gibt es niemanden. Prüf die Schreibweise."};
+      if(uid===user.uid) return {err:"Das ist dein eigener Code."};
+      if(friends[uid]) return {ok:`${friends[uid].name||"Diese Person"} ist schon dein Freund.`};
+      if(requestsIn[uid]){ await acceptRequest(uid); return {ok:`Ihr seid jetzt befreundet.`}; }
+      await db.ref(`requests/${uid}/${user.uid}`).set({name:myName(),at:Date.now()});
+      return {ok:"Freundschaftsanfrage gesendet. Sobald sie angenommen ist, erscheint die Person hier."};
+    }
+    async function acceptRequest(from){
+      const req=requestsIn[from]||{}, now=Date.now();
+      await db.ref(`friends/${user.uid}/${from}`).set({name:req.name||"Freund",since:now});
+      await db.ref(`friends/${from}/${user.uid}`).set({name:myName(),since:now});
+      await db.ref(`requests/${user.uid}/${from}`).remove();
+    }
+    function friendsView(msgText,isErr){
+      friendsOpen=true;
+      const base=location.href.split("#")[0].replace(/[^/]*$/,"");
+      const link=friendCode?`${base}index.html#friend-${friendCode}`:"";
+      const reqs=Object.entries(requestsIn), inv=Object.entries(inbox), fl=Object.entries(friends).sort((a,b)=>(a[1].name||"").localeCompare(b[1].name||""));
+      const pageOf=t=>PAGES.find(p=>p.type===(t==="swipe"?"recipes":t))||PAGES[0];
+      show("Freunde",fl.length?`${fl.length} ${fl.length===1?"Freund":"Freunde"}`:"Füg Freunde hinzu, um sie schnell zu deinen Listen einzuladen.",`
+        ${inv.length?`<p class="auth-sec">Einladungen</p><ul class="auth-people">${inv.map(([id,x])=>`<li>${avatar(x.from,x.fromName,30)}
+          <span class="nm"><b>${esc(x.fromName||"Jemand")}</b><small>${x.type==="swipe"?"will mit dir Rezepte swipen":`lädt dich zu ${esc(pageOf(x.type).label)} ein`}</small></span>
+          <button type="button" class="rm" data-inv-no="${esc(id)}">Nein</button><button type="button" class="rm yes" data-inv-yes="${esc(id)}">Annehmen</button></li>`).join("")}</ul>`:""}
+        ${reqs.length?`<p class="auth-sec">Anfragen</p><ul class="auth-people">${reqs.map(([id,x])=>`<li>${avatar(id,x.name,30)}
+          <span class="nm"><b>${esc(x.name||"Jemand")}</b><small>möchte mit dir befreundet sein</small></span>
+          <button type="button" class="rm" data-req-no="${esc(id)}">Ablehnen</button><button type="button" class="rm yes" data-req-yes="${esc(id)}">Annehmen</button></li>`).join("")}</ul>`:""}
+        <p class="auth-sec">Deine Freunde</p>
+        ${fl.length?`<ul class="auth-people">${fl.map(([id,f])=>`<li>${avatar(id,f.name,30)}<span class="nm"><b>${esc(f.name||"Freund")}</b><small>befreundet seit ${new Date(f.since||Date.now()).toLocaleDateString("de-DE")}</small></span>
+          <button type="button" class="rm${frConfirm===id?" sure":""}" data-fr-rm="${esc(id)}">${frConfirm===id?"Entfernen?":"Entfernen"}</button></li>`).join("")}</ul>`
+          :`<p class="auth-note">Noch keine Freunde. Schick deinen Code oder Link, oder gib unten einen Code ein.</p>`}
+        <p class="auth-sec">Dein Freundescode</p>
+        <div class="fr-code">${esc(friendCode||"…")}</div>
+        <div class="auth-copy"><input type="text" id="frLink" readonly value="${esc(link)}" aria-label="Dein Freundes-Link"><button class="auth-btn" type="button" id="frCopy">Link kopieren</button></div>
+        <p class="auth-sec">Freund hinzufügen</p>
+        <form class="auth-copy" id="frAdd" autocomplete="off"><input type="text" id="frIn" maxlength="40" placeholder="Code, z.B. K7M2QX9A" aria-label="Freundescode"><button class="auth-btn" type="submit">Senden</button></form>
+        <p class="auth-msg${isErr?" err":""}" id="authMsg"${msgText?"":" hidden"}>${esc(msgText||"")}</p>
+        <button class="auth-btn alt" type="button" id="frClose">Fertig</button>`,true);
+      $a("#frClose").onclick=()=>{ friendsOpen=false; frConfirm=null; hide(); };
+      $a("#frCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText(link); msg("Kopiert. Schick den Link an deine Freunde."); }catch(e){ $a("#frLink").select(); msg("Markiert. Jetzt kopieren und verschicken."); } };
+      $a("#frAdd").onsubmit=async e=>{ e.preventDefault(); try{ const r=await sendRequest($a("#frIn").value); friendsView(r.err||r.ok,!!r.err); }catch(err){ friendsView("Das hat nicht geklappt. Prüf die Regeln in Firebase.",true); } };
+      screen.querySelectorAll("[data-req-yes]").forEach(b=>b.onclick=async()=>{ try{ await acceptRequest(b.dataset.reqYes); }catch(e){ friendsView("Annehmen hat nicht geklappt.",true); } });
+      screen.querySelectorAll("[data-req-no]").forEach(b=>b.onclick=()=>db.ref(`requests/${user.uid}/${b.dataset.reqNo}`).remove().catch(()=>{}));
+      screen.querySelectorAll("[data-inv-no]").forEach(b=>b.onclick=()=>db.ref(`inbox/${user.uid}/${b.dataset.invNo}`).remove().catch(()=>{}));
+      screen.querySelectorAll("[data-inv-yes]").forEach(b=>b.onclick=async()=>{
+        const x=inbox[b.dataset.invYes]; if(!x) return; const p=pageOf(x.type);
+        if(x.type==="swipe"){ friendsOpen=false; hide(); const t=`${p.file}#swipe-${x.sid}`; if(p.type===type){ history.replaceState(null,"",t); location.reload(); } else location.href=t; return; }
+        await db.ref(`inbox/${user.uid}/${b.dataset.invYes}`).remove().catch(()=>{});
+        const target=`${p.file}#join-${x.sid}-${x.code}`;
+        if(p.type===type){ history.replaceState(null,"",target); location.reload(); } else location.href=target;
+      });
+      screen.querySelectorAll("[data-fr-rm]").forEach(b=>b.onclick=async()=>{
+        const id=b.dataset.frRm; if(frConfirm!==id){ frConfirm=id; friendsView(); return; }
+        frConfirm=null;
+        await db.ref(`friends/${user.uid}/${id}`).remove().catch(()=>{});
+        await db.ref(`friends/${id}/${user.uid}`).remove().catch(()=>{});
+      });
+    }
+    // Freund direkt zu dieser Liste einladen (landet bei ihm unter "Freunde")
+    async function inviteFriend(fid){
+      const code=rand(20);
+      await db.ref(`spaces/${sid}/invites/${code}`).set({by:user.uid,at:Date.now(),for:fid});
+      await db.ref(`inbox/${fid}`).push().set({type,sid,code,from:user.uid,fromName:myName(),at:Date.now()});
+    }
+
+    /* ---------- Seite ohne Bereich: neu anlegen ---------- */
+    function setupView(problem){
+      hide();
+      const wrap=document.querySelector(".wrap"), head=document.querySelector("header");
+      if(!setupEl){ setupEl=document.createElement("div"); setupEl.className="auth-setup"; wrap.style.position="relative"; wrap.appendChild(setupEl); }
+      setupEl.style.top=(head.offsetTop+head.offsetHeight)+"px";
+      const cnt=document.getElementById("count"); if(cnt) cnt.textContent="";
+      let oldCode=null; try{ oldCode=localStorage.getItem("dateideen.code"); }catch(e){}
+      setupEl.innerHTML=`<div class="box">
+        <h3>${esc(PAGE.empty)}</h3>
+        ${problem?`<p class="auth-msg err">${esc(problem)}</p>`:""}
+        <p class="auth-note">${esc(PAGE.hint)}</p>
+        ${oldCode?`<label class="auth-check"><input type="checkbox" id="setMig" checked> Bisherige ${esc(PAGE.label)} von diesem Gerät übernehmen</label>`:""}
+        <p class="auth-msg" id="authMsg" hidden></p>
+        <button class="auth-btn" type="button" id="setNew">${PAGE.type==="chores"?"Neuen Haushalt anlegen":PAGE.type==="budget"?"Budget anlegen":`${esc(PAGE.noun)} anlegen`}</button>
+        <p class="auth-note">Hat dich jemand eingeladen? Dann öffne einfach den Einladungslink.</p>
+      </div>`;
+      setupEl.hidden=false;
+      setupEl.querySelector("#setNew").onclick=async()=>{
+        const btn=setupEl.querySelector("#setNew"); btn.disabled=true; msg("Wird angelegt …",false,setupEl);
+        const id=rand(20);
+        try{
+          await db.ref(`spaces/${id}/access/${user.uid}`).set("owner");
+          await db.ref(`spaces/${id}/meta`).set({type,owner:user.uid,createdAt:Date.now()});
+          const mig=setupEl.querySelector("#setMig");
+          if(mig && mig.checked && oldCode){ msg("Bisherige Daten werden übernommen …",false,setupEl); await migrate(oldCode,id); }
+          await db.ref(`users/${user.uid}/spaces/${type}`).set(id);
+          ready(id);
+        }catch(err){ msg("Das Anlegen hat nicht geklappt. Prüf die Internetverbindung und die Regeln in Firebase.",true,setupEl); btn.disabled=false; }
+      };
+    }
+    // alte Daten vom geheimen Link übernehmen, nur was zu dieser Seite gehört
+    async function migrate(code,id){
+      if(type==="budget"){
+        const b=(await db.ref(`lists/${code}/budget`).once("value")).val();
+        if(b) await db.ref(`spaces/${id}`).update(b);
+        return;
+      }
+      const out={};
+      for(const k of PAGE.keys){ const v=(await db.ref(`lists/${code}/${k}`).once("value")).val(); if(v!=null) out[k]=v; }
+      const ids=new Set();
+      if(out.ideas) Object.values(out.ideas).forEach(i=>(Array.isArray(i.photos)?i.photos:[]).forEach(p=>ids.add(p)));
+      if(out.recipes) Object.values(out.recipes).forEach(r=>{ if(r.cover) ids.add(r.cover); });
+      if(ids.size){ out.photos={}; for(const p of ids){ const v=(await db.ref(`lists/${code}/photos/${p}`).once("value")).val(); if(v) out.photos[p]=v; } }
+      if(Object.keys(out).length) await db.ref(`spaces/${id}`).update(out);
+    }
+
+    /* ---------- Einladung annehmen ---------- */
+    // wie viele Einträge eine Liste hat (für die Frage beim Beitreten)
+    async function countData(id){
+      const d=DATA[type]; if(!d) return 0;
+      try{ return Object.keys((await db.ref(`spaces/${id}/${d.keys[0]}`).once("value")).val()||{}).length; }catch(e){ return 0; }
+    }
+    async function join(j,current,mode){
+      if(current && current!==j.sid && !mode){
+        const n=await countData(current), d=DATA[type], w=d?d.word:["Eintrag","Einträge"];
+        if(n>0){
+          show(`Einladung zu ${PAGE.label}`,"",`<p class="auth-note">Du hast schon eine eigene ${esc(PAGE.noun)} mit <b>${n} ${n===1?w[0]:w[1]}</b>. Was soll damit passieren?</p>
+            <button class="auth-btn" type="button" id="jYes">Mitnehmen und zusammenlegen</button>
+            <p class="auth-note">Deine ${w[1]} kommen in die gemeinsame ${esc(PAGE.noun)}. Sie gehört dann euch beiden. Wenn du später austrittst, nimmst du alles mit.</p>
+            <button class="auth-btn alt" type="button" id="jDrop">Nicht mitnehmen und löschen</button>
+            <p class="auth-note">Du trittst ohne deine ${w[1]} bei. Deine bisherige ${esc(PAGE.noun)} wird gelöscht.</p>
+            <button class="auth-link" type="button" id="jNo">Abbrechen, bei meiner bleiben</button>`);
+          $a("#jYes").onclick=()=>{ $a("#jYes").disabled=true; $a("#jYes").textContent="Wird zusammengelegt …"; join(j,current,"merge"); };
+          $a("#jDrop").onclick=()=>{ const b=$a("#jDrop"); if(b.dataset.sure!=="1"){ b.dataset.sure="1"; b.textContent=`Wirklich löschen? ${n} ${n===1?w[0]:w[1]} gehen verloren.`; return; }
+            b.disabled=true; join(j,current,"drop"); };
+          $a("#jNo").onclick=()=>{ clearHash(); hide(); open(current); };
+          return;
+        }
+        mode="drop";   // eigene Liste ist leer: einfach wechseln
+      }
+      try{
+        await db.ref(`spaces/${j.sid}/access/${user.uid}`).set(j.code);
+        await db.ref(`spaces/${j.sid}/meta/owners/${user.uid}`).set(true).catch(()=>{});   // gehört dann allen gemeinsam
+        if(current && current!==j.sid){
+          if(mode==="merge") await copyData(current,j.sid);
+          // alte Liste aufräumen: löschen, wenn sonst niemand drin war, sonst nur selbst austreten
+          try{ const acc=(await db.ref(`spaces/${current}/access`).once("value")).val()||{};
+            if(Object.keys(acc).length<=1) await db.ref(`spaces/${current}`).remove();
+            else { await db.ref(`spaces/${current}/profiles/${user.uid}`).remove(); await db.ref(`spaces/${current}/meta/owners/${user.uid}`).remove().catch(()=>{}); await db.ref(`spaces/${current}/access/${user.uid}`).remove(); } }catch(e){}
+        }
+        await db.ref(`users/${user.uid}/spaces/${type}`).set(j.sid);
+        await db.ref(`spaces/${j.sid}/invites/${j.code}`).remove().catch(()=>{});   // Link gilt nur einmal
+        clearHash(); ready(j.sid);
+      }catch(err){ clearHash(); if(current) open(current); else setupView("Der Einladungslink ist ungültig oder wurde zurückgezogen."); }
+    }
+    let confirm_=false;
+    // Alle Daten dieser Seite samt Fotos von einer Liste in eine andere kopieren (Vorhandenes bleibt)
+    async function copyData(from,to){
+      const d=DATA[type]; if(!d) return;
+      const photos=new Set();
+      for(const key of d.keys){
+        const src=(await db.ref(`spaces/${from}/${key}`).once("value")).val(); if(!src) continue;
+        const dst=(await db.ref(`spaces/${to}/${key}`).once("value")).val()||{};
+        const out={};
+        if(key==="week"){   // Gym-Wochenplan: Übungen je Tag zusammenführen
+          const A=Array.isArray(src)?Object.assign({},src):src, B=Array.isArray(dst)?Object.assign({},dst):dst;
+          for(const [day,v] of Object.entries(A)){ if(!v) continue; const b=B[day];
+            if(!b) out[day]=v; else out[day]={title:b.title||v.title||null,ex:[...new Set([...(b.ex||[]),...(v.ex||[])])]}; }
+        }else if(key==="log"){   // abgehakte Übungen je Datum zusammenführen
+          for(const [day,v] of Object.entries(src)) out[day]={...(v||{}),...(dst[day]||{})};
+        }else if(key==="rooms"||key==="cats"){   // eigene Namen: doppelte weglassen
+          const have=new Set(Object.values(dst));
+          for(const [k,v] of Object.entries(src)) if(!have.has(v) && !dst[k]) out[k]=v;
+        }else{
+          for(const [k,v] of Object.entries(src)){ if(dst[k] || !v) continue; out[k]=v;
+            if(v.cover && /^[0-9a-f]{32}$/.test(v.cover)) photos.add(v.cover);
+            if(Array.isArray(v.photos)) v.photos.forEach(p=>{ if(/^[0-9a-f]{32}$/.test(p)) photos.add(p); }); }
+        }
+        if(Object.keys(out).length) await db.ref(`spaces/${to}/${key}`).update(out);
+      }
+      for(const p of photos){ const ph=(await db.ref(`spaces/${from}/photos/${p}`).once("value")).val(); if(ph) await db.ref(`spaces/${to}/photos/${p}`).set(ph); }
+    }
+
+    async function open(id){
+      try{ await db.ref(`spaces/${id}/meta`).once("value"); ready(id); }
+      catch(err){ await db.ref(`users/${user.uid}/spaces/${type}`).remove().catch(()=>{}); setupView("Du hast keinen Zugriff mehr auf diese Liste. Leg eine neue an oder lass dich wieder einladen."); }
+    }
+    function ready(id){
+      sid=id; hide(); if(setupEl) setupEl.hidden=true; updateMenu();
+      db.ref(`spaces/${id}/profiles/${user.uid}`).update({name:profile.name||user.email.split("@")[0],email:user.email}).catch(()=>{});
+      if(started) return; started=true;
+      cb(db.ref("spaces/"+id),{uid:user.uid,sid:id,email:user.email,name:profile.name});
+    }
+
+    auth.onAuthStateChanged(async u=>{
+      if(!u){ if(user){ location.reload(); return; } loginView(parseJoin()||/^#friend-/.test(location.hash)?"register":"login"); return; }
+      user=u;
+      if(bootT) clearTimeout(bootT); bootT=setTimeout(()=>{ bootT=null; if(!started) show(PAGE.label,"",`<p class="auth-note">Lädt …</p>`); },1500);
+      try{
+        pubDb=db;
+        profile=(await db.ref(`users/${u.uid}/profile`).once("value")).val()||{};
+        if(!profile.name){
+          let n=""; try{ n=sessionStorage.getItem("auth.newName")||""; sessionStorage.removeItem("auth.newName"); }catch(e){}
+          profile.name=n||u.displayName||u.email.split("@")[0];
+          await db.ref(`users/${u.uid}/profile/name`).set(profile.name);
+        }
+        try{ const pb=(await db.ref(`pub/${u.uid}`).once("value")).val()||{}; pubCache.set(u.uid,pb);
+          if(pb.name!==profile.name) await db.ref(`pub/${u.uid}/name`).set(profile.name); pubCache.get(u.uid).name=profile.name; }catch(e){}
+        window.Auth._profileView=profileView; window.Auth.me=u.uid;
+        installMenu();
+        db.ref(`users/${u.uid}/settings`).on("value",s=>{ const v=s.val()||{};
+          Object.entries(KC_KEY).forEach(([t,k])=>applyKcal(t,typeof v[k]==="boolean"?v[k]:v.kcal===true));
+          if(v.theme&&window.OursTheme&&v.theme!==OursTheme.pref) OursTheme.set(v.theme,false); OursPush._load(v.push); },()=>{});
+        try{ await ensureFriendCode(); watchFriends(); watchChats(); }catch(e){}
+        const fr=location.hash.match(/^#friend-([A-Za-z0-9]{6,12})$/);
+        if(fr){ clearHash(); setTimeout(async()=>{ let r; try{ r=await sendRequest(fr[1]); }catch(e){ r={err:"Die Anfrage hat nicht geklappt."}; } friendsView(r.err||r.ok,!!r.err); },400); }
+        if(PAGE.noSpace){ hide(); updateMenu(); if(!started){ started=true; cb(null,{uid:u.uid,email:u.email,name:profile.name,db}); } return; }
+        const current=(await db.ref(`users/${u.uid}/spaces/${type}`).once("value")).val();
+        const j=parseJoin();
+        if(j){ await join(j,current); return; }
+        if(current){ await open(current); return; }
+        setupView();
+      }catch(err){
+        show(PAGE.label,"",`<p class="auth-msg err">Die Daten konnten nicht geladen werden. Prüf die Internetverbindung und die Regeln in Firebase.</p>
+          <button class="auth-btn" type="button" onclick="location.reload()">Neu laden</button>
+          <button class="auth-link" type="button" id="authOut">Abmelden</button>`);
+        $a("#authOut").onclick=()=>auth.signOut();
+      }
+    });
+  }};
+})();
+</script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=t=>String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const firebaseConfig={apiKey:"AIzaSyD6JNwGczfmHYTqHp9qI5bnutz-JLphgGI",authDomain:"oursapp-ff4cf.firebaseapp.com",databaseURL:"https://oursapp-ff4cf-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"oursapp-ff4cf",storageBucket:"oursapp-ff4cf.firebasestorage.app",messagingSenderId:"509984933255",appId:"1:509984933255:web:1f2e8b0850c94056f87f22"};
+// Was im Feed erscheint: Rezepte (neu gepostet), Gym (abgeschlossenes Training), Kalender (nur geteilter Kalender). Budget, Mail, Haushalt und der Rest: nichts.
+const SRC={recipe:["🍝","Rezepte","#d98e30","rezepte.html"],gym:["🏋️","Gym","#5a5bb8","gym.html"],cal:["📅","Kalender","#cf4b42","kalender.html"]};
+const DAYS=30;
+let me=null, db=null, items=null, filter="all", photos={};
+const pad=n=>String(n).padStart(2,"0"), iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const ago=t=>{ const m=Math.round((Date.now()-t)/60000); if(m<1) return "gerade eben"; if(m<60) return `vor ${m} Min.`; const h=Math.round(m/60); if(h<24) return `vor ${h} Std.`;
+  const d=Math.round(h/24); return d<7?`vor ${d} ${d===1?"Tag":"Tagen"}`:new Date(t).toLocaleDateString("de-DE",{day:"numeric",month:"short"}); };
+const dayLabel=t=>{ const d=new Date(t), a=new Date(); a.setHours(0,0,0,0); const n=Math.round((a-new Date(d.getFullYear(),d.getMonth(),d.getDate()))/864e5);
+  return n===0?"Heute":n===1?"Gestern":d.toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"}); };
+const once=p=>db.ref(p).once("value").then(s=>s.val()).catch(()=>null);
+const av=(uid,name,z)=>window.Auth&&Auth.avatar?Auth.avatar(uid,name,z):`<span class="ours-av" style="width:${z}px;height:${z}px">${esc((name||"?")[0])}</span>`;
+async function load(){
+  const out=[], cutoff=Date.now()-DAYS*864e5;
+  const friends=(await once(`friends/${me}`))||{};
+  await Promise.all(Object.entries(friends).map(async([fid,f])=>{
+    const name=(f&&f.name)||"Freund";
+    // Rezepte: neue Beiträge
+    const posts=(await once(`posts/${fid}`))||{};
+    Object.entries(posts).forEach(([pid,p])=>{ if(p&&p.at>cutoff) out.push({k:"recipe",at:p.at,fid,name,title:p.title||"Rezept",cover:p.cover||null,sid:p.sid||null,cat:p.category||null}); });
+    // Gym: abgeschlossene Trainings (nur wenn der Freund seinen Plan teilt)
+    const shelf=(await once(`shelf/${fid}`))||{};
+    if(shelf.gym){ const [se,tp]=await Promise.all([once(`spaces/${shelf.gym}/sessions`),once(`spaces/${shelf.gym}/templates`)]);
+      Object.values(se||{}).forEach(x=>{ if(!x||!x.end||x.by!==fid) return; const at=typeof x.end==="number"&&x.end>1e11?x.end:(x.start||0)+(x.dur||0)*1000; if(at<cutoff) return;
+        const t=(tp||{})[x.tpl]||{}; out.push({k:"gym",at,fid,name,title:t.title||"Training",dur:Math.round((x.dur||0)/60),n:null}); }); }
+  }));
+  // Kalender: nur wenn er mit jemandem geteilt ist – neue Termine der anderen
+  const cal=await once(`users/${me}/spaces/calendar`);
+  if(cal){ const acc=(await once(`spaces/${cal}/access`))||{};
+    if(Object.keys(acc).length>1){ const [ev,pr]=await Promise.all([once(`spaces/${cal}/events`),once(`spaces/${cal}/profiles`)]);
+      Object.values(ev||{}).forEach(e=>{ if(!e||!e.by||e.by===me||!(e.at>cutoff)) return; out.push({k:"cal",at:e.at,fid:e.by,name:((pr||{})[e.by]||{}).name||"Jemand",title:e.title||"Termin",date:e.date,start:e.allDay?null:e.start||null}); }); } }
+  items=out.sort((a,b)=>b.at-a.at).slice(0,80); render();
+  try{ localStorage.setItem("ours.feedSeen",String(Date.now())); }catch(e){}
+}
+function photo(it){ if(!it.cover||!it.sid) return null; const key=it.sid+"/"+it.cover; if(photos[key]!==undefined) return photos[key];
+  photos[key]=null; once(`spaces/${it.sid}/photos/${it.cover}`).then(v=>{ if(typeof v==="string"&&v.startsWith("data:image/")){ photos[key]=v; render(); } }); return null; }
+function postHtml(it){
+  const [ic,lab,c,href]=SRC[it.k], first=esc(it.name.split(" ")[0]);
+  let text="", extra="";
+  if(it.k==="recipe"){ text=`${first} hat ein neues Rezept gepostet: <strong>${esc(it.title)}</strong>`; const u=photo(it); if(it.cover) extra=`<div class="pimg">${u?`<img src="${u}" alt="">`:"🍝"}</div>`; }
+  if(it.k==="gym"){ text=`${first} hat ein Training abgeschlossen: <strong>${esc(it.title)}</strong>`; extra=`<div class="pmeta">${it.dur?`<span>⏱️ ${it.dur} Min.</span>`:""}${it.n?`<span>✅ ${it.n} Übungen</span>`:""}</div>`; }
+  if(it.k==="cal"){ const d=it.date?new Date(it.date+"T12:00").toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"}):""; text=`${first} hat einen Termin eingetragen: <strong>${esc(it.title)}</strong>`; extra=`<div class="pmeta"><span>📅 ${esc(d)}${it.start?` · ${esc(it.start)} Uhr`:""}</span></div>`; }
+  return `<a class="post" href="${href}"><div class="ph">${av(it.fid,it.name,38)}<span class="who"><b>${esc(it.name)}</b><small>${ago(it.at)}</small></span><span class="src" style="--c:${c}">${ic} ${lab}</span></div><p class="pt">${text}</p>${extra}</a>`;
+}
+function render(){
+  const L=$("#list"); if(items===null) return;
+  const list=items.filter(x=>filter==="all"||x.k===filter), kinds=[...new Set(items.map(x=>x.k))];
+  let h=kinds.length>1?`<div class="filters">${[["all","Alles"],...kinds.map(k=>[k,SRC[k][1]])].map(([k,l])=>`<button type="button" class="chip" data-f="${k}" aria-pressed="${filter===k}">${l}</button>`).join("")}</div>`:"";
+  if(!list.length) h+=`<div class="empty"><div class="big">👋</div><h3>Noch nichts Neues</h3><p>Hier siehst du, was deine Freunde machen: neue Rezepte, abgeschlossene Trainings und neue Termine in einem geteilten Kalender.</p><button class="btn" type="button" id="addFriends">Freunde hinzufügen</button></div>`;
+  let last=""; list.forEach(it=>{ const d=dayLabel(it.at); if(d!==last){ h+=`<p class="day">${esc(d)}</p>`; last=d; } h+=postHtml(it); });
+  L.innerHTML=h;
+}
+document.addEventListener("click",e=>{
+  const f=e.target.closest("[data-f]"); if(f){ filter=f.dataset.f; render(); return; }
+  if(e.target.closest("#addFriends")){ const t=document.getElementById("tabMe"); if(t){ t.click(); setTimeout(()=>{ const b=document.querySelector('#pfMenu [data-pf="friends"]'); if(b) b.click(); },150); } }
+});
+Auth.start(firebaseConfig,"feed",(r,info)=>{ if(!info) return; me=info.uid; db=info.db||firebase.database(); load().catch(()=>{ items=items||[]; render(); }); });
+</script>
+</body>
+</html>

@@ -7,7 +7,7 @@ Aufruf:  python3 entwicklung/build.py
 import re, json, time, pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-PAGES = ["home", "index", "rezepte", "haushalt", "budget", "gym", "kalender", "reise", "mail", "chat"]
+PAGES = ["home", "index", "rezepte", "haushalt", "budget", "gym", "kalender", "reise", "mail", "chat", "feed"]
 MARK = "/* Anmeldung, Profil und Bereiche"
 
 version = time.strftime("%Y-%m-%d-%H%M%S")

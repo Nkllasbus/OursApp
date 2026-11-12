@@ -7,7 +7,7 @@ from playwright.sync_api import sync_playwright
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
 OUT = pathlib.Path(args[0] if args else "/tmp/ours-screens"); OUT.mkdir(parents=True, exist_ok=True)
-PAGES = args[1:] or ["home", "kalender", "gym", "budget", "haushalt", "rezepte", "index", "reise", "chat", "mail"]
+PAGES = args[1:] or ["home", "kalender", "gym", "budget", "haushalt", "rezepte", "index", "reise", "chat", "mail", "feed"]
 DARK = "--dark" in sys.argv
 STUB = (ROOT / "entwicklung/test/firebase-attrappe.js").read_text(encoding="utf-8")
 SEED = {".info": {"connected": True}, "users": {"u1": {"profile": {"name": "Niklas"}, "spaces": {t: "s-" + t for t in ["dates", "recipes", "chores", "budget", "gym", "calendar", "trips"]},
