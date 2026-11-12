@@ -15,7 +15,7 @@ ok = []; bad = []
 def check(name, cond): (ok if cond else bad).append(name)
 try:
     with sync_playwright() as p:
-        b = p.chromium.launch()
+        b = p.chromium.launch(**({"executable_path": "/opt/pw-browsers/chromium"} if pathlib.Path("/opt/pw-browsers/chromium").exists() else {}))
         for dev in ["iPhone 13", None]:
             ctx = b.new_context(**(p.devices[dev] if dev else {"viewport": {"width": 1280, "height": 800}}), service_workers="block")
             ctx.add_init_script(f"window.__SEED={json.dumps(SEED)}")
@@ -25,9 +25,9 @@ try:
             tag = dev or "PC"
             pg.goto(f"http://localhost:{PORT}/gym.html"); pg.wait_for_timeout(1500)
             bar = pg.locator("#oursTabs").bounding_box(); vh = pg.viewport_size["height"]
-            check(f"{tag}: Leiste unten", bar and abs(bar["y"] + bar["height"] - vh) < 2)
-            wrap = pg.locator(".wrap").bounding_box()
-            check(f"{tag}: Inhalt endet über der Leiste", wrap["y"] + wrap["height"] <= bar["y"] + 1)
+            check(f"{tag}: Leiste schwebt unten", bar and 0 <= vh - (bar["y"] + bar["height"]) <= 40)
+            pad = pg.evaluate("parseFloat(getComputedStyle(document.querySelector('.wrap .scroll')).paddingBottom)")
+            check(f"{tag}: Inhalt läuft unter der Leiste und endet darüber", pad >= vh - bar["y"])
             check(f"{tag}: Seiten-Tab aktiv auf Gym", pg.get_attribute("#pgBtn", "aria-current") == "page")
             check(f"{tag}: Chat-Zähler 3", pg.inner_text("#oursChatN") == "3" and pg.is_visible("#oursChatN"))
             pg.click("#pgBtn"); pg.wait_for_timeout(300)
@@ -39,7 +39,7 @@ try:
             pg.click("#tabMe"); pg.wait_for_timeout(300)
             check(f"{tag}: Du-Bogen offen", pg.is_visible("#pfMenu"))
             pg.click("#pfMenu [data-pf=settings]"); pg.wait_for_timeout(400)
-            check(f"{tag}: Einstellungen öffnen", pg.is_visible("text=Darstellung"))
+            check(f"{tag}: Einstellungen öffnen (ohne Dunkelmodus)", pg.is_visible("#psNote") and pg.locator(".auth-theme").count() == 0)
             pg.click("#stClose"); pg.wait_for_timeout(200)
             # Pausen-Timer sichtbar über der Leiste
             pg.evaluate("restSec=60; startRest();"); pg.wait_for_timeout(300)

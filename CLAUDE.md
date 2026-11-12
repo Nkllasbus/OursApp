@@ -9,7 +9,7 @@ Ours ist eine private Web-App für ein Paar bzw. eine WG (Niklas, GitHub `Nkllas
 - Firebase-Regeln und Cloudflare-Worker kann Claude nicht selbst ändern: Datei an Niklas geben, er fügt sie ein.
 - **Niemals** API-Schlüssel, den Enable-Banking-Schlüssel (.pem), `FIN_SECRET` oder Client-Secrets im Chat oder auf GitHub. Sie gehören nur in die Cloudflare-Secrets. Bank-PINs/Passwörter werden nirgends gespeichert.
 - Niklas möchte Schritt-für-Schritt-Anleitungen: immer nur den nächsten Schritt geben, wenn er „gib mir den nächsten Schritt“ sagt.
-- Design: Apple-Stil (HIG), siehe unten.
+- Design: konsequent Apple-Stil (iOS 26: helle Systemfarben, große Titel, Kapsel-Knöpfe, Segmented Controls, schwebende Glas-Leiste, Sheets von unten, Haptik). **Vorerst nur ein heller Modus** – den Dunkelmodus machen wir später wieder.
 
 ## Adressen
 - Webseite (GitHub Pages): https://nkllasbus.github.io/OursApp/ (Start: `home.html`)
@@ -18,7 +18,7 @@ Ours ist eine private Web-App für ein Paar bzw. eine WG (Niklas, GitHub `Nkllas
 - iPhone-App (unsigniert, Installation mit Sideloadly): https://github.com/Nkllasbus/OursApp/releases/download/app-neueste/Ours.ipa
 
 ## Aufbau
-- Jede Seite ist eine einzelne HTML-Datei im Hauptordner: `home` (Start), `index` (Dateideen), `rezepte`, `haushalt`, `budget`, `gym`, `kalender`, `reise`, `mail`, `chat`, `raum` (Raumdesign), `smarthome` (bald), `datenschutz`.
+- Jede Seite ist eine einzelne HTML-Datei im Hauptordner: `home` (Start), `index` (Dateideen), `rezepte`, `haushalt`, `budget`, `gym`, `kalender`, `reise`, `mail`, `chat`, `datenschutz`. (Räume und Smart Home sind vorerst entfernt und kommen später.)
 - **`entwicklung/auth.js`** ist der gemeinsame Kern und steckt eingebettet in jeder Seite: Anmeldung, Bereiche (`spaces/<id>`), Seitenmenü, Einstellungen, Hell/Dunkel (`OursTheme`), Apple-Design-Schicht (Schrift, Farben, Drück-Gefühl, Haptik `OursHaptic`, Bögen, Seitenübergänge), Offline-Schicht (Zwischenspeicher `ofl:c:` + Warteschlange `ofl:outbox`, Daten sofort aus dem Speicher), Mitteilungen (`OursPush`), Kurzbefehle-Links, Freunde/Chat.
   - Nach Änderungen an `auth.js`: `python3 entwicklung/build.py` (baut es in alle Seiten ein und setzt eine neue Version in `version.json`).
   - **Navigation (seit 12.11.2026, Stil wie Instagram/YouTube):** Leiste unten `#oursTabs` mit Home · Kalender · Seiten (Raster `#pgMenu`, Liste `GRID`) · Chats (Zähler `#oursChatN`) · Du (Profilbild `#pfBtn`, Menü `#pfMenu` als Bogen). Kopfzeile schlicht (Hintergrund `--bg`, Titel links). `.wrap` endet über der Leiste (`--tab-h`). Kein Logo und kein schwebender Chat-Knopf mehr.
@@ -48,9 +48,8 @@ Seiten lokal mit `python3 -m http.server` ausliefern und mit Playwright (Chromiu
 - Wichtig: im Kontext `service_workers="block"` setzen und die Route als Regex `gstatic\.com/firebasejs/` angeben (ein Glob `**/gstatic.com/…` trifft `www.gstatic.com` nicht).
 
 ## Offene Punkte (Stand 12.11.2026)
-- Neues Aussehen (Leiste unten, schlichte Kopfzeile) ist ein erster Entwurf: Niklas sagt, was er anders haben möchte.
-- Räume: Seite war im Kern nicht eingetragen und stürzte beim Start ab; jetzt Typ `rooms` mit eigenem Bereich (`designs`). Niklas muss die Raumsammlung einmal anlegen.
+- Apple-Gestaltung (Stylesheet `ours-apple` in `auth.js`, je Seite eine Tint-Farbe über `data-hig-page`) – Niklas gibt weitere Anweisungen, danach Dunkelmodus.
 - Budget: Umsätze vom selben Tag kommen bei der Sparkasse teils nicht an. Diagnose eingebaut (Meldung nach „Aktualisieren“ zeigt Anzahl und Datum des neuesten Umsatzes). Auf der Webseite geht es, in der App noch prüfen (neue App-Version installieren).
 - iPhone-App: nächster Schritt für Niklas = automatische Verlängerung alle 7 Tage (kostenlose Apple-ID; Sideloadly „Auto Refresh“ o. Ä.).
 - Mail: Gmail-OAuth-Client-ID fehlt noch (`GMAIL_CLIENT_ID` in `mail.html`).
-- Smart Home: Antworten offen (IKEA-Hub DIRIGERA/TRÅDFRI?, TV-Marke, Home Assistant ja/nein).
+- Smart Home und Räume: später (Seiten entfernt; Smart-Home-Fragen offen: IKEA-Hub, TV-Marke, Home Assistant).

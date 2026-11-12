@@ -8,7 +8,8 @@
    alle anderen bekommen ein allgemeines dunkles Farbschema. */
 (function(){
   const KEY="ours.theme", mq=matchMedia("(prefers-color-scheme: dark)");
-  let pref="auto"; try{ pref=localStorage.getItem(KEY)||"auto"; }catch(e){}
+  // Vorerst nur ein (heller) Modus – der Dunkelmodus kommt später wieder
+  let pref="light";
   let rules=null;
   const find=()=>{ if(rules) return rules; rules=[]; for(const ss of document.styleSheets){ let rs; try{ rs=ss.cssRules; }catch(e){ continue; }
     for(const r of rs){ if(r.media&&/prefers-color-scheme:\s*dark/.test(r.media.mediaText)) rules.push({r,orig:r.media.mediaText}); } } return rules; };
@@ -25,8 +26,7 @@
     document.dispatchEvent(new CustomEvent("ours-theme",{detail:{pref,dark}}));
   }
   mq.addEventListener?mq.addEventListener("change",apply):mq.addListener(apply);
-  window.OursTheme={get pref(){ return pref; },set(v,save){ if(!["auto","light","dark"].includes(v)) return; pref=v; try{ localStorage.setItem(KEY,v); }catch(e){} apply();
-    if(save!==false) try{ const u=firebase.auth().currentUser; if(u) firebase.database().ref(`users/${u.uid}/settings/theme`).set(v).catch(()=>{}); }catch(e){} },apply};
+  window.OursTheme={get pref(){ return pref; },set(){ /* vorerst immer hell */ },apply};
   apply();
 })();
 /* ---------- Apple-Design für alle Seiten ----------
@@ -89,6 +89,131 @@
   input[type=checkbox][role=switch]:checked+i,.tgl input:checked+i{background:#34c759!important}
   :root[data-theme="dark"] input[type=checkbox][role=switch]:checked+i{background:#30d158!important}`;
   const put=()=>{ if(!css.isConnected) document.head.appendChild(css); }; put(); addEventListener("DOMContentLoaded",()=>document.head.appendChild(css));
+  // Apple-Gestaltung als letztes Stylesheet (überschreibt die Seiten-Styles)
+  const apple=document.createElement("style"); apple.id="ours-apple"; apple.textContent=`  /* ===== Apple-Gestaltung (iOS 26): eine helle Variante, Systemfarben, Glas-Leiste, Kapsel-Knöpfe ===== */
+  :root:root:root{--page:#f2f2f7;--bg:#f2f2f7;--surface:#ffffff;--surface2:#f2f2f7;--ink:#000000;--muted:#6c6c70;--line:#e5e5ea;--frame-line:#e5e5ea;--sep:#c6c6c8;
+    --fill:rgba(118,118,128,.12);--fill2:rgba(118,118,128,.08);--btn:rgba(118,118,128,.12);--dots:transparent;--shadow:rgba(0,0,0,.04);--theirs:#e9e9eb;--grouped:#f2f2f7;--cell:#ffffff;
+    --red:#ff3b30;--minus:#ff3b30;--plus:#34c759;--on-band:#ffffff;--on-band-muted:rgba(255,255,255,.75);color-scheme:light;
+    --accent:var(--tint);--band:var(--tint);--logo-bg:var(--tint);--accent-soft:color-mix(in srgb,var(--tint) 12%,#ffffff);--mine:var(--tint);
+    --tint:#007aff;--glass:rgba(255,255,255,.72);--glass-line:rgba(255,255,255,.65);--glass-shadow:0 10px 30px -8px rgba(0,0,0,.18),0 1px 3px rgba(0,0,0,.08)}
+  :root:root:root[data-hig-page="index"]{--tint:#ff2d55}
+  :root:root:root[data-hig-page="rezepte"]{--tint:#ff9500}
+  :root:root:root[data-hig-page="haushalt"]{--tint:#af52de}
+  :root:root:root[data-hig-page="budget"]{--tint:#34c759}
+  :root:root:root[data-hig-page="gym"]{--tint:#5856d6}
+  :root:root:root[data-hig-page="kalender"]{--tint:#ff3b30;--bg:#ffffff;--surface2:#f2f2f7}
+  :root:root:root[data-hig-page="reise"]{--tint:#00a99d}
+  html,body{background:var(--bg)!important}
+  body{font-size:17px;line-height:1.35;letter-spacing:-.022em}
+  .wrap{background:var(--bg)!important;border:0!important}
+  /* Großer Titel wie in iOS */
+  body.ours-tabbed :is(header,#head){padding:calc(10px + env(safe-area-inset-top,0px)) 20px 6px!important;margin-top:0!important;height:auto!important;overflow:visible!important;border:0!important}
+  body.ours-tabbed :is(header,#head) .wordmark{font-size:34px!important;line-height:41px!important;font-weight:700!important;letter-spacing:-.02em!important}
+  body.ours-tabbed :is(header,#head) .wordmark.pg-title::after{opacity:.35;border-width:0 .06em .06em 0}
+  body.hig-scrolled :is(header,#head){box-shadow:0 .5px 0 var(--sep)!important}
+  /* Schwebende Glas-Leiste unten (iOS 26) */
+  :root:root:root,body.ours-tabbed{--tab-h:64px;--tab-gap:max(10px,env(safe-area-inset-bottom,0px));--tab-total:calc(var(--tab-h) + var(--tab-gap) + 8px)}
+  .ours-tabs{left:16px!important;right:16px!important;bottom:var(--tab-gap)!important;height:var(--tab-h)!important;max-width:440px!important;margin:0 auto!important;padding:4px!important;
+    border-radius:999px!important;border:.5px solid var(--glass-line)!important;background:var(--glass)!important;box-shadow:var(--glass-shadow)!important;
+    -webkit-backdrop-filter:blur(24px) saturate(180%)!important;backdrop-filter:blur(24px) saturate(180%)!important;view-transition-name:ours-tabs}
+  .ours-native .ours-tabs{background:rgba(255,255,255,.94)!important}
+  .ours-tab{border-radius:999px!important;color:#1c1c1e!important;gap:2px!important;padding:0!important;transition:background-color .25s,color .25s}
+  .ours-tab>svg,.ours-tab .tab-av svg{width:25px!important;height:25px!important}
+  .ours-tab>span:not(.cb):not(.tab-av){font-size:10px!important;font-weight:600!important;letter-spacing:0!important}
+  .ours-tab[aria-current="page"],.ours-tab[aria-expanded="true"],.tab-me[data-open]{color:var(--tint)!important;background:rgba(118,118,128,.13)!important}
+  .ours-tabs .pf-btn .ours-av{background:var(--tint)!important;color:#fff!important}
+  .ours-tab .cb{box-shadow:0 0 0 2px #fff!important}
+  .ours-sheet{bottom:calc(var(--tab-total) + 4px)!important;left:max(16px,env(safe-area-inset-left,0px))!important;right:max(16px,env(safe-area-inset-right,0px))!important;max-width:440px!important;
+    max-height:calc(100dvh - var(--tab-total) - 80px)!important;border-radius:28px!important;background:rgba(255,255,255,.92)!important;-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);
+    box-shadow:0 0 0 100vmax rgba(0,0,0,.18),var(--glass-shadow)!important}
+  /* Inhalt läuft unter der Leiste durch und endet darüber */
+  body.ours-tabbed .wrap{height:100dvh!important;max-height:100dvh!important}
+  body.ours-tabbed .wrap :is(.scroll,main.scroll,.rscroll,.msgs){padding-bottom:calc(var(--tab-total) + 84px)!important;scroll-padding-bottom:calc(var(--tab-total) + 20px)}
+  /* Kalender: Wochen füllen genau den sichtbaren Bereich über der Leiste */
+  :root[data-hig-page="kalender"] .wrap{height:calc(100dvh - var(--tab-total))!important;max-height:calc(100dvh - var(--tab-total))!important}
+  :root[data-hig-page="kalender"] body.ours-tabbed .wrap .scroll{padding-bottom:12px!important}
+  :root[data-hig-page="kalender"] body.ours-tabbed :is(.fab,.todaypill){bottom:12px!important}
+  body.ours-tabbed .foot-count{display:none!important}
+  body.ours-tabbed .wrap>.status{position:fixed!important;left:50%;translate:-50% 0;bottom:calc(var(--tab-total) + 76px);z-index:46;max-width:min(88vw,420px);width:max-content;margin:0!important;
+    padding:9px 16px!important;border-radius:999px;background:rgba(28,28,30,.88);color:#fff!important;font-size:14px!important;font-weight:500;text-align:center;pointer-events:none;
+    -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:var(--glass-shadow)}
+  body.ours-tabbed .wrap>.status:empty{display:none!important}
+  body.ours-tabbed .toast{bottom:calc(var(--tab-total) + 76px)!important}
+  /* runder Hauptknopf über der Leiste (Glas, getönt) */
+  body.ours-tabbed :is(.fab,.g-fab,.sp-fab){bottom:calc(var(--tab-total) + 12px)!important;translate:none!important;right:max(20px,env(safe-area-inset-right,0px))!important;
+    width:56px!important;height:56px!important;border-radius:50%!important;border:0!important;background:var(--tint)!important;color:#fff!important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 8px 22px -6px color-mix(in srgb,var(--tint) 70%,transparent),0 2px 6px rgba(0,0,0,.12)!important}
+  body.ours-tabbed .fab.fab-mid{right:calc(max(20px,env(safe-area-inset-right,0px)) + 68px)!important;background:var(--glass)!important;color:var(--tint)!important;
+    -webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);box-shadow:var(--glass-shadow)!important;border:.5px solid var(--glass-line)!important}
+  body.ours-tabbed :is(.todaypill,.rest-bar,.sp-card){bottom:calc(var(--tab-total) + 12px)!important;translate:none!important}
+  body.ours-tabbed .fab-menu{bottom:calc(var(--tab-total) + 80px)!important;translate:none!important}
+  .fab-opt{background:var(--glass)!important;color:var(--ink)!important;border:.5px solid var(--glass-line)!important;border-radius:999px!important;box-shadow:var(--glass-shadow)!important;
+    -webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);font-weight:500!important}
+  /* geöffnetes Schnellmenü: Hintergrund abdunkeln und unscharf wie bei iOS-Kontextmenüs */
+  .fab-menu.open::before{content:"";position:fixed;inset:0;z-index:-1;background:rgba(242,242,247,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);pointer-events:auto;animation:hig-fadein .2s ease-out}
+  body:has(.fab-menu.open) :is(.fab,.g-fab){z-index:8!important}
+  /* Einstellungen und Anmeldung: heller Kopf mit großem Titel */
+  .auth-head{background:#ffffff!important;color:var(--ink)!important;padding:20px 22px 6px!important}
+  .auth-head::after{display:none!important}
+  .auth-head h2{font-size:28px!important;font-weight:700!important}
+  .auth-head p{color:var(--muted)!important;opacity:1!important}
+  .auth-card{border:0!important;box-shadow:0 20px 50px -18px rgba(0,0,0,.35)!important}
+  .auth-sec{color:var(--muted)!important;font-size:13px!important;font-weight:400!important;letter-spacing:0!important;text-transform:uppercase}
+  #stOut{color:var(--red)!important}
+  /* Knöpfe: Kapseln wie in iOS */
+  .btn{border:0!important;border-radius:999px!important;background:var(--fill)!important;color:var(--tint)!important;font-weight:600!important;box-shadow:none!important}
+  .btn.primary,.btn.big.primary,.auth-btn:not(.alt):not(.auth-google){background:var(--tint)!important;color:#fff!important;border:0!important;border-radius:999px!important;box-shadow:none!important}
+  .auth-btn.alt{background:var(--fill)!important;color:var(--tint)!important;border:0!important;border-radius:999px!important}
+  .btn.ghost,.ghost,.linkish,.auth-link{background:none!important;border:0!important;color:var(--tint)!important;box-shadow:none!important}
+  .btn:disabled,.btn[disabled]{opacity:.4!important}
+  .del,.danger,.btn.danger{color:var(--red)!important}
+  /* Segmente wie das iOS-Segmented-Control */
+  :is(.seg,.toggle,.tabs:not(nav)){background:var(--fill)!important;border:0!important;border-radius:999px!important;padding:2px!important;box-shadow:none!important;gap:0!important}
+  :is(.seg,.toggle,.tabs:not(nav))>button{background:none!important;color:var(--ink)!important;border:0!important;border-radius:999px!important;box-shadow:none!important;font-weight:500!important;
+    font-size:14px!important;min-height:30px;transition:background-color .2s,box-shadow .2s}
+  :is(.seg,.toggle,.tabs:not(nav))>button:is([aria-pressed="true"],[aria-selected="true"]){background:#ffffff!important;color:var(--ink)!important;font-weight:600!important;
+    box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04),0 0 0 .5px rgba(0,0,0,.04)!important}
+  :is(.seg,.toggle,.tabs:not(nav))>button::after{display:none!important}
+  /* Auswahl-Chips */
+  .chip,.fl,.fchip{border:0!important;border-radius:999px!important;background:var(--fill)!important;color:var(--ink)!important;box-shadow:none!important;font-weight:500!important}
+  .chip[aria-pressed="true"],.fl[aria-pressed="true"]{background:var(--tint)!important;color:#fff!important}
+  .chip.sug{background:var(--accent-soft)!important;color:var(--tint)!important}
+  /* Eingabefelder */
+  :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]),textarea,select):not(.cell):not(.inp):not(.r):not(:is(.igrp,.list,.dt,.auth-screen,.composer,.search) *){
+    background:var(--fill)!important;border:0!important;border-radius:12px!important;box-shadow:none!important;color:var(--ink)!important}
+  :is(input,textarea,select):focus-visible{outline:none!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--tint) 30%,transparent)!important}
+  /* Karten: weiß, ohne Rahmen, größere Rundung */
+  :is(.card,.chart-card,.sec,.pg-card,.me-card,.hero,.empty,.list,.igrp,.box):not(button){border-color:transparent!important}
+  /* Bögen kommen von unten, mit Griff (iOS-Sheet) */
+  .modal{z-index:55!important;background:rgba(0,0,0,.25)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  .lightbox,.frx{z-index:56!important}
+  @media (max-width:600px){
+    .modal:not(.auth-screen){place-items:end center!important;align-items:end!important;justify-content:center!important;padding:max(48px,env(safe-area-inset-top,0px)) 0 0!important}
+    .modal:not(.auth-screen)>:is(.sheet,form.sheet,[role=dialog]){width:100%!important;max-width:none!important;max-height:100%!important;border-radius:26px 26px 0 0!important;border:0!important;
+      padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))!important;box-shadow:0 -6px 30px rgba(0,0,0,.12)!important;position:relative;animation:hig-rise .5s var(--hig-spring) backwards!important}
+    .modal:not(.auth-screen)>:is(.sheet,form.sheet):not(.ios)::before{content:"";position:sticky;top:0;display:block;width:36px;height:5px;border-radius:3px;background:#c7c7cc;margin:-12px auto 6px;flex:none}
+  }
+  .sheet:not(.ios),.auth-card{background:#ffffff!important}
+  .sheet-actions{gap:10px!important}
+  /* Drücken wie in iOS: Knöpfe leicht kleiner und gedimmt, Zeilen grau hinterlegt */
+  .hig-down{scale:.96!important;opacity:.75;transition:scale .12s var(--hig-spring),opacity .12s,filter .12s!important}
+  .hig-down.hig-wide{scale:.98!important;opacity:1}
+  .hig-down.hig-row{scale:1!important;opacity:1;filter:brightness(.92)}
+  .ours-tab.hig-down{scale:.92!important;opacity:1}
+  .hig-up{transition:scale .5s var(--hig-bounce),opacity .3s ease-out,filter .3s ease-out!important}
+  /* Seitenwechsel: wie Tabs in iOS, ruhig überblenden, Leiste bleibt stehen */
+  header.brand{view-transition-name:none!important}
+  ::view-transition-old(root){animation:.16s ease-out both hig-fadeout!important}
+  ::view-transition-new(root){animation:.24s ease-out both hig-fadein!important}
+  ::view-transition-group(ours-tabs){animation:none!important}
+  @keyframes hig-fadeout{to{opacity:0}}
+  @keyframes hig-fadein{from{opacity:0}}
+`;
+  // nach dem Einhängen Größen neu berechnen lassen (z. B. Kalenderwochen, die die Höhe ausfüllen)
+  const attach=()=>document.head.appendChild(apple); attach(); addEventListener("DOMContentLoaded",attach);
+  window.OursDesign={attach};
+  // beim Scrollen eine feine Linie unter dem Titel (wie in iOS)
+  document.addEventListener("scroll",e=>{ const t=e.target; if(!t||!t.classList||!t.classList.contains("scroll")) return; document.body.classList.toggle("hig-scrolled",t.scrollTop>6); },{capture:true,passive:true});
   // Statusleiste in der Farbe des (jetzt schlichten) Kopfes
   const tint=()=>{ let m=document.querySelector('meta[name="theme-color"]'); if(!m){ m=document.createElement("meta"); m.name="theme-color"; document.head.appendChild(m); }
     const c=getComputedStyle(root).getPropertyValue("--bg").trim()||getComputedStyle(root).getPropertyValue("--band").trim(); if(c) m.content=c; };
@@ -249,18 +374,17 @@ window.OursPush=(function(){
 })();
 (function(){
   // Zukunftsprojekte: stehen im Menü, sind aber noch nicht anklickbar
-  const SOON = [{label:"Smart Home",color:"#5a5f6e",ic:"🏠"}];
+  const SOON = [];
   // Raster im Tab „Seiten“
   const GRID = [
-    {type:"dates",file:"index.html",label:"Dateideen",color:"#8c7559",ic:"💡"},
-    {type:"recipes",file:"rezepte.html",label:"Rezepte",color:"#7a2434",ic:"🍝"},
-    {type:"chores",file:"haushalt.html",label:"Haushalt",color:"#3f6f8c",ic:"🧹"},
-    {type:"budget",file:"budget.html",label:"Budget",color:"#123354",ic:"💶"},
-    {type:"gym",file:"gym.html",label:"Gym",color:"#3c4270",ic:"🏋️"},
-    {type:"calendar",file:"kalender.html",label:"Kalender",color:"#2f6b4f",ic:"📅"},
-    {type:"trips",file:"reise.html",label:"Reisen",color:"#1d6a7a",ic:"✈️"},
-    {type:"mail",file:"mail.html",label:"Mail",color:"#7a2e2e",ic:"✉️"},
-    {type:"rooms",file:"raum.html",label:"Räume",color:"#8a4a30",ic:"🛋️"},
+    {type:"dates",file:"index.html",label:"Dateideen",color:"#ff2d55",ic:"💡"},
+    {type:"recipes",file:"rezepte.html",label:"Rezepte",color:"#ff9500",ic:"🍝"},
+    {type:"chores",file:"haushalt.html",label:"Haushalt",color:"#af52de",ic:"🧹"},
+    {type:"budget",file:"budget.html",label:"Budget",color:"#34c759",ic:"💶"},
+    {type:"gym",file:"gym.html",label:"Gym",color:"#5856d6",ic:"🏋️"},
+    {type:"calendar",file:"kalender.html",label:"Kalender",color:"#ff3b30",ic:"📅"},
+    {type:"trips",file:"reise.html",label:"Reisen",color:"#00b5ad",ic:"✈️"},
+    {type:"mail",file:"mail.html",label:"Mail",color:"#007aff",ic:"✉️"},
   ];
   // Symbole der Leiste unten: Umriss, aktiv ausgefüllt
   const svg=(b,on)=>`<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="${on?2:1.8}" stroke-linecap="round" stroke-linejoin="round">${b}</svg>`;
@@ -272,33 +396,30 @@ window.OursPush=(function(){
     me:svg(`<circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.8 3.6-6 7-6s6.2 2.2 7 6"/>`,false),
   };
   const PAGES = [
-    {type:"home",    file:"home.html",     label:"Home",  color:"#2b2a33", noSpace:true, menu:true},
-    {type:"dates",   file:"index.html",    label:"Dateideen", color:"#8c7559", noun:"Dateideen-Liste",
+    {type:"home",    file:"home.html",     label:"Home",  color:"#007aff", noSpace:true, menu:true},
+    {type:"dates",   file:"index.html",    label:"Dateideen", color:"#ff2d55", noun:"Dateideen-Liste",
      empty:"Noch keine Dateideen-Liste", hint:"Leg eine Liste an und lad danach deine Freundin oder deinen Freund ein. Nur eingeladene Personen sehen sie.",
      keys:["ideas"]},
-    {type:"recipes", file:"rezepte.html",  label:"Rezepte",   color:"#7a2434", noun:"Rezeptsammlung",
+    {type:"recipes", file:"rezepte.html",  label:"Rezepte",   color:"#ff9500", noun:"Rezeptsammlung",
      empty:"Noch keine Rezeptsammlung", hint:"Leg eine Sammlung an und lad Freunde oder Familie ein. Nur eingeladene Personen sehen sie.",
      keys:["recipes","people","swipe"]},
-    {type:"chores",  file:"haushalt.html", label:"Haushalt",  color:"#3f6f8c", noun:"Haushalt",
+    {type:"chores",  file:"haushalt.html", label:"Haushalt",  color:"#af52de", noun:"Haushalt",
      empty:"Noch kein Haushalt", hint:"Leg einen Haushalt an und lad deine Mitbewohner ein.",
      keys:["chores","choreLog","members","rooms","people"]},
-    {type:"budget",  file:"budget.html",   label:"Budget",    color:"#123354", noun:"Budget",
+    {type:"budget",  file:"budget.html",   label:"Budget",    color:"#34c759", noun:"Budget",
      empty:"Noch kein Budget", hint:"Dein Budget ist privat. Später kannst du jemanden dazuholen, zum Beispiel deine Freundin oder deinen Freund.",
      keys:null},
-    {type:"gym",     file:"gym.html",      label:"Gym", color:"#3c4270", noun:"Trainingsplan",
+    {type:"gym",     file:"gym.html",      label:"Gym", color:"#5856d6", noun:"Trainingsplan",
      empty:"Noch kein Trainingsplan", hint:"Leg deinen Plan an: Übungen nach Muskelgruppen und ein Wochenplan. Später kannst du deinen Trainingspartner dazuholen.",
      keys:[]},
-    {type:"calendar",file:"kalender.html", label:"Kalender", color:"#2f6b4f", noun:"Kalender",
+    {type:"calendar",file:"kalender.html", label:"Kalender", color:"#ff3b30", noun:"Kalender",
      empty:"Noch kein Kalender", hint:"Leg einen Kalender an und lad deine Freundin oder deinen Freund ein. Ihr seht und bearbeitet dieselben Termine. Gym, Dateideen und Budget kommen automatisch dazu – die siehst nur du.",
      keys:["events"]},
-    {type:"trips",   file:"reise.html",    label:"Reisen", color:"#1d6a7a", noun:"Reiseplanung",
+    {type:"trips",   file:"reise.html",    label:"Reisen", color:"#00b5ad", noun:"Reiseplanung",
      empty:"Noch keine Reiseplanung", hint:"Leg eine Reiseplanung an und lad deine Freundin oder deinen Freund ein. Ihr plant zusammen: Packliste, Ablauf, Buchungen und Kosten.",
      keys:["trips"]},
-    {type:"rooms",   file:"raum.html",     label:"Räume", color:"#8a4a30", noun:"Raumsammlung",
-     empty:"Noch keine Raumsammlung", hint:"Leg eine Sammlung für deine Raumideen an. Später kannst du deine Freundin oder deinen Freund dazuholen.",
-     keys:["designs"]},
-    {type:"chat",    file:"chat.html",     label:"Chats", color:"#5f6e54", noSpace:true},
-    {type:"mail",    file:"mail.html",     label:"Mail",  color:"#7a2e2e", noSpace:true, menu:true},
+    {type:"chat",    file:"chat.html",     label:"Chats", color:"#007aff", noSpace:true},
+    {type:"mail",    file:"mail.html",     label:"Mail",  color:"#007aff", noSpace:true, menu:true},
   ];
   const CSS = `
   .auth-screen{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow-y:auto;background:var(--page);
@@ -539,13 +660,13 @@ window.OursPush=(function(){
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-12-005738";
+  const APP_VERSION="2026-11-12-002314";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
       const k="ours.reload."+v.v; try{ if(sessionStorage.getItem(k)) return; sessionStorage.setItem(k,"1"); }catch(e){}
-      (async()=>{ try{ if(window.caches){ const c=await caches.open("ours-v7"), here=location.pathname.split("/").pop()||"index.html";
-          await Promise.all(["home.html","index.html","rezepte.html","haushalt.html","budget.html","chat.html","gym.html","mail.html","kalender.html","reise.html","raum.html"].map(f=>
+      (async()=>{ try{ if(window.caches){ const c=await caches.open("ours-v8"), here=location.pathname.split("/").pop()||"index.html";
+          await Promise.all(["home.html","index.html","rezepte.html","haushalt.html","budget.html","chat.html","gym.html","mail.html","kalender.html","reise.html"].map(f=>
             fetch(f+"?v="+v.v,{cache:"no-store"}).then(r=>{ if(r.ok) return c.put(new URL(f,location.href).href,r); }).catch(()=>{}))); } }catch(e){}
         location.reload(); })();
     }).catch(()=>{}); }catch(e){}
@@ -561,7 +682,6 @@ window.OursPush=(function(){
     gym:     {keys:["exercises","templates","workouts","sessions","bw","week","log"], word:["Übung","Übungen"]},
     calendar:{keys:["events"], word:["Termin","Termine"]},
     trips:   {keys:["trips"], word:["Reise","Reisen"]},
-    rooms:   {keys:["designs"], word:["Raum","Räume"]},
   };
   function pgToggle(open){ const m=document.getElementById("pgMenu"); if(!m) return; m.hidden=!open;
     ["pgBtn"].map(id=>document.getElementById(id)).concat([document.querySelector("header .wordmark.pg-title")]).forEach(b=>b&&b.setAttribute("aria-expanded",open)); }
@@ -579,7 +699,7 @@ window.OursPush=(function(){
     editProfile(){ if(window.Auth._profileView) window.Auth._profileView(); },
     start(config, type, cb){
     const PAGE = PAGES.find(p=>p.type===type);
-    const st=document.createElement("style"); st.textContent=CSS; document.head.appendChild(st);
+    const st=document.createElement("style"); st.textContent=CSS; document.head.appendChild(st); if(window.OursDesign) OursDesign.attach();
     // Name der App oben in jeder Seite
     const hd=document.querySelector("header");
     if(hd && !document.getElementById("oursTabs")){
@@ -793,8 +913,6 @@ window.OursPush=(function(){
         ${(()=>{ let last=""; return (window.Auth.pageSettings||[]).map((x,i)=>{ const h=x.sec&&x.sec!==last?`<p class="auth-sec">${esc(x.sec)}</p>`:""; last=x.sec||last;
           if(x.button) return h+`<div class="auth-sw row"><span>${esc(x.label)}<small id="stX${i}n">${x.noteHtml?x.noteHtml():esc(x.note())}</small></span><button type="button" class="auth-mini${x.alt&&x.alt()?" alt":""}" id="stX${i}"${x.disabled&&x.disabled()?" disabled":""}>${esc(x.button())}</button></div>`;
           return h+`<label class="auth-sw" for="stX${i}"><span>${esc(x.label)}<small id="stX${i}n">${esc(x.note(x.get()))}</small></span><input type="checkbox" id="stX${i}" role="switch"${x.get()?" checked":""}${x.disabled&&x.disabled()?" disabled":""}><i aria-hidden="true"></i></label>`; }).join(""); })()}
-        <p class="auth-sec">Darstellung</p>
-        <div class="auth-theme" role="group" aria-label="Darstellung">${[["auto","Automatisch"],["light","Hell"],["dark","Dunkel"]].map(([k,l])=>`<button type="button" data-theme="${k}" aria-pressed="${(window.OursTheme&&OursTheme.pref||"auto")===k}">${l}</button>`).join("")}</div>
         <p class="auth-sec">Mitteilungen</p>
         <div class="auth-sw row"><span>Mitteilungen aufs Handy<small id="psNote">Wird geprüft …</small></span><button type="button" class="auth-mini" id="psBtn" hidden></button></div>
         <div id="psCats" hidden>${OursPush.CATS.map(([k,l,n])=>`<label class="auth-sw" for="ps_${k}"><span>${l}<small>${n}</small></span><input type="checkbox" id="ps_${k}" data-pcat="${k}" role="switch"${OursPush.cats[k]?" checked":""}><i aria-hidden="true"></i></label>`).join("")}

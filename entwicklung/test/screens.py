@@ -7,7 +7,7 @@ from playwright.sync_api import sync_playwright
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
 OUT = pathlib.Path(args[0] if args else "/tmp/ours-screens"); OUT.mkdir(parents=True, exist_ok=True)
-PAGES = args[1:] or ["home", "kalender", "gym", "budget", "haushalt", "rezepte", "index", "reise", "chat", "mail", "raum"]
+PAGES = args[1:] or ["home", "kalender", "gym", "budget", "haushalt", "rezepte", "index", "reise", "chat", "mail"]
 DARK = "--dark" in sys.argv
 STUB = (ROOT / "entwicklung/test/firebase-attrappe.js").read_text(encoding="utf-8")
 SEED = {".info": {"connected": True}, "users": {"u1": {"profile": {"name": "Niklas"}, "spaces": {t: "s-" + t for t in ["dates", "recipes", "chores", "budget", "gym", "calendar", "trips"]},
@@ -21,7 +21,7 @@ time.sleep(0.8)
 errors = {}
 try:
     with sync_playwright() as p:
-        b = p.chromium.launch()
+        b = p.chromium.launch(**({"executable_path": "/opt/pw-browsers/chromium"} if pathlib.Path("/opt/pw-browsers/chromium").exists() else {}))
         ctx = b.new_context(**p.devices["iPhone 13"], service_workers="block", color_scheme="dark" if DARK else "light")
         ctx.add_init_script(f"window.__SEED={json.dumps(SEED)};try{{localStorage.setItem('ours.theme','{'dark' if DARK else 'light'}')}}catch(e){{}}")
         ctx.route(re.compile(r"gstatic\.com/firebasejs/"), lambda r: r.fulfill(status=200, content_type="text/javascript", body=STUB if "app-compat" in r.request.url else ""))
