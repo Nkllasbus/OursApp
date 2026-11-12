@@ -77,6 +77,16 @@ header p{margin:4px 0 0;color:var(--on-band-muted);font-size:.88rem}
 .add{border:1px dashed var(--line);background:none;color:var(--accent);border-radius:10px;padding:8px 12px;font-weight:600;font-size:.88rem;text-align:left}
 .add:hover{border-color:var(--accent)}
 ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.pc-head{display:flex;align-items:center;gap:8px}.pc-head h3{margin:0}.pc-head .dot{width:12px;height:12px}
+.pc-sum{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:12px 0 8px}.pc-sum b{font-size:34px;font-weight:700;letter-spacing:-.02em}.pc-sum span{color:var(--muted);font-size:15px}
+.pc-track{display:block!important;height:8px!important;min-height:8px;margin:0 0 6px;border-radius:999px;background:var(--surface2,#ececf0);overflow:hidden}.pc-track>span{display:block!important;height:8px!important;border-radius:999px}
+.pc-st{margin:0 0 2px;font-size:14px;color:var(--muted)}.pc-st.over{color:var(--red,#cf4b42);font-weight:600}
+.pc-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 4px}
+.pc-tiles>div{display:flex;flex-direction:column;gap:2px;background:rgba(118,118,128,.08);border-radius:12px;padding:10px 12px}
+.pc-tiles b{font-size:17px;font-weight:700}.pc-tiles span{font-size:12px;color:var(--muted)}
+.pc-day{margin:16px 4px 6px;font-size:13px;font-weight:600;color:var(--muted)}
+.pc-list .empty{margin-top:14px}
+.pc-back{display:block;align-self:flex-start;margin-right:auto;text-align:left;border:0;background:none;color:var(--accent);font:inherit;font-size:16px;padding:0 0 8px;cursor:pointer}
 .row{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;text-align:left}
 .row:hover{border-color:#3a3d43}
 .ico{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-weight:700;font-size:.9rem;color:#111}
@@ -2589,10 +2599,10 @@ function renderPlan(){
   h+=`<div class="sec-head"><h2>Kategorien</h2>${planned?`<button class="note" type="button" data-plansug style="border:0;background:none;color:var(--accent);font-weight:600">Vorschlag</button>`:""}</div>
     <div class="sec">${cats.map(c=>{ const b=B[c]||0, v=ps.byCat[c]||0, lv=budLevel(v,b), left=b-v, perDay=left>0?Math.floor(left/si.daysLeft):0;
       const col=lv===2?"var(--red,#cf4b42)":lv===1?"#d98e30":catColor(c);
-      return `<button type="button" class="bud plan-row${lv===2?" over":lv===1?" near":""}" data-bud="${esc(c)}"><span class="cat-name"><span class="dot" style="background:${catColor(c)}"></span>${esc(c)}</span>
+      return `<button type="button" class="bud plan-row${lv===2?" over":lv===1?" near":""}" data-plancat="${esc(c)}"><span class="cat-name"><span class="dot" style="background:${catColor(c)}"></span>${esc(c)}</span>
         <b class="num">${money(v)}${b?` <span class="of">/ ${money(b)}</span>`:""}</b>
         ${b?`<span class="track"><span style="width:${Math.min(100,v/b*100)}%;background:${col}"></span></span>`:""}
-        <small>${b?(lv===2?`${money(-left)} über dem Budget`:`noch ${money(left)}${perDay?` · ${money(perDay)} pro Tag`:""}${lv===1?" · fast aufgebraucht":""}`):"Kein Budget – antippen zum Festlegen"}</small></button>`; }).join("")||`<div class="empty">Noch keine Ausgaben in diesem Zeitraum.</div>`}</div>
+        <small>${b?(lv===2?`${money(-left)} über dem Budget`:`noch ${money(left)}${perDay?` · ${money(perDay)} pro Tag`:""}${lv===1?" · fast aufgebraucht":""}`):"Kein Budget festgelegt"}</small></button>`; }).join("")||`<div class="empty">Noch keine Ausgaben in diesem Zeitraum.</div>`}</div>
     <div class="plan-add"><button class="add" type="button" data-bud="">+ Budget für eine Kategorie</button><button class="add" type="button" data-budnewcat>+ Eigene Kategorie</button></div>
     <p class="note">Eigene Kategorien kannst du bei jedem Umsatz auswählen (Umsatz antippen → Kategorie). ${pm?`Darin enthalten sind auch deine Verträge (zusammen ${money(pm)} pro Monat), z. B. Miete in „Wohnen“. `:""}Bei 80 % und bei 100 % eines Budgets bekommst du eine Mitteilung (Einstellungen → Budget-Mitteilungen).</p>`;
   return h;
@@ -2734,6 +2744,30 @@ function saveKillMeta(){
   const k=sheetCtx.key, name=$("#kName").value.trim(), addr=$("#kAddr").value.trim(), no=$("#kNo").value.trim(), mail=$("#kMail").value.trim();
   fin.meta=fin.meta||{}; fin.meta.fullName=name; fin.meta.address=addr; finRef("meta").update({fullName:name||null,address:addr||null}).catch(()=>{});
   fin.contracts[k]={...(fin.contracts[k]||{}),customerNo:no||null,mail:mail||null}; finRef("contracts/"+k).update({customerNo:no||null,mail:mail||null}).catch(()=>{});
+}
+// Kategorie im Reiter „Budgets“ antippen: alle Abbuchungen im aktuellen Zeitraum
+function planCatSheet(c){
+  const si=salaryInfo(), b=(fin.budgets||{})[c]||0;
+  const list=allTx().filter(t=>!t.ex&&t.amount<0&&t.date>=si.start&&t.date<=si.end&&catOf(t)===c).sort((a,b)=>b.date.localeCompare(a.date)||a.amount-b.amount);
+  const v=list.reduce((a,t)=>a-t.amount,0), lv=budLevel(v,b), left=b-v;
+  const col=lv===2?"var(--red,#cf4b42)":lv===1?"#d98e30":catColor(c);
+  const fmt=d=>fromIso(d).toLocaleDateString("de-DE",{day:"numeric",month:"short"});
+  const big=list.length?list.reduce((m,t)=>t.amount<m.amount?t:m,list[0]):null;
+  sheetCtx={type:"plancat",cat:c};
+  let days="", last="";
+  list.forEach(t=>{ if(t.date!==last){ if(last) days+=`</ul>`; last=t.date; const d=fromIso(t.date);
+      days+=`<p class="pc-day">${esc(d.toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"}))}</p><ul>`; }
+    days+=txRow(t); });
+  if(last) days+=`</ul>`;
+  openSheet(`<div class="pc-head"><span class="dot" style="background:${catColor(c)}"></span><h3>${esc(c)}</h3></div>
+    <div class="pc-sum"><b class="num">${money(v)}</b><span>${b?`von ${money(b)} Budget`:"ausgegeben"}</span></div>
+    ${b?`<span class="track pc-track"><span style="width:${Math.min(100,v/b*100)}%;background:${col}"></span></span>
+    <p class="pc-st${lv===2?" over":""}">${lv===2?`${money(-left)} über dem Budget`:`Noch ${money(left)} frei${lv===1?" · fast aufgebraucht":""}`}</p>`:""}
+    <p class="note">Zeitraum ${fmt(si.start)} – ${fmt(si.end)}</p>
+    ${list.length?`<div class="pc-tiles"><div><b class="num">${list.length}</b><span>${list.length===1?"Abbuchung":"Abbuchungen"}</span></div><div><b class="num">${money(Math.round(v/list.length))}</b><span>im Schnitt</span></div><div><b class="num">${money(-big.amount)}</b><span>größte</span></div></div>`:""}
+    <div class="pc-list">${days||`<div class="empty">In diesem Zeitraum gibt es noch keine Abbuchungen in „${esc(c)}“.</div>`}</div>
+    <p class="note">Tipp: Umsatz antippen, um ihn einer anderen Kategorie zuzuordnen.</p>
+    <div class="actions"><button class="btn" type="button" data-bud="${esc(c)}">${b?"Budget ändern":"Budget festlegen"}</button><button class="btn primary" type="button" data-close>Fertig</button></div>`);
 }
 function budSheet(cat,newCat){
   sheetCtx={type:"bud",cat:cat||null,newCat:!!newCat};
@@ -2999,7 +3033,10 @@ document.addEventListener("click",e=>{
   const v=t.closest("[data-view]"); if(v){ view=v.dataset.view; try{ localStorage.setItem("budget.view",view); }catch(err){} $("#list").scrollTop=0; render(); return; }
   const n=t.closest("[data-new]"); if(n) return openForm(n.dataset.new);
   const ed=t.closest("[data-edit]"); if(ed) return openForm(ed.dataset.edit,ed.dataset.id);
-  const tx=t.closest("[data-tx]"); if(tx) return txSheet(tx.dataset.tx);
+  const pcat=t.closest("[data-plancat]"); if(pcat) return planCatSheet(pcat.dataset.plancat);
+  const tx=t.closest("[data-tx]"); if(tx){ const back=sheetCtx&&sheetCtx.type==="plancat"&&!$("#sheetModal").hidden?sheetCtx.cat:null; txSheet(tx.dataset.tx);
+    if(back&&!$("#sheetModal").hidden&&sheetCtx&&sheetCtx.type!=="plancat") $("#sheet").insertAdjacentHTML("afterbegin",`<button type="button" class="pc-back" data-plancat="${esc(back)}">‹ ${esc(back)}</button>`);
+    return; }
   const co=t.closest("[data-con]"); if(co) return conSheet(co.dataset.con);
   const bu=t.closest("[data-bud]"); if(bu) return budSheet(bu.dataset.bud);
   if(t.closest("[data-budnewcat]")) return budSheet(null,true);
