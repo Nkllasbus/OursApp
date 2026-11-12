@@ -282,6 +282,17 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
 .circ.ok.dim{background:rgba(118,118,128,.18);color:rgba(60,60,67,.4);box-shadow:none}
 .shake{animation:shake .35s}
 @keyframes shake{25%{translate:-6px 0}50%{translate:5px 0}75%{translate:-3px 0}}
+/* Bogen: fester Kopf, darunter eigener Scrollbereich (kein „sticky“ – zuverlässiger in Safari) */
+#sheet.ios{display:flex!important;flex-direction:column!important;overflow:hidden!important;padding-bottom:0!important}
+#sheet.ios>.ehead,#sheet.ios>.ihead{position:relative!important;top:auto!important;flex:none}
+#sheet.ios>.sbody{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;margin:0 -16px;padding:2px 16px calc(28px + env(safe-area-inset-bottom,0px))}
+/* Auswahlzeilen: die ganze Zeile öffnet das Menü */
+.efield{position:relative}
+.popw{position:static!important;display:inline-flex;align-items:center;gap:4px;color:var(--muted);max-width:62%;min-width:0}
+.popv{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.popw svg{position:static!important;flex:none;width:16px;height:16px}
+.popw select.pop{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;opacity:0!important;z-index:2;margin:0!important;padding:0!important;font-size:16px!important;cursor:pointer}
+label.efield,label.erow{cursor:text}
 </style>
 </head>
 <body>
@@ -539,7 +550,9 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
   function haptic(){ if(busy) return; busy=true; try{
     if(navigator.vibrate&&!/iPhone|iPad|iPod/.test(navigator.userAgent)) navigator.vibrate(8);
     else { if(!hl){ hl=document.createElement("label"); hl.setAttribute("aria-hidden","true"); hl.style.cssText="position:fixed;left:-200px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none";
-      const i=document.createElement("input"); i.type="checkbox"; i.setAttribute("switch",""); i.tabIndex=-1; hl.appendChild(i); document.body.appendChild(hl); } hl.click(); }
+      const i=document.createElement("input"); i.type="checkbox"; i.setAttribute("switch",""); i.tabIndex=-1; hl.appendChild(i); document.body.appendChild(hl); }
+      const a=document.activeElement; if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)&&a!==hl.firstChild){ busy=false; return; }   // beim Tippen in ein Feld keine Haptik
+      hl.click(); if(a&&a!==document.activeElement&&a.focus) try{ a.focus({preventScroll:true}); }catch(e){} }
   }catch(e){} busy=false; }
   window.OursHaptic=haptic;
   // iPhone-App (WKWebView): nach dem Schließen der Tastatur die Ansicht zurücksetzen, damit Tippen wieder genau trifft
@@ -570,7 +583,7 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
   document.addEventListener("scroll",release,{passive:true,capture:true});
   // Haptik bei Auswahl und Umschaltern
   document.addEventListener("change",e=>{ const t=e.target; if(t&&t!==(hl&&hl.firstChild)&&(t.type==="checkbox"||t.type==="radio")) haptic(); },true);
-  document.addEventListener("click",e=>{ if(busy) return; const el=e.target.closest('[role=checkbox],[role=tab],[aria-pressed],[aria-checked],.ck,[data-theme]'); if(el&&!el.closest("label")) haptic(); },true);
+  document.addEventListener("click",e=>{ if(busy) return; const el=e.target.closest('[role=checkbox],[role=tab],button[aria-pressed],[aria-checked],.ck'); if(el&&!el.closest("label")&&!/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) haptic(); },true);
 })();
 /* ---------- Mitteilungen aufs Handy (Web Push über den Helfer in Cloudflare) ----------
    Auf dem iPhone nur, wenn Ours vom Home-Bildschirm geöffnet wird (ab iOS 16.4). */
@@ -980,7 +993,7 @@ window.OursPush=(function(){
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-12-013522";
+  const APP_VERSION="2026-11-12-014842";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1894,6 +1907,8 @@ function grab(){ const g=id=>document.getElementById(id); if(!edit||edit.page!==
   if(g("eTitle")) edit.title=g("eTitle").value; if(g("eLoc")) edit.loc=g("eLoc").value; if(g("eNote")) edit.note=g("eNote").value; if(g("eUrl")) edit.url=g("eUrl").value;
   if(g("eDate")) edit.date=g("eDate").value||edit.date; if(g("eEnd")) edit.end=g("eEnd").value||edit.end; if(g("eStart")) edit.start=g("eStart").value||edit.start; if(g("eEndT")) edit.endTime=g("eEndT").value||edit.endTime;
   if(edit.end<edit.date) edit.end=edit.date; }
+function sheetBody(sh){ const head=sh.firstElementChild; if(!head||!/\b(ehead|ihead)\b/.test(head.className)) return; const body=document.createElement("div"); body.className="sbody";
+  while(head.nextSibling) body.appendChild(head.nextSibling); sh.appendChild(body); }
 function paintSheet(){
   const E=edit, cell=(l,r,attr)=>`<button type="button" class="cell nav"${attr||""}><span>${l}</span><span class="cv">${r} <i>›</i></span></button>`;
   const sh=$("#sheet"); sh.classList.add("ios");
@@ -1909,7 +1924,7 @@ function paintSheet(){
   const REPS=[["","Nie"],["day1","Jeden Tag"],["week1","Jede Woche"],["week2","Alle 2 Wochen"],["month1","Jeden Monat"],["year1","Jedes Jahr"]];
   const repKey=r=>!r?"":r.custom||(r.days&&r.days.length>1)?"custom":r.f+(+r.n||1);
   const rk=repKey(E.rep), others=Object.keys(profiles).filter(u=>u!==myUid), rem=E.kind==="rem";
-  const sel=(id,opts,cur)=>`<span class="popw"><select id="${id}" class="pop">${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?" selected":""}>${esc(l)}</option>`).join("")}</select><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 9.5 12 6l4 3.5M8 14.5l4 3.5 4-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+  const sel=(id,opts,cur)=>`<span class="popw"><span class="popv">${esc((opts.find(([v])=>String(v)===String(cur))||opts[0]||["",""])[1])}</span><select id="${id}" class="pop" aria-label="${id}">${opts.map(([v,l])=>`<option value="${v}"${String(cur)===String(v)?" selected":""}>${esc(l)}</option>`).join("")}</select><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 9.5 12 6l4 3.5M8 14.5l4 3.5 4-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
   const alOpts=alList().map(([v,l])=>[v==null?"":v,l.replace(" (9:00)","")]);
   if(E.page==="main") sh.innerHTML=`<div class="ehead"><button type="button" class="circ" data-close aria-label="Abbrechen">${IC.x}</button>
       ${E.id?`<b class="etl">${rem?"Erinnerung":"Ereignis"}</b>`:`<div class="kseg" role="group" aria-label="Art"><button type="button" data-ekind="ev" aria-pressed="${!rem}">Ereignis</button><button type="button" data-ekind="rem" aria-pressed="${rem}">Erinnerung</button></div>`}
@@ -1923,16 +1938,16 @@ function paintSheet(){
         <div class="erow"><span>Wiederholung</span>${sel("eRep",[...REPS,...(rk==="custom"?[["custom",repText(E.rep)]]:[]),["custom_new","Eigene …"]],rk)}</div>
         ${E.rep?`<button type="button" class="erow nav" data-page="end"><span>Wiederholung beenden</span><span class="pv">${E.rep.until?fromIso(E.rep.until).toLocaleDateString("de-DE"):"Nie"} <i>›</i></span></button>`:""}
       </div></div></div>
-    ${rem?"":`<p class="eh">Ort</p><div class="efield">${IC.loc}<input id="eLoc" maxlength="120" placeholder="Standort oder Videoanruf" value="${esc(E.loc)}" autocomplete="off"></div>
-    <p class="eh">Eingeladene</p><button type="button" class="efield" data-page="inv"${others.length?"":" disabled"}>${IC.ppl}<span class="${E.inv.length?"":"ph"}">${E.inv.length?esc(E.inv.map(u=>((profiles[u]||{}).name||"").split(" ")[0]).filter(Boolean).join(", ")):others.length?"Eingeladene":"Teile den Kalender, um jemanden einzuladen"}</span></button>`}
+    ${rem?"":`<p class="eh">Ort</p><label class="efield">${IC.loc}<input id="eLoc" maxlength="120" placeholder="Standort oder Videoanruf" value="${esc(E.loc)}" autocomplete="off"></label>
+    <p class="eh">Eingeladene</p><button type="button" class="efield" ${others.length?'data-page="inv"':'data-noinv'}>${IC.ppl}<span class="${E.inv.length?"":"ph"}">${E.inv.length?esc(E.inv.map(u=>((profiles[u]||{}).name||"").split(" ")[0]).filter(Boolean).join(", ")):others.length?"Eingeladene":"Teile den Kalender, um jemanden einzuladen"}</span></button>`}
     <p class="eh">Optionen</p>
     <div class="efield">${IC.cal}<span class="lbl">Farbe</span><span class="cdot" style="background:${E.col}"></span>${sel("eCol",ECOLS.map(c=>[c,COLNAMES[c]||c]),E.col)}</div>
     <div class="efield">${IC.bell}<span class="lbl">Hinweis</span>${sel("eAl0",alOpts,E.al[0]??"")}</div>
     ${E.al[0]!=null?`<div class="efield">${IC.bell}<span class="lbl">2. Hinweis</span>${sel("eAl1",alOpts,E.al[1]??"")}</div>`:""}
     ${!E.id&&!rem&&Object.keys(ideas).length?`<button type="button" class="efield" data-page="idea">${IC.heart}<span class="lbl">Aus Dateidee</span><span class="pv">${E.idea&&ideas[E.idea]?esc(ideas[E.idea].title):"wählen"} <i>›</i></span></button>`:""}
     <p class="eh">Details</p>
-    <div class="egrp det"><div class="erow ic">${IC.note}<textarea id="eNote" maxlength="1000" placeholder="Notizen">${esc(E.note)}</textarea></div>
-      <div class="erow ic">${IC.link}<input id="eUrl" maxlength="300" placeholder="URL" value="${esc(E.url)}" inputmode="url" autocomplete="off"></div></div>
+    <div class="egrp det"><label class="erow ic">${IC.note}<textarea id="eNote" maxlength="1000" placeholder="Notizen">${esc(E.note)}</textarea></label>
+      <label class="erow ic">${IC.link}<input id="eUrl" maxlength="300" placeholder="URL" value="${esc(E.url)}" inputmode="url" autocomplete="off"></label></div>
     ${E.id?`<button type="button" class="edel" id="eDel">${rem?"Erinnerung":"Ereignis"} löschen</button>`:""}`;
   else if(E.page==="inv"){ sh.innerHTML=`<div class="ihead"><button type="button" class="ib" data-page="main">‹ Zurück</button><b>Eingeladene</b><span class="ib"></span></div>
       <div class="igrp">${others.map(u=>`<button type="button" class="cell" data-invt="${esc(u)}"><span>${esc((profiles[u]||{}).name||"Person")}</span>${E.inv.includes(u)?`<span class="chk">✓</span>`:""}</button>`).join("")}</div>
@@ -2061,6 +2076,7 @@ $("#modal").addEventListener("click",ev=>{
   const pg=t.closest("[data-page]"); if(pg){ grab(); edit.page=pg.dataset.page; return paintSheet(); }
   if(t.closest("#eSave")) return saveEv();
   if(t.closest("#eDel")){ $("#modal").hidden=true; const id=edit.id; edit=null; showEv(id,events[id]&&events[id].date); return delAsk(); }
+  if(t.closest("[data-noinv]")){ say("Teile zuerst den Kalender (Du → Personen bei Kalender), dann kannst du jemanden einladen.",6000); return; }
   const ek=t.closest("[data-ekind]"); if(ek){ grab(); edit.kind=ek.dataset.ekind; if(!edit.id) edit.allDay=edit.kind==="rem"; return paintSheet(); }
   const iv=t.closest("[data-invt]"); if(iv){ const u=iv.dataset.invt; edit.inv=edit.inv.includes(u)?edit.inv.filter(x=>x!==u):[...edit.inv,u]; return paintSheet(); }
   if(t.id==="eAll"){ grab(); edit.allDay=edit.kind==="rem"?!t.checked:t.checked; const ok=new Set(alList().map(x=>x[0])); edit.al=edit.al.map(v=>ok.has(v)?v:(v==null?null:edit.allDay?0:15)); return paintSheet(); }
@@ -2075,6 +2091,8 @@ $("#modal").addEventListener("click",ev=>{
 });
 // iPhone/Safari: Tipps auf die Knöpfe im festen Kopf des Bogens anhand der Position auswerten
 // (WebKit ordnet Tipps auf festgehefteten Elementen in scrollenden Bögen manchmal falsch zu)
+// Bogen-Inhalt immer unter einen festen Kopf in einen eigenen Scrollbereich legen
+new MutationObserver(()=>{ const sh=$("#sheet"); if(sh.querySelector(":scope>.sbody")) return; sheetBody(sh); }).observe($("#sheet"),{childList:true});
 $("#modal").addEventListener("touchend",ev=>{
   const tc=ev.changedTouches&&ev.changedTouches[0]; if(!tc) return;
   const hit=[...document.querySelectorAll("#sheet .ehead button")].find(b=>{ const r=b.getBoundingClientRect(); return tc.clientX>=r.left-4&&tc.clientX<=r.right+4&&tc.clientY>=r.top-4&&tc.clientY<=r.bottom+4; });
