@@ -277,6 +277,11 @@ header.brand .pf-btn{top:calc(50% - 27px + env(safe-area-inset-top,0px) / 2)}
 .egrp.det textarea,.egrp.det input{flex:1;min-width:0;border:0!important;background:none!important;box-shadow:none!important;padding:8px 0!important;font:inherit;font-size:1rem!important;color:var(--ink);outline:none;resize:vertical}
 .egrp.det textarea{min-height:90px}
 .edel{width:100%;margin-top:18px;border:0;background:#fff;border-radius:999px;padding:15px;font:inherit;font-weight:600;color:var(--red,#cf4b42)}
+.ab-btn{flex:none;border-radius:999px;background:var(--tint,var(--accent));color:#fff!important;font-weight:600;font-size:.88rem;padding:7px 14px;text-decoration:none}
+.ab-btn.alt{background:rgba(118,118,128,.14);color:var(--tint,var(--accent))!important}
+.circ.ok.dim{background:rgba(118,118,128,.18);color:rgba(60,60,67,.4);box-shadow:none}
+.shake{animation:shake .35s}
+@keyframes shake{25%{translate:-6px 0}50%{translate:5px 0}75%{translate:-3px 0}}
 </style>
 </head>
 <body>
@@ -975,7 +980,7 @@ window.OursPush=(function(){
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-12-012539";
+  const APP_VERSION="2026-11-12-013522";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -1908,7 +1913,7 @@ function paintSheet(){
   const alOpts=alList().map(([v,l])=>[v==null?"":v,l.replace(" (9:00)","")]);
   if(E.page==="main") sh.innerHTML=`<div class="ehead"><button type="button" class="circ" data-close aria-label="Abbrechen">${IC.x}</button>
       ${E.id?`<b class="etl">${rem?"Erinnerung":"Ereignis"}</b>`:`<div class="kseg" role="group" aria-label="Art"><button type="button" data-ekind="ev" aria-pressed="${!rem}">Ereignis</button><button type="button" data-ekind="rem" aria-pressed="${rem}">Erinnerung</button></div>`}
-      <button type="button" class="circ ok" id="eSave" aria-label="Speichern"${E.title.trim()?"":" disabled"}>${IC.ok}</button></div>
+      <button type="button" class="circ ok${E.title.trim()?"":" dim"}" id="eSave" aria-label="Speichern">${IC.ok}</button></div>
     <div class="ebar" style="--c:${E.col}"><i aria-hidden="true"></i><div>
       <input class="etitle" id="eTitle" maxlength="80" placeholder="Titel" value="${esc(E.title)}" autocomplete="off">
       <div class="egrp">
@@ -1976,7 +1981,7 @@ function showEv(id,on){
       ${e.url?`<p class="sub">🔗 <a href="${esc(/^https?:\/\//.test(e.url)?e.url:"https://"+e.url)}" target="_blank" rel="noopener">${esc(e.url)}</a></p>`:""}</div>
     ${e.kind==="rem"?`<div class="igrp"><button type="button" class="cell" id="remDone"><span>${e.doneOn&&e.doneOn[view.on]?"✓ Erledigt – antippen zum Zurücknehmen":"○ Als erledigt markieren"}</span></button></div>`:""}
     ${e.note?`<div class="igrp"><div class="cell col"><small class="sub">Notizen</small><span>${esc(e.note).replace(/\n/g,"<br>")}</span></div></div>`:""}
-    <div class="igrp"><button type="button" class="cell nav" id="eIcs"><span>📲 Ins iPhone übernehmen</span><span class="cv"><i>›</i></span></button></div>
+    <div class="igrp"><button type="button" class="cell nav" id="eIcs"><span>📲 Ins iPhone übernehmen</span><span class="cv"><i>›</i></span></button>${calFeedOn?"":`<button type="button" class="cell nav" id="eAbo"><span>🔄 Alle Termine automatisch im Apple-Kalender</span><span class="cv"><i>›</i></span></button>`}</div>
     <div class="igrp" id="delBox"><button type="button" class="cell danger" id="evDel">${e.kind==="rem"?"Erinnerung":"Ereignis"} löschen</button></div>`;
   $("#modal").hidden=false;
 }
@@ -1993,14 +1998,16 @@ function doDel(mode){
   $("#modal").hidden=true; view=null; refresh();
 }
 function saveEv(){
-  grab(); const E=edit, title=E.title.trim(); if(!title||!E.date) return;
+  grab(); const E=edit, title=E.title.trim();
+  if(!title){ const t=$("#eTitle"); if(t){ t.focus(); t.classList.remove("shake"); void t.offsetWidth; t.classList.add("shake"); } say("Gib dem Termin einen Titel."); return; }
+  if(!E.date) return;
   const id=E.id||Date.now().toString(36)+Math.random().toString(36).slice(2,5), old=E.id?events[E.id]:{};
   let rep=E.rep?{f:E.rep.f,n:Math.max(1,+E.rep.n||1)}:null; if(rep){ if(E.rep.custom) rep.custom=true; if(rep.f==="week") rep.days=(E.rep.days&&E.rep.days.length?E.rep.days:[dowOf(E.date)]).slice().sort(); if(E.rep.until) rep.until=E.rep.until; }
   const e={title,loc:E.kind==="rem"?null:E.loc.trim()||null,date:E.date,end:E.kind!=="rem"&&E.end&&E.end>E.date?E.end:null,allDay:E.allDay||null,start:E.allDay?null:E.start||null,endTime:E.allDay?null:E.endTime||null,
     rep,col:E.col,note:E.note.trim()||null,idea:E.idea||null,skip:old.skip||null,by:old.by||myUid,at:old.at||Date.now(),
     kind:E.kind==="rem"?"rem":null,url:(E.url||"").trim()||null,inv:E.inv&&E.inv.length?E.inv:null,doneOn:old.doneOn||null,
     al:(()=>{ const a={...(old.al||{})}, mine=E.al.filter(v=>v!=null); if(mine.length) a[myUid]=mine; else delete a[myUid]; return Object.keys(a).length?a:null; })()};
-  events[id]=e; root.child("events/"+id).set(e).catch(showErr);
+  events[id]=e; root.child("events/"+id).set(e).catch(showErr); feedPublish(true);
   if(!E.id&&window.OursPush) OursPush.notify(root.key,`${myName||"Jemand"} hat einen Termin eingetragen`,`${title} · ${fromIso(E.date).toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"})}${e.start?" · "+e.start+" Uhr":""}`,"kalender.html");
   if(e.idea&&ideasRef) ideasRef.child(e.idea+"/date").set(E.date).catch(()=>{});
   focus=E.date; $("#modal").hidden=true; edit=null; if(level==="week") render(); else refresh();
@@ -2041,9 +2048,15 @@ $("#modal").addEventListener("click",ev=>{
   const t=ev.target;
   if(t.id==="modal"||t.closest("[data-close]")){ $("#modal").hidden=true; edit=null; view=null; return; }
   // Ansehen
+  if(t.closest("#abReset")){ if(!confirm("Neue Links erzeugen? Die alten Abos im Apple-Kalender funktionieren dann nicht mehr.")) return; calCall({mode:"cal-token",reset:true}).then(()=>appleSheet()).catch(err=>say(err.message)); return; }
+  if(t.closest("#abCopy")){ const tx=$("#sheet")._links||""; navigator.clipboard.writeText(tx).then(()=>say("Links kopiert.")).catch(()=>prompt("Links:",tx)); return; }
   if(view){ if(t.closest("#evEdit")) return openEv(view.id);
     if(t.closest("#remDone")){ const e=events[view.id]; if(!e) return; const v=!(e.doneOn&&e.doneOn[view.on]); e.doneOn=e.doneOn||{}; if(v) e.doneOn[view.on]=true; else delete e.doneOn[view.on]; root.child(`events/${view.id}/doneOn/${view.on}`).set(v||null).catch(showErr); if(window.OursHaptic) OursHaptic(); showEv(view.id,view.on); refresh(); return; } if(t.closest("#evDel")) return delAsk(); const dl=t.closest("[data-del]"); if(dl) return doDel(dl.dataset.del);
-    if(t.closest("#eIcs")){ const e=events[view.id]; if(!e) return; const blob=new Blob([icsFor(e)],{type:"text/calendar"}), u=URL.createObjectURL(blob), a=document.createElement("a"); a.href=u; a.download=(e.title||"Termin").replace(/[^\wäöüÄÖÜß -]/g,"")+".ics"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),20000); } return; }
+    if(t.closest("#eIcs")){ const e=events[view.id]; if(!e) return; const ics=icsFor(e);
+      if(/iPhone|iPad|iPod/.test(navigator.userAgent)){ location.href="data:text/calendar;charset=utf-8,"+encodeURIComponent(ics); return; }
+      const blob=new Blob([ics],{type:"text/calendar"}), u=URL.createObjectURL(blob), a=document.createElement("a"); a.href=u; a.download=(e.title||"Termin").replace(/[^\wäöüÄÖÜß -]/g,"")+".ics"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),20000); return; }
+    if(t.closest("#eAbo")) return appleSheet();
+    return; }
   if(!edit) return;
   const pg=t.closest("[data-page]"); if(pg){ grab(); edit.page=pg.dataset.page; return paintSheet(); }
   if(t.closest("#eSave")) return saveEv();
@@ -2060,7 +2073,17 @@ $("#modal").addEventListener("click",ev=>{
   const cs=t.closest("[data-colset]"); if(cs){ edit.col=cs.dataset.colset; edit.page="main"; return paintSheet(); }
   const pi=t.closest("[data-idea]"); if(pi){ const i=ideas[pi.dataset.idea]; edit.idea=pi.dataset.idea; edit.title=i.title; edit.note=[i.when,i.where,i.notes].filter(Boolean).join(" · "); edit.col="#8c7559"; edit.page="main"; return paintSheet(); }
 });
-$("#modal").addEventListener("input",ev=>{ if(ev.target.id==="eTitle"&&edit){ const b=$("#eSave"); if(b) b.disabled=!ev.target.value.trim(); } });
+// iPhone/Safari: Tipps auf die Knöpfe im festen Kopf des Bogens anhand der Position auswerten
+// (WebKit ordnet Tipps auf festgehefteten Elementen in scrollenden Bögen manchmal falsch zu)
+$("#modal").addEventListener("touchend",ev=>{
+  const tc=ev.changedTouches&&ev.changedTouches[0]; if(!tc) return;
+  const hit=[...document.querySelectorAll("#sheet .ehead button")].find(b=>{ const r=b.getBoundingClientRect(); return tc.clientX>=r.left-4&&tc.clientX<=r.right+4&&tc.clientY>=r.top-4&&tc.clientY<=r.bottom+4; });
+  if(!hit) return; ev.preventDefault();
+  if(hit.id==="eSave") return saveEv();
+  if(hit.hasAttribute("data-close")){ $("#modal").hidden=true; edit=null; view=null; return; }
+  if(hit.dataset.ekind&&edit){ grab(); edit.kind=hit.dataset.ekind; if(!edit.id) edit.allDay=edit.kind==="rem"; paintSheet(); }
+},{passive:false});
+$("#modal").addEventListener("input",ev=>{ if(ev.target.id==="eTitle"&&edit){ const b=$("#eSave"); if(b){ b.disabled=false; b.classList.toggle("dim",!ev.target.value.trim()); } } });
 $("#modal").addEventListener("change",ev=>{ if(!edit) return; const t=ev.target;
   if(t.id==="eRep"){ grab(); const v=t.value; if(v==="custom_new"||v==="custom"){ edit.page="custom"; return paintSheet(); } edit.rep=v?{f:v.replace(/\d+$/,""),n:+v.match(/\d+$/)[0],until:edit.rep&&edit.rep.until||null}:null; if(edit.rep&&edit.rep.f==="week") edit.rep.days=[dowOf(edit.date)]; return paintSheet(); }
   if(t.id==="eCol"){ grab(); edit.col=t.value; return paintSheet(); }
@@ -2072,14 +2095,66 @@ document.addEventListener("keydown",e=>{ if(e.key==="Escape") $("#modal").hidden
 if(!ECOLS.includes("#8c7559")) ECOLS.push("#8c7559");
 document.addEventListener("ours-theme",()=>{ if(level==="week") renderWeeks(false); });
 
+/* ---------- Apple-Kalender-Abo: je Terminart ein eigener Kalender in seiner Farbe ----------
+   Gemeinsame Termine (nach Farbe) gelten für alle im Kalender; Gym, Dates, Reisen und Verträge sind privat. */
+const CAL_W="https://oursapp.niklasbergnerbus.workers.dev";
+let calFeedOn=false, calTok=null, pubT=null, pubLast="", calSid=null;
+const slugOf=s=>String(s||"").toLowerCase().replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,30)||"termine";
+const PRIV_FEEDS={gym:["gym","Ours · Gym","#5a5bb8"],date:["dates","Ours · Dates","#8c7559"],con:["vertraege","Ours · Verträge & Gehalt","#3f70b8"],sal:["vertraege","Ours · Verträge & Gehalt","#3f70b8"]};
+function feedData(){
+  const start=addDays(now,-60), days=430, shared={}, priv={};
+  // eigene/gemeinsame Termine, nach Farbe getrennt
+  Object.entries(events).forEach(([id,e])=>{ if(!e||!e.date||!e.title) return; const col=e.col||ECOLS[0], k="c-"+slugOf(COLNAMES[col]||col);
+    const f=shared[k]=shared[k]||{name:"Ours · "+(COLNAMES[col]||"Termine"),color:col,items:[]};
+    const base={t:e.title,s:e.allDay?null:e.start||null,et:e.allDay?null:e.endTime||null,l:e.loc||null,n:e.note||null,url:e.url||null,al:e.al||null};
+    const r=repOf(e), span=e.end&&e.end>e.date?dayNum(e.end)-dayNum(e.date):0;
+    if(!r){ f.items.push({...base,u:id,d:e.date,e:span?e.end:null}); return; }
+    for(let i=0;i<days&&f.items.length<1800;i++){ const di=iso(addDays(start,i)); if(di<e.date) continue; if(r.until&&di>r.until) break;
+      if(!(e.skip&&e.skip[di])&&startsOn(e,r,di)) f.items.push({...base,u:id+"_"+di,d:di,e:span?iso(addDays(fromIso(di),span)):null}); } });
+  // private Bereiche aus dem, was der Kalender ohnehin anzeigt
+  const keep=show; show={ev:false,gym:true,date:true,con:true,buy:false,inc:false,trip:false};
+  try{ for(let i=0;i<days;i++){ const di=iso(addDays(start,i)); itemsOn(di).forEach(x=>{ const pf=PRIV_FEEDS[x.src]; if(!pf) return;
+      const f=priv[pf[0]]=priv[pf[0]]||{name:pf[1],color:pf[2],items:[]}; if(f.items.length>=1500) return;
+      const timed=!!x.t, end=x.end||(timed?addMin(x.t,x.dur||60):null);
+      f.items.push({u:x.src+"_"+di+"_"+slugOf(x.title),t:x.title+(x.r?" ("+x.r.replace("−","-")+")":""),d:di,s:timed?x.t:null,et:end,n:x.sub||null}); }); } }
+  finally{ show=keep; }
+  // Reisen: ganze Reise als ganztägiger Eintrag, Programmpunkte mit Uhrzeit
+  Object.entries(trips||{}).forEach(([id,tr])=>{ if(!tr||!tr.from||tr.cal===false) return; const f=priv.reisen=priv.reisen||{name:"Ours · Reisen",color:"#25a199",items:[]};
+    f.items.push({u:"trip_"+id,t:"✈️ "+(tr.dest||"Reise"),d:tr.from,e:tr.to&&tr.to>tr.from?tr.to:null});
+    Object.entries(tr.plan||{}).forEach(([pid,p])=>{ if(p&&p.d&&p.t) f.items.push({u:"trip_"+id+"_"+pid,t:(p.ic||"📍")+" "+p.t,d:p.d,s:p.time||null,et:p.time?(p.end||addMin(p.time,60)):null,l:p.place||null,n:p.conf?"Buchungsnummer: "+p.conf:null}); }); });
+  return {shared,priv};
+}
+async function calCall(body){ const u=firebase.auth().currentUser; if(!u) throw new Error("Bitte neu anmelden.");
+  const r=await fetch(CAL_W,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...body,token:await u.getIdToken()})}); const d=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(/Link|Video/.test(d.error||"")?"Der Cloudflare-Worker hat noch den alten Code. Füg den neuen Code ein und drück auf Deploy.":d.error||"Der Helfer antwortet nicht."); return d; }
+function feedPublish(fast){ if(!root||!myUid||!calFeedOn) return; clearTimeout(pubT); pubT=setTimeout(async()=>{ const d=feedData(), h=JSON.stringify(d); if(h===pubLast) return;
+    try{ await calCall({mode:"cal-publish",sid:calSid||root.key,shared:d.shared,priv:d.priv}); pubLast=h; }catch(e){} },fast?400:5000); }
+async function appleSheet(){
+  const sh=$("#sheet"); sh.classList.add("ios"); edit=null; view=null;
+  sh.innerHTML=`<div class="ihead"><button type="button" class="ib" data-close>Schließen</button><b>Apple-Kalender</b><span class="ib"></span></div><p class="ifoot" style="margin:0 4px 16px">Wird vorbereitet …</p>`;
+  $("#modal").hidden=false;
+  try{ const t=await calCall({mode:"cal-token"}); calTok=t; calFeedOn=true; root.child("meta/calFeed").set(true).catch(()=>{}); pubLast=""; feedPublish(true); }
+  catch(e){ sh.innerHTML=`<div class="ihead"><button type="button" class="ib" data-close>Schließen</button><b>Apple-Kalender</b><span class="ib"></span></div><div class="igrp"><div class="cell"><span>${esc(e.message)}</span></div></div>`; return; }
+  const d=feedData(), all={...d.shared,...d.priv}, web=k=>calTok.base.replace(/^https:/,"webcal:")+k+".ics";
+  sh.innerHTML=`<div class="ihead"><button type="button" class="ib" data-close>Schließen</button><b>Apple-Kalender</b><span class="ib"></span></div>
+    <p class="ifoot" style="margin:0 4px 14px">Tipp bei jeder Terminart auf <b>Abonnieren</b> und bestätige im iPhone-Kalender. Jede Art wird ein eigener Kalender in ihrer Farbe. Neue und geänderte Termine kommen automatisch nach (Apple holt sie etwa alle 15 Minuten).</p>
+    <div class="igrp">${Object.entries(all).map(([k,f])=>`<div class="cell"><span><span class="cdot" style="background:${f.color}"></span> ${esc(f.name.replace("Ours · ",""))}<small class="sub">${f.items.length} ${f.items.length===1?"Eintrag":"Einträge"}</small></span><a class="ab-btn" href="${web(k)}">Abonnieren</a></div>`).join("")||`<div class="cell"><span class="sub">Noch keine Termine.</span></div>`}</div>
+    <div class="igrp"><div class="cell"><span>Alles in einem Kalender<small class="sub">eine Farbe für alles</small></span><a class="ab-btn alt" href="${web("alle")}">Abonnieren</a></div></div>
+    <div class="igrp"><button type="button" class="cell nav" id="abCopy"><span>Links kopieren</span><span class="cv"><i>›</i></span></button><button type="button" class="cell danger" id="abReset">Neue Links erzeugen (alte werden ungültig)</button></div>
+    <p class="ifoot">Kommen neue Arten dazu (z. B. eine neue Farbe), öffne dieses Fenster nochmal und abonniere sie. Falls „Abonnieren“ nichts öffnet: Links kopieren und unter Einstellungen → Kalender → Accounts → Account hinzufügen → Andere → Kalenderabo hinzufügen einfügen. Wer den Link kennt, kann die Termine lesen, aber nichts ändern.</p>`;
+  sh._links=Object.keys(all).concat("alle").map(k=>`${(all[k]||{name:"Ours (alles)"}).name}: ${calTok.base}${k}.ics`).join("\n");
+}
+Auth.pageSettings.push({sec:"Apple-Kalender",label:"Mit Apple-Kalender verbinden",note:()=>"Termine aus Ours automatisch im iPhone-Kalender – je Terminart ein eigener Kalender in seiner Farbe.",button:()=>"Einrichten",
+  action:()=>{ setTimeout(()=>{ const c=document.getElementById("stClose"); if(c) c.click(); appleSheet(); },80); }});
 /* ---------- Start: eigener Kalender + Gym, Dateideen und Budget dazuladen ---------- */
 let ideasRef=null, refT=null, budChecked=false;
 // neue Daten: Woche an derselben Stelle neu zeichnen, sonst normal
-function refresh(){ clearTimeout(refT); refT=setTimeout(()=>{ if(level==="week"&&!listMode&&$("#list").querySelector("[data-wk]")){ dayCache=new Map(); paintFilters(); $("#budNote").hidden=!!bud||!budChecked; renderWeeks(false); } else render(); },60); }
+function refresh(){ feedPublish(); clearTimeout(refT); refT=setTimeout(()=>{ if(level==="week"&&!listMode&&$("#list").querySelector("[data-wk]")){ dayCache=new Map(); paintFilters(); $("#budNote").hidden=!!bud||!budChecked; renderWeeks(false); } else render(); },60); }
 Auth.start(firebaseConfig,"calendar",(r,info)=>{
-  root=r; if(info){ myUid=info.uid; myName=info.name||""; } render(); if(!root||!myUid) return;
+  root=r; if(info){ myUid=info.uid; myName=info.name||""; calSid=info.sid||null; } render(); if(!root||!myUid) return;
   root.child("events").on("value",s=>{ events=s.val()||{}; refresh(); },showErr);
   root.child("profiles").on("value",s=>{ profiles=s.val()||{}; refresh(); },()=>{});
+  root.child("meta/calFeed").on("value",s=>{ calFeedOn=s.val()===true; if(calFeedOn) feedPublish(); },()=>{});
   const db=fdb();
   db.ref(`users/${myUid}/spaces/dates`).once("value").then(s=>{ const sid=s.val(); if(!sid) return; ideasRef=db.ref(`spaces/${sid}/ideas`); ideasRef.on("value",x=>{ ideas=x.val()||{}; refresh(); },()=>{}); }).catch(()=>{});
   db.ref(`users/${myUid}/spaces/gym`).once("value").then(s=>{ const sid=s.val(); if(!sid) return; ["workouts","templates","sessions"].forEach(k=>db.ref(`spaces/${sid}/${k}`).on("value",x=>{ gym[k]=x.val()||{}; refresh(); },()=>{})); }).catch(()=>{});

@@ -32,6 +32,9 @@
 // - mode "push-plan": Erinnerungen der nächsten Tage hinterlegen (die Seite rechnet sie aus)
 // - mode "push-notify": Personen eines gemeinsamen Bereichs benachrichtigen (z. B. neuer Termin)
 // - mode "push-test": Test-Mitteilung an die eigenen Geräte
+// - mode "cal-token": geheimen Abo-Schlüssel für den Apple-Kalender holen (reset: neu erzeugen)
+// - mode "cal-publish": aktuelle Termine für die Abos hinterlegen (gemeinsamer Kalender + eigene Bereiche)
+// - GET /cal/<schlüssel>/<kalender>.ics: Kalender-Abo (eine Farbe pro Abo, je Terminart ein eigenes)
 // - mode "push-budget": Stand der Budgets (Zeitraum, Budgets, Ausgaben, Händler→Kategorie); meldet 80 % / 100 % je einmal
 // Braucht einen KV-Speicher mit der Bindung PUSH und einen Cron-Trigger (z. B. alle 15 Minuten).
 // Die Schlüssel für Web Push erzeugt der Helfer selbst und legt sie nur im KV-Speicher ab.
@@ -76,6 +79,11 @@ export default {
       new Response(JSON.stringify(data), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+    // Kalender-Abo für den Apple-Kalender: GET /cal/<geheimer-schlüssel>/<kalender>.ics
+    if (request.method === "GET" || request.method === "HEAD") {
+      const m = new URL(request.url).pathname.match(/^\/cal\/([A-Za-z0-9_-]{20,64})\/([a-z0-9-]{1,40})\.ics$/);
+      if (m) return calFeed(env, m[1], m[2]);
+    }
     if (request.method !== "POST") return reply(405, { error: "Nur POST erlaubt." });
     // nur Anfragen von deiner eigenen Seite, damit niemand sonst dein Guthaben verbraucht
     if (!allowed.includes(origin)) return reply(403, { error: "Diese Seite darf den Helfer nicht benutzen." });
@@ -100,6 +108,11 @@ export default {
       }
       try { return reply(200, await geminiImage(env, prompt, m[1], m[2])); }
       catch (e) { return reply(502, { error: e.message || "Google hat nicht geantwortet." }); }
+    }
+
+    if (String(body.mode || "").startsWith("cal-")) {
+      try { return reply(200, await calApi(env, body, new URL(request.url).origin)); }
+      catch (e) { return reply(e.status || 502, { error: e.message || "Das Kalender-Abo hat nicht geklappt." }); }
     }
 
     if (String(body.mode || "").startsWith("push-")) {
@@ -866,4 +879,63 @@ async function pushCron(env) {
       if (changed) await kv.put(k.name, JSON.stringify(rec));
     }
   } while (cursor);
+}
+
+/* ---------- Kalender-Abo (ICS) für den Apple-Kalender ---------- */
+const calRand = () => { const b = crypto.getRandomValues(new Uint8Array(24)); return b64u(b); };
+const cleanItem = x => ({ u: clip(x.u, 90), t: clip(x.t, 120), d: /^\d{4}-\d{2}-\d{2}$/.test(x.d || "") ? x.d : null, e: /^\d{4}-\d{2}-\d{2}$/.test(x.e || "") ? x.e : null,
+  s: /^\d{2}:\d{2}$/.test(x.s || "") ? x.s : null, et: /^\d{2}:\d{2}$/.test(x.et || "") ? x.et : null, l: clip(x.l, 160) || null, n: clip(x.n, 800) || null, url: clip(x.url, 300) || null,
+  al: x.al && typeof x.al === "object" ? Object.fromEntries(Object.entries(x.al).slice(0, 10).map(([k, v]) => [clip(k, 40), (Array.isArray(v) ? v : []).slice(0, 2).map(n => Math.max(0, Math.min(20160, +n || 0)))])) : null });
+const cleanFeeds = feeds => { const out = {}; Object.entries(feeds || {}).slice(0, 20).forEach(([k, f]) => { if (!/^[a-z0-9-]{1,40}$/.test(k) || !f) return;
+  out[k] = { name: clip(f.name, 60), color: /^#[0-9a-f]{6}$/i.test(f.color || "") ? f.color : "#2f72c4", items: (Array.isArray(f.items) ? f.items : []).slice(0, 2000).map(cleanItem).filter(x => x.u && x.t && x.d) }; }); return out; };
+async function calApi(env, body, origin) {
+  const uid = await verifyFirebase(body.token), kv = needKV(env);
+  if (body.mode === "cal-token") {
+    let tok = await kv.get("calu:" + uid);
+    if (!tok || body.reset) { if (tok) await kv.delete("calt:" + tok); tok = calRand(); await kv.put("calu:" + uid, tok); }
+    const info = (await kv.get("calt:" + tok, "json")) || {};
+    await kv.put("calt:" + tok, JSON.stringify({ uid, sid: info.sid || null }));
+    return { token: tok, base: origin + "/cal/" + tok + "/" };
+  }
+  if (body.mode === "cal-publish") {
+    const sid = String(body.sid || "");
+    if (sid) { // Mitgliedschaft im gemeinsamen Kalender mit dem Login der Person prüfen
+      const r = await fetch(`${DB_URL}/spaces/${encodeURIComponent(sid)}/access/${uid}.json?auth=${encodeURIComponent(body.token)}`);
+      if (!r.ok || !(await r.json())) throw fail(403, "Kein Zugriff auf diesen Kalender.");
+      await kv.put("cals:" + sid, JSON.stringify({ at: Date.now(), feeds: cleanFeeds(body.shared) }));
+    }
+    await kv.put("calp:" + uid, JSON.stringify({ at: Date.now(), feeds: cleanFeeds(body.priv) }));
+    const tok = await kv.get("calu:" + uid); if (tok) await kv.put("calt:" + tok, JSON.stringify({ uid, sid: sid || null }));
+    return { ok: true };
+  }
+  throw fail(400, "Unbekannte Anfrage.");
+}
+const icsEsc = t => String(t || "").replace(/\\/g, "\\\\").replace(/[,;]/g, m => "\\" + m).replace(/\r?\n/g, "\\n");
+const icsFold = line => { const out = []; let s = line; while (s.length > 74) { let n = 74; const c = s.charCodeAt(n - 1); if (c >= 0xD800 && c <= 0xDBFF) n--; out.push(s.slice(0, n)); s = " " + s.slice(n); } out.push(s); return out.join("\r\n"); };
+const ymd = d => d.replace(/-/g, "");
+const nextDay = d => { const x = new Date(d + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() + 1); return x.toISOString().slice(0, 10).replace(/-/g, ""); };
+async function calFeed(env, tok, key) {
+  const kv = env.PUSH, notFound = () => new Response("Kalender nicht gefunden", { status: 404 });
+  if (!kv) return notFound();
+  const info = await kv.get("calt:" + tok, "json"); if (!info || !info.uid) return notFound();
+  const [p, sh] = await Promise.all([kv.get("calp:" + info.uid, "json"), info.sid ? kv.get("cals:" + info.sid, "json") : null]);
+  const feeds = { ...((sh && sh.feeds) || {}), ...((p && p.feeds) || {}) };
+  let list, name, color;
+  if (key === "alle") { list = Object.values(feeds).flatMap(f => f.items); name = "Ours"; color = "#2f72c4"; }
+  else { const f = feeds[key]; if (!f) return notFound(); list = f.items; name = f.name; color = f.color; }
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
+  const L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Ours//Kalender-Abo//DE", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+    "X-WR-CALNAME:" + icsEsc(name), "X-APPLE-CALENDAR-COLOR:" + color, "COLOR:" + color, "X-WR-TIMEZONE:Europe/Berlin", "REFRESH-INTERVAL;VALUE=DURATION:PT15M", "X-PUBLISHED-TTL:PT15M",
+    "BEGIN:VTIMEZONE", "TZID:Europe/Berlin", "BEGIN:DAYLIGHT", "TZOFFSETFROM:+0100", "TZOFFSETTO:+0200", "TZNAME:MESZ", "DTSTART:19700329T020000", "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU", "END:DAYLIGHT",
+    "BEGIN:STANDARD", "TZOFFSETFROM:+0200", "TZOFFSETTO:+0100", "TZNAME:MEZ", "DTSTART:19701025T030000", "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU", "END:STANDARD", "END:VTIMEZONE"];
+  for (const x of list) {
+    L.push("BEGIN:VEVENT", "UID:" + icsEsc(x.u) + "@ours", "DTSTAMP:" + stamp, "SUMMARY:" + icsEsc(x.t));
+    if (!x.s) { L.push("DTSTART;VALUE=DATE:" + ymd(x.d), "DTEND;VALUE=DATE:" + nextDay(x.e || x.d)); }
+    else { const end = x.et || x.s; L.push("DTSTART;TZID=Europe/Berlin:" + ymd(x.d) + "T" + x.s.replace(":", "") + "00", "DTEND;TZID=Europe/Berlin:" + ymd(x.e || x.d) + "T" + end.replace(":", "") + "00"); }
+    if (x.l) L.push("LOCATION:" + icsEsc(x.l)); if (x.n) L.push("DESCRIPTION:" + icsEsc(x.n)); if (x.url) L.push("URL:" + icsEsc(/^https?:\/\//.test(x.url) ? x.url : "https://" + x.url));
+    const al = x.al && x.al[info.uid]; (al || []).forEach(m => { const mm = x.s ? m : m - 540; L.push("BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + icsEsc(x.t), "TRIGGER:" + (mm < 0 ? "PT" + (-mm) + "M" : "-PT" + mm + "M"), "END:VALARM"); });
+    L.push("END:VEVENT");
+  }
+  L.push("END:VCALENDAR");
+  return new Response(L.map(icsFold).join("\r\n") + "\r\n", { headers: { "Content-Type": "text/calendar; charset=utf-8", "Cache-Control": "max-age=300", "Content-Disposition": `inline; filename="${key}.ics"` } });
 }

@@ -41,6 +41,7 @@ Ours ist eine private Web-App für ein Paar bzw. eine WG (Niklas, GitHub `Nkllas
 ## Cloudflare-Einstellungen (macht Niklas)
 - Secrets: `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `EB_PRIVATE_KEY`, `FIN_SECRET`; Text: `ALLOWED_ORIGIN`, `EB_APP_ID`.
 - KV-Bindung **`PUSH`** (Mitteilungen; VAPID-Schlüssel erzeugt der Worker selbst) und Cron-Trigger `*/15 * * * *`.
+- Apple-Kalender-Abo: Worker liefert `GET /cal/<schlüssel>/<kalender>.ics` (KV: `calu:<uid>`→Schlüssel, `calt:<schlüssel>`→{uid,sid}, `cals:<sid>` gemeinsame Termine je Farbe, `calp:<uid>` private Arten Gym/Dates/Verträge/Reisen). Die Kalender-Seite schickt den Stand mit `cal-publish`, sobald `spaces/<kal>/meta/calFeed` an ist. Je Terminart ein Abo, weil Apple bei Abos nur eine Farbe pro Kalender kennt.
 
 ## Testen
 Seiten lokal mit `python3 -m http.server` ausliefern und mit Playwright (Chromium ist vorinstalliert) testen. Vor jedem Push die betroffenen Abläufe durchklicken.
