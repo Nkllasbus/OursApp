@@ -259,7 +259,8 @@ header.brand .wordmark{font-weight:800}
   #stOut{color:var(--red)!important}
   /* Einstellungen wie in den iPhone-Einstellungen: Blatt von unten, gruppierte weiße Zeilen, „Fertig“ oben rechts */
   @media (max-width:600px){.auth-screen.dim{place-items:end center!important;padding:max(40px,env(safe-area-inset-top,0px)) 0 0!important}
-    .auth-screen.dim .auth-card{width:100%!important;max-width:none!important;max-height:100%!important;border-radius:26px 26px 0 0!important;animation:hig-rise .5s var(--hig-spring) backwards!important}}
+    .auth-screen.dim .auth-card{width:100%!important;max-width:none!important;max-height:100%!important;border-radius:26px 26px 0 0!important;animation:hig-rise .5s var(--hig-spring) backwards!important}
+    .auth-screen.dim .auth-card::before{content:"";display:block;flex:none;width:36px;height:5px;border-radius:3px;background:#c7c7cc;margin:7px auto -7px;position:relative;z-index:1}}
   .auth-screen.dim .auth-card{background:#f2f2f7!important;overflow-y:auto;display:flex;flex-direction:column;max-height:calc(100dvh - 32px)}
   .auth-screen.dim .auth-head{flex:none}
   .auth-screen.dim .auth-head{background:#f2f2f7!important;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:18px 18px 6px!important}
@@ -371,6 +372,12 @@ header.brand .wordmark{font-weight:800}
   .fp-zoom{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.85);display:grid;place-items:center;padding:24px}
   .fp-zoom img{max-width:100%;max-height:80dvh;border-radius:50%;aspect-ratio:1;object-fit:cover}
   .fr-row.st-row{width:100%}
+  .pf-c{flex-direction:column!important;align-items:center!important;text-align:center;gap:10px!important;margin:4px 0 14px}
+  .pf-c>div{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .pf-c .ours-av{width:104px!important;height:104px!important;font-size:42px!important}
+  .pf-note{margin:6px 4px 18px!important;text-align:center}
+  .pf-prev{margin-top:0!important}
+  .pf-prev .st-row b{font-weight:400;color:var(--ink)}
   /* Knöpfe: Kapseln wie in iOS */
   .btn{border:0!important;border-radius:999px!important;background:var(--fill)!important;color:var(--tint)!important;font-weight:600!important;box-shadow:none!important}
   .btn.primary,.btn.big.primary,.auth-btn:not(.alt):not(.auth-google){background:var(--tint)!important;color:#fff!important;border:0!important;border-radius:999px!important;box-shadow:none!important}
@@ -442,6 +449,54 @@ header.brand .wordmark{font-weight:800}
       hl.click(); if(a&&a!==document.activeElement&&a.focus) try{ a.focus({preventScroll:true}); }catch(e){} }
   }catch(e){} busy=false; }
   window.OursHaptic=haptic;
+  // Blätter von unten wie in iOS nach unten wegziehen (Einstellungen, Profil, Freunde und alle .modal-Fenster)
+  (()=>{
+    const CARD='.auth-screen.dim>.auth-card,.modal:not([hidden])>*,.frx:not([hidden])>.frx-card';
+    let d=null;
+    const scroller=(el,card)=>{ for(let n=el;n&&n!==card.parentNode;n=n.parentNode){ if(n.nodeType!==1) continue; const cs=getComputedStyle(n);
+      if(/(auto|scroll)/.test(cs.overflowY)&&n.scrollHeight>n.clientHeight+1) return n; if(n===card) break; } return null; };
+    function dismiss(card){
+      const ov=card.parentNode;
+      // 1. Klick auf den Hintergrund (so schließen die meisten Fenster)  2. Schließen-Knopf  3. einfach verstecken
+      ov.dispatchEvent(new MouseEvent("click",{bubbles:true,cancelable:true}));
+      setTimeout(()=>{ if(ov.isConnected&&!ov.hidden&&getComputedStyle(ov).display!=="none"){
+          const b=card.querySelector('#fpDone,#stDone,#frDone,.auth-done,[aria-label="Schließen"],[id$="Close"],[id$="close"],.x,.close');
+          if(b) b.click(); else ov.hidden=true; }
+        card.style.transform=""; card.style.transition=""; },40);
+    }
+    document.addEventListener("touchstart",e=>{
+      d=null; if(e.touches.length!==1) return;
+      const card=e.target.closest(CARD); if(!card) return;
+      if(card.parentNode.classList.contains("auth-screen")&&!card.parentNode.classList.contains("dim")) return;
+      const r=card.getBoundingClientRect(); if(r.bottom<innerHeight-4) return;   // nur echte Blätter von unten
+      if(e.target.closest('input[type=range],textarea,.fp-rez,[data-nodrag]')) return;
+      const sc=scroller(e.target,card);
+      const t=e.touches[0]; d={card,sc,y:t.clientY,x:t.clientX,at:Date.now(),on:false,dy:0,ty:t.clientY,tt:Date.now(),v:0};
+    },{capture:true,passive:true});
+    document.addEventListener("touchmove",e=>{
+      if(!d) return; const t=e.touches[0], dy=t.clientY-d.y, dx=t.clientX-d.x;
+      if(!d.on){
+        if(Math.abs(dy)<8&&Math.abs(dx)<8) return;
+        if(dy<=0||Math.abs(dx)>Math.abs(dy)||(d.sc&&d.sc.scrollTop>0)){ d=null; return; }
+        d.on=true; d.y=t.clientY; d.card.style.transition="none"; if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();
+      }
+      e.preventDefault();
+      const y=Math.max(0,t.clientY-d.y); d.dy=y; const now=Date.now(); d.v=(t.clientY-d.ty)/Math.max(1,now-d.tt); d.ty=t.clientY; d.tt=now;
+      d.card.style.transform=`translateY(${y}px)`;
+      const ov=d.card.parentNode; ov.style.transition="none"; ov.style.backgroundColor=""; ov.style.opacity=String(Math.max(.4,1-y/(innerHeight*1.2)));
+    },{capture:true,passive:false});
+    const end=()=>{
+      if(!d) return; const x=d; d=null; if(!x.on) return;
+      const card=x.card, ov=card.parentNode, h=card.offsetHeight;
+      const close=x.dy>Math.min(140,h*.3)||(x.v>.6&&x.dy>30);
+      card.style.transition="transform .32s cubic-bezier(.2,.9,.25,1)"; ov.style.transition="opacity .32s";
+      if(close){ card.style.transform=`translateY(${h+40}px)`; ov.style.opacity="0";
+        setTimeout(()=>{ dismiss(card); ov.style.opacity=""; ov.style.transition=""; },260); }
+      else { card.style.transform=""; ov.style.opacity=""; setTimeout(()=>{ card.style.transition=""; ov.style.transition=""; },340); }
+    };
+    document.addEventListener("touchend",end,{capture:true,passive:true});
+    document.addEventListener("touchcancel",end,{capture:true,passive:true});
+  })();
   // iPhone-App (WKWebView): nach dem Schließen der Tastatur die Ansicht zurücksetzen, damit Tippen wieder genau trifft
   if(window.Capacitor){ root.classList.add("ours-native");
     // Eingabefelder per Tipp sicher fokussieren (WKWebView verliert sonst nach der Tastatur manchmal den Fokus-Tipp)
@@ -880,7 +935,7 @@ window.OursPush=(function(){
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-12-102023";
+  const APP_VERSION="2026-11-12-105538";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
@@ -970,7 +1025,7 @@ window.OursPush=(function(){
     let bootT=null;
     function show(title,sub,html,dim){ if(bootT){ clearTimeout(bootT); bootT=null; }
       if(!screen){ screen=document.createElement("div"); screen.className="auth-screen"; document.body.appendChild(screen);
-        screen.addEventListener("click",e=>{ if(e.target===screen && screen.classList.contains("dim")) hide(); }); }
+        screen.addEventListener("click",e=>{ if(e.target===screen && screen.classList.contains("dim")){ friendsOpen=false; frConfirm=null; fpUid=null; hide(); } }); }
       screen.classList.toggle("dim",!!dim);
       screen.innerHTML=`<div class="auth-card" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="auth-head"><h2>${esc(title)}</h2>${sub?`<p>${esc(sub)}</p>`:""}</div><div class="auth-body">${html}</div></div>`;
       screen.hidden=false; return screen;
@@ -1076,8 +1131,8 @@ window.OursPush=(function(){
     /* ---------- Profil, Einstellungen ---------- */
     function profileView(){
       const pb=pubCache.get(user.uid)||{}; let photo=okPhoto(pb.photo)?pb.photo:null;
-      show("Mein Profil","Name, Bild und ein paar Worte über dich sehen deine Freunde.",`
-        <div class="pf-photo"><span class="ours-av" id="pfPrev">${photo?`<img src="${photo}" alt="">`:esc(initial(profile.name))}</span>
+      show("Mein Profil","",`
+        <div class="pf-photo pf-c"><span class="ours-av" id="pfPrev">${photo?`<img src="${photo}" alt="">`:esc(initial(profile.name))}</span>
           <div><button class="auth-btn alt" type="button" id="pfPick">${photo?"Bild ändern":"Profilbild wählen"}</button>
           <button class="auth-link" type="button" id="pfDrop"${photo?"":" hidden"}>Bild entfernen</button></div></div>
         <input type="file" id="pfFile" accept="image/*" hidden>
@@ -1085,9 +1140,11 @@ window.OursPush=(function(){
         <label>Über mich <small>(optional)</small><textarea id="pfBio" maxlength="140" placeholder="z.B. Koche am liebsten Asiatisch, backe sonntags">${esc(pb.bio||"")}</textarea></label>
         <p class="auth-msg" id="authMsg" hidden></p>
         <button class="auth-btn" type="button" id="pfSave">Speichern</button>
-        <button class="auth-link" type="button" id="pfClose">Abbrechen</button>
-        <button class="auth-link" type="button" id="pfPreview">So sehen dich deine Freunde ›</button>`,true);
+        <button class="auth-link" type="button" id="pfClose" hidden>Abbrechen</button>
+        <p class="fp-foot pf-note">Name, Bild und „Über mich“ sehen deine Freunde.</p>
+        <div class="st-grp pf-prev"><button class="st-row" type="button" id="pfPreview"><span class="st-t"><b>So sehen dich deine Freunde</b></span><i class="chev">›</i></button></div>`,true);
       $a("#pfClose").onclick=hide;
+      { const hd=screen.querySelector(".auth-head"); if(hd&&!hd.querySelector(".auth-done")){ hd.insertAdjacentHTML("beforeend",'<button type="button" class="auth-done" id="pfDone">Fertig</button>'); hd.querySelector("#pfDone").onclick=hide; } }
       $a("#pfPreview").onclick=()=>friendProfile(user.uid,"profile");
       $a("#pfPick").onclick=()=>$a("#pfFile").click();
       $a("#pfDrop").onclick=()=>{ photo=null; $a("#pfPrev").textContent=initial($a("#pfIn").value||profile.name); $a("#pfDrop").hidden=true; $a("#pfPick").textContent="Profilbild wählen"; };
