@@ -39,12 +39,12 @@ final class Session {
         var n = (snap?.value as? [String: Any])?["name"] as? String ?? ""
         if n.isEmpty {
             n = pendingName ?? u.displayName ?? String((u.email ?? "Ich").split(separator: "@").first ?? "Ich")
-            db.child("users/\(u.uid)/profile/name").setValue(n)
+            db.child("users/\(u.uid)/profile/name").put(n)
         }
         pendingName = nil
         name = n
         let pub = try? await db.child("pub/\(u.uid)/name").getData()
-        if (pub?.value as? String) != n { db.child("pub/\(u.uid)/name").setValue(n) }
+        if (pub?.value as? String) != n { db.child("pub/\(u.uid)/name").put(n) }
     }
 
     func signIn(email: String, password: String) async throws {
@@ -65,8 +65,8 @@ final class Session {
         let n = String(newName.prefix(30))
         name = n
         let db = Database.database().reference()
-        db.child("users/\(uid)/profile/name").setValue(n)
-        db.child("pub/\(uid)/name").setValue(n)
+        db.child("users/\(uid)/profile/name").put(n)
+        db.child("pub/\(uid)/name").put(n)
     }
 
     func signOut() {
@@ -86,5 +86,12 @@ final class Session {
         case .userDisabled: return "Dieses Konto ist gesperrt."
         default: return "Das hat nicht geklappt. Versuch es nochmal."
         }
+    }
+}
+
+extension DatabaseReference {
+    /// Speichern ohne auf die Antwort zu warten (offline landet es in der Warteschlange)
+    func put(_ value: Any?) {
+        setValue(value) { _, _ in }
     }
 }
