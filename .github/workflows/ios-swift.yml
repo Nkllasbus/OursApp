@@ -1,0 +1,55 @@
+# Baut die neue Swift-App (unsigniert). Zum Testen mit Sideloadly installieren.
+name: Swift-App bauen
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["ios-native/**", ".github/workflows/ios-swift.yml"]
+permissions:
+  contents: write
+concurrency:
+  group: ios-swift
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Xcode wählen
+        run: |
+          ls /Applications | grep -i xcode || true
+          X=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1); if [ -n "$X" ]; then sudo xcode-select -s "$X"; fi
+          xcodebuild -version
+      - name: XcodeGen
+        run: brew install xcodegen && cd ios-native && xcodegen generate
+      - uses: actions/cache@v4
+        with:
+          path: ~/spm
+          key: spm-${{ hashFiles('ios-native/project.yml') }}
+      - name: Bauen (ohne Signatur)
+        working-directory: ios-native
+        run: |
+          set +e
+          xcodebuild -project Ours.xcodeproj -scheme Ours -configuration Release -sdk iphoneos \
+            -destination 'generic/platform=iOS' -clonedSourcePackagesDirPath ~/spm \
+            -archivePath "$RUNNER_TEMP/Ours.xcarchive" archive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" > build.log 2>&1
+          STATUS=$?
+          echo "::group::Fehler"; grep -E "error:|\*\* ARCHIVE" build.log | grep -v "^ld: warning" | head -60; echo "::endgroup::"
+          tail -n 25 build.log
+          exit $STATUS
+      - name: IPA packen
+        run: |
+          cd "$RUNNER_TEMP"
+          mkdir -p Payload
+          cp -R Ours.xcarchive/Products/Applications/Ours.app Payload/
+          zip -qry Ours-Swift.ipa Payload
+          ls -la Ours-Swift.ipa
+      - name: Als Download bereitstellen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete swift-neueste --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" || true
+          gh release create swift-neueste "$RUNNER_TEMP/Ours-Swift.ipa" --repo "$GITHUB_REPOSITORY" --prerelease \
+            --title "Ours Swift-App (Test)" --notes "Neue echte iPhone-App, noch im Aufbau. Mit Sideloadly installieren. Gebaut am $(date '+%d.%m.%Y %H:%M') UTC."

@@ -1,0 +1,48 @@
+# Ours als echte iPhone-App (SwiftUI). Das Xcode-Projekt erzeugt XcodeGen in GitHub Actions: xcodegen generate
+name: Ours
+options:
+  bundleIdPrefix: de.nkllasbus
+  deploymentTarget:
+    iOS: "17.0"
+  developmentLanguage: de
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk
+    from: "11.6.0"
+targets:
+  Ours:
+    type: application
+    platform: iOS
+    sources:
+      - path: Ours
+    scheme: {}
+    info:
+      path: Ours/Info.plist
+      properties:
+        CFBundleDisplayName: Ours
+        CFBundleDevelopmentRegion: de
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        UILaunchScreen:
+          UIColorName: AccentColor
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIUserInterfaceStyle: Light
+        ITSAppUsesNonExemptEncryption: false
+        NSCameraUsageDescription: "Ours braucht die Kamera, um Fotos von Rezepten, Etiketten oder für dein Profilbild aufzunehmen."
+        NSPhotoLibraryUsageDescription: "Ours braucht Zugriff auf deine Fotos, damit du Bilder für Rezepte und dein Profil auswählen kannst."
+        NSLocationWhenInUseUsageDescription: "Ours nutzt deinen Standort, um Läden in deiner Nähe zu finden."
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.nkllasbus.ours
+        MARKETING_VERSION: "2.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.0"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ENABLE_PREVIEWS: YES
+    dependencies:
+      - package: Firebase
+        product: FirebaseAuth
+      - package: Firebase
+        product: FirebaseDatabase
