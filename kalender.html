@@ -13,13 +13,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <style>
-/* Kalender: gemeinsame Termine + Gym, Verträge und Käufe */
+/* Kalender: gemeinsame Termine + Gym, Haushalt, Reisen, Verträge und Käufe */
 :root{--page:#f2f2f7;--band:#2f6b4f;--on-band:#fff;--on-band-muted:#c3dccf;--bg:#ffffff;--surface:#ffffff;--surface2:#f2f2f7;--ink:#111;--muted:#8a8a8e;--line:#e5e5ea;--shadow:rgba(0,0,0,.08);
   --accent:#2f6b4f;--accent-soft:#e6f2ec;--logo-bg:#22513b;--body:"Inter",system-ui,-apple-system,sans-serif;--minus:#cf4b42;--plus:#1f9d55;color-scheme:light;
   --grouped:#f2f2f7;--cell:#ffffff;--sep:#d8d8dc;--red:#cf4b42;
-  --c-ev:#2f6b4f;--c-gym:#3c4270;--c-date:#8c7559;--c-con:#123354;--c-buy:#8a8f99;--c-trip:#1d6a7a}
+  --c-ev:#2f6b4f;--c-gym:#3c4270;--c-chore:#9a60bd;--c-con:#123354;--c-buy:#8a8f99;--c-trip:#1d6a7a}
 @media (prefers-color-scheme:dark){:root{--page:#000;--band:#1f4a36;--bg:#000;--surface:#1c1c1e;--surface2:#1c1c1e;--ink:#f2f2f7;--muted:#8e8e93;--line:#2c2c2e;--shadow:rgba(0,0,0,.6);--accent:#5fbf8f;--accent-soft:#1f3a2d;--logo-bg:#173828;color-scheme:dark;
-  --grouped:#000;--cell:#1c1c1e;--sep:#38383a;--red:#ff453a;--c-ev:#4fae80;--c-gym:#7d84c9;--c-date:#c4a27a;--c-con:#5b8fd1;--c-buy:#8a8f99;--c-trip:#4fb3c6}}
+  --grouped:#000;--cell:#1c1c1e;--sep:#38383a;--red:#ff453a;--c-ev:#4fae80;--c-gym:#7d84c9;--c-chore:#b78ad6;--c-con:#5b8fd1;--c-buy:#8a8f99;--c-trip:#4fb3c6}}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{height:100%}
@@ -1953,8 +1953,8 @@ const dowOf=di=>(fromIso(di).getDay()+6)%7, dayNum=di=>Math.round(fromIso(di).ge
 
 /* ---------- Daten ---------- */
 let events={}, profiles={}, ideas={}, gym={workouts:{},templates:{},sessions:{}}, bud=null;
-const SRC={ev:["Termine","var(--c-ev)"],gym:["Gym","var(--c-gym)"],date:["Dates","var(--c-date)"],con:["Verträge & Gehalt","var(--c-con)"],buy:["Ausgaben","var(--c-buy)"],inc:["Einnahmen","var(--plus)"],trip:["Reisen","var(--c-trip)"]};
-let show={ev:true,gym:true,date:true,con:true,buy:true,inc:true,trip:true}; let trips={}; try{ Object.assign(show,JSON.parse(localStorage.getItem("cal.show")||"{}")); }catch(e){}
+const SRC={ev:["Termine","var(--c-ev)"],gym:["Gym","var(--c-gym)"],chore:["Haushalt","var(--c-chore)"],con:["Verträge & Gehalt","var(--c-con)"],buy:["Ausgaben","var(--c-buy)"],inc:["Einnahmen","var(--plus)"],trip:["Reisen","var(--c-trip)"]};
+let show={ev:true,gym:true,chore:true,con:true,buy:true,inc:true,trip:true}; let trips={}; try{ Object.assign(show,JSON.parse(localStorage.getItem("cal.show")||"{}")); }catch(e){}
 const now=new Date(); let sel=iso(now);
 const ECOLS=["#2f6b4f","#2563eb","#dc2626","#ca8a04","#9333ea","#db2777","#0891b2","#ea580c"];
 
@@ -2005,9 +2005,15 @@ function itemsOn(di){
   if(show.gym) Object.entries(gym.workouts||{}).forEach(([wid,w])=>{ if(!gymOn(w,di)) return; const t=gym.templates[w.tpl]; if(!t) return;
     const done=Object.values(gym.sessions||{}).some(x=>x&&x.end&&x.by===myUid&&x.date===di&&(x.plan===wid||x.tpl===w.tpl));
     out.push({src:"gym",t:w.time||"",dur:+w.dur||60,title:"🏋️ "+t.title,sub:done?"erledigt ✓":di<today?"nicht gemacht":(w.dur||60)+" min",c:t.col||"var(--c-gym)",done,href:"gym.html"}); });
-  const linked=new Set(Object.values(events).map(e=>e&&e.idea).filter(Boolean));   // schon als Termin eingeplant → nicht doppelt zeigen
-  if(show.date) Object.entries(ideas||{}).forEach(([id,i])=>{ if(!i||!i.title||(linked.has(id)&&!i.done)) return; const d=i.done&&i.doneAt?iso(new Date(i.doneAt)):ideaDate(i); if(d!==di) return;
-    out.push({src:"date",t:"",title:"💕 "+i.title,sub:i.done?"Date erledigt":[i.when,i.where].filter(Boolean).join(" · ")||"Dateidee",c:"var(--c-date)",done:!!i.done,href:"index.html"}); });
+  // Haushalt: eigene Aufgaben (gleiche Regeln wie Home/Haushalt); heute auch Überfälliges, abhaken direkt hier
+  if(show.chore) Object.entries(chores).forEach(([id,c])=>{ if(!c||!c.title||!choreMine(c)) return;
+    const every=Math.max(1,+c.every||7), due=iso(new Date(choreDue(c))), done=[c.lastDone,c.prevDone].filter(Boolean).map(x=>iso(new Date(x)));
+    const base={src:"chore",t:"",c:"var(--c-chore)"};
+    if(done.includes(di)) return out.push({...base,title:"🧹 "+c.title,sub:"erledigt ✓",done:true,href:"haushalt.html"});
+    if(di<today) return;
+    if(di===today){ if(due<=today) out.push({...base,chore:id,title:"○ "+c.title,sub:due<today?"überfällig · antippen zum Abhaken":"heute · antippen zum Abhaken"}); return; }
+    const start=due<=today?today:due, gap=dayNum(di)-dayNum(start);   // danach im Rhythmus (als ob pünktlich erledigt)
+    if(gap>=0&&gap%every===0) out.push({...base,title:"🧹 "+c.title,sub:"Haushalt",href:"haushalt.html"}); });
   if(show.trip) Object.entries(trips).forEach(([id,tr])=>{ if(!tr||!tr.from||tr.cal===false) return;
     if(di>=tr.from&&di<=(tr.to||tr.from)) out.push({src:"trip",t:"",title:"✈️ "+(tr.dest||"Reise"),sub:di===tr.from?"Abreise":di===tr.to?"Rückreise":"Reise",c:"var(--c-trip)",href:"reise.html?trip="+encodeURIComponent(id)});
     Object.values(tr.plan||{}).forEach(p=>{ if(p&&p.d===di&&p.time) out.push({src:"trip",t:p.time,end:p.end||null,dur:60,title:(p.ic||"📍")+" "+p.t,sub:[p.place,tr.dest].filter(Boolean).join(" · "),c:"var(--c-trip)",href:"reise.html?trip="+encodeURIComponent(id)}); }); });
@@ -2017,7 +2023,7 @@ function itemsOn(di){
     // erwartetes Gehalt: nächster Gehaltstag und danach jeden Monat am selben Tag
     if(show.con&&bud.sal&&di>today){ const sd=fromIso(bud.sal.d), d=fromIso(di), day=Math.min(bud.sal.day||sd.getDate(),new Date(d.getFullYear(),d.getMonth()+1,0).getDate());
       if(di===bud.sal.d||(di>bud.sal.d&&d.getDate()===day)) out.push({src:"sal",t:"",title:"💰 Gehalt",sub:"erwartet",r:"+"+EUR(bud.sal.a),c:"var(--plus)",href:"budget.html"}); } }
-  const order={ev:0,gym:1,date:2,sal:3,con:4,inc:5,buy:6};
+  const order={ev:0,gym:1,chore:2,sal:3,con:4,inc:5,buy:6};
   return out.sort((a,b)=>(a.t?0:-1)-(b.t?0:-1)||String(a.t).localeCompare(String(b.t))||order[a.src]-order[b.src]);
 }
 
@@ -2061,7 +2067,7 @@ function render(){
   if(level==="year"){ sc.innerHTML=renderYears(); scrollTo(`[data-year="${focus.slice(0,4)}"]`); $("#title").textContent=""; return; }
 }
 const relTop=el=>el.getBoundingClientRect().top-$("#list").getBoundingClientRect().top;   // Abstand zur Oberkante des sichtbaren Bereichs
-function paintFilters(){ $("#filters").innerHTML=Object.entries(SRC).filter(([k])=>k==="ev"||k==="gym"&&Object.keys(gym.workouts||{}).length||k==="date"&&Object.keys(ideas||{}).length||(k==="con"||k==="buy"||k==="inc")&&bud||k==="trip"&&Object.keys(trips).length).map(([k,[l,c]])=>`<button type="button" class="fl" data-fl="${k}" aria-pressed="${!!show[k]}" style="--c:${c}"><i></i>${l}</button>`).join(""); }
+function paintFilters(){ $("#filters").innerHTML=Object.entries(SRC).filter(([k])=>k==="ev"||k==="gym"&&Object.keys(gym.workouts||{}).length||k==="chore"&&Object.keys(chores).length||(k==="con"||k==="buy"||k==="inc")&&bud||k==="trip"&&Object.keys(trips).length).map(([k,[l,c]])=>`<button type="button" class="fl" data-fl="${k}" aria-pressed="${!!show[k]}" style="--c:${c}"><i></i>${l}</button>`).join(""); }
 function scrollTo(sel){ const sc=$("#list"), el=sc.querySelector(sel); if(el) sc.scrollTop+=relTop(el)-2; }
 // Woche: endlos scrollbare Wochenzeilen
 function weekHtml(mon){
@@ -2106,7 +2112,7 @@ function renderDay(){
   h+=`<div class="allday" id="allday">${all.map(itemRow).join("")}</div><div class="timeline">`;
   for(let i=0;i<24;i++) h+=`<div class="hr" style="top:calc(var(--hpx) * ${i})"><span>${pad(i)}:00</span></div>`;
   timed.forEach(x=>{ const st=toMin(x.t), en=x.end?toMin(x.end):st+(x.dur||60), top=`calc(var(--hpx) * ${(st/60).toFixed(3)})`, hh=`max(24px, calc(var(--hpx) * ${((en-st)/60).toFixed(3)}))`;
-    const tag=x.href?`a href="${x.href}"`:`button type="button"${x.id?` data-ev="${esc(x.id)}" data-on="${esc(x.on||"")}"`:""}`;
+    const tag=x.href?`a href="${x.href}"`:`button type="button"${x.chore?` data-chore="${esc(x.chore)}"`:x.id?` data-ev="${esc(x.id)}" data-on="${esc(x.on||"")}"`:""}`;
     h+=`<${tag} class="tev" style="top:${top};height:${hh};--c:${x.c}"><b>${esc(x.title)}</b><small>${esc(x.t)}${x.end?"–"+esc(x.end):""}${x.sub?" · "+esc(x.sub):""}</small></${x.href?"a":"button"}>`; });
   if(focus===iso(new Date())){ const n=new Date(); h+=`<div class="nowline" style="top:calc(var(--hpx) * ${((n.getHours()*60+n.getMinutes())/60).toFixed(3)})"></div>`; }
   return h+`</div>`;
@@ -2131,7 +2137,7 @@ function renderYears(){
   return h;
 }
 function itemRow(x){
-  const tag=x.href?`a href="${x.href}"`:`button type="button"${x.id?` data-ev="${esc(x.id)}" data-on="${esc(x.on||"")}"`:""}`;
+  const tag=x.href?`a href="${x.href}"`:`button type="button"${x.chore?` data-chore="${esc(x.chore)}"`:x.id?` data-ev="${esc(x.id)}" data-on="${esc(x.on||"")}"`:""}`;
   return `<${tag} class="item${x.done?" done":""}" style="--c:${x.c}"><span class="t">${esc(x.t||"")}</span><span class="m"><b>${esc(x.title)}</b>${x.sub?`<small>${esc(x.sub)}</small>`:""}</span>${x.r?`<span class="r">${esc(x.r)}</span>`:""}</${x.href?"a":"button"}>`;
 }
 function renderList(){
@@ -2346,6 +2352,7 @@ function icsFor(e){
 /* ---------- Klicks ---------- */
 document.addEventListener("click",e=>{
   const t=e.target;
+  const ch=t.closest("[data-chore]"); if(ch) return choreDone(ch.dataset.chore);
   const ev=t.closest("[data-ev]"); if(ev) return showEv(ev.dataset.ev,ev.dataset.on);
   const gd=t.closest("[data-goday]"); if(gd&&!t.closest("a")) return setLevel("day",gd.dataset.goday);
   const gw=t.closest("[data-goweek]"); if(gw) return setLevel("week",gw.dataset.goweek);
@@ -2356,7 +2363,7 @@ document.addEventListener("click",e=>{
   if(t.closest("#zoomOut")) return zoomOut();
   if(t.closest("#listBtn")){ listMode=!listMode; render(); return; }
   if(t.closest("#todayBtn")){ listMode=false; focus=iso(now); if(level==="year") level="month"; render(); return; }
-  const fl=t.closest("[data-fl]"); if(fl){ show[fl.dataset.fl]=!show[fl.dataset.fl]; try{ localStorage.setItem("cal.show",JSON.stringify(show)); }catch(err){} if(level==="week") renderWeeks(false); else render(); $("#filters").innerHTML=Object.entries(SRC).filter(([k])=>k==="ev"||k==="gym"&&Object.keys(gym.workouts||{}).length||k==="date"&&Object.keys(ideas||{}).length||(k==="con"||k==="buy"||k==="inc")&&bud||k==="trip"&&Object.keys(trips).length).map(([k,[l,c]])=>`<button type="button" class="fl" data-fl="${k}" aria-pressed="${!!show[k]}" style="--c:${c}"><i></i>${l}</button>`).join(""); return; }
+  const fl=t.closest("[data-fl]"); if(fl){ show[fl.dataset.fl]=!show[fl.dataset.fl]; try{ localStorage.setItem("cal.show",JSON.stringify(show)); }catch(err){} if(level==="week") renderWeeks(false); else render(); $("#filters").innerHTML=Object.entries(SRC).filter(([k])=>k==="ev"||k==="gym"&&Object.keys(gym.workouts||{}).length||k==="chore"&&Object.keys(chores).length||(k==="con"||k==="buy"||k==="inc")&&bud||k==="trip"&&Object.keys(trips).length).map(([k,[l,c]])=>`<button type="button" class="fl" data-fl="${k}" aria-pressed="${!!show[k]}" style="--c:${c}"><i></i>${l}</button>`).join(""); return; }
   if(t.closest("#fab")){ if(!root){ say("Leg zuerst einen Kalender an."); return; } return openEv(null,level==="day"?focus:iso(now)); }
 });
 // Hinweis zum Zoomen einmal zeigen
@@ -2420,7 +2427,7 @@ document.addEventListener("ours-theme",()=>{ if(level==="week") renderWeeks(fals
 const CAL_W="https://oursapp.niklasbergnerbus.workers.dev";
 let calFeedOn=false, calTok=null, pubT=null, pubLast="", calSid=null;
 const slugOf=s=>String(s||"").toLowerCase().replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,30)||"termine";
-const PRIV_FEEDS={gym:["gym","Ours · Gym","#5a5bb8"],date:["dates","Ours · Dates","#8c7559"],con:["vertraege","Ours · Verträge & Gehalt","#3f70b8"],sal:["vertraege","Ours · Verträge & Gehalt","#3f70b8"]};
+const PRIV_FEEDS={gym:["gym","Ours · Gym","#5a5bb8"],con:["vertraege","Ours · Verträge & Gehalt","#3f70b8"],sal:["vertraege","Ours · Verträge & Gehalt","#3f70b8"]};
 function feedData(){
   const start=addDays(now,-60), days=430, shared={}, priv={};
   // eigene/gemeinsame Termine, nach Farbe getrennt
@@ -2466,8 +2473,17 @@ async function appleSheet(){
 }
 Auth.pageSettings.push({sec:"Apple-Kalender",label:"Mit Apple-Kalender verbinden",note:()=>"Termine aus Ours automatisch im iPhone-Kalender – je Terminart ein eigener Kalender in seiner Farbe.",button:()=>"Einrichten",
   action:()=>{ setTimeout(()=>{ const c=document.getElementById("stClose"); if(c) c.click(); appleSheet(); },80); }});
-/* ---------- Start: eigener Kalender + Gym, Dateideen und Budget dazuladen ---------- */
-let ideasRef=null, refT=null, budChecked=false;
+/* ---------- Start: eigener Kalender + Gym, Haushalt, Reisen und Budget dazuladen ---------- */
+let ideasRef=null, refT=null, budChecked=false, choreRoot=null, chores={};
+// Haushalt (gleiche Regeln und Punkte wie auf der Haushalt-Seite)
+const CDAY=864e5, csod=t=>{ const d=new Date(t); d.setHours(0,0,0,0); return d.getTime(); };
+const choreDue=c=>c.lastDone?csod(c.lastDone)+(c.every||7)*CDAY:csod(c.createdAt||Date.now());
+const choreMine=c=>!c.who||c.who==="all"||(Array.isArray(c.who)&&c.who.includes(myUid));
+function choreDone(id){ const c=chores[id]; if(!c||!choreRoot) return;
+  const now=Date.now(), every=+c.every||7, pts=every<=3?1:every<=14?2:3, logRef=choreRoot.child("choreLog").push();
+  choreRoot.child("chores/"+id).update({lastDone:now,lastBy:myUid,prevDone:c.lastDone||null,prevBy:c.lastBy||null,lastLog:logRef.key}).catch(showErr);
+  logRef.set({chore:id,by:myUid,at:now,pts}).catch(showErr);
+  if(window.OursHaptic) OursHaptic("success"); say(`„${c.title}“ erledigt · +${pts} ${pts===1?"Punkt":"Punkte"}`,3500); }
 // neue Daten: Woche an derselben Stelle neu zeichnen, sonst normal
 function refresh(){ feedPublish(); clearTimeout(refT); refT=setTimeout(()=>{ if(level==="week"&&!listMode&&$("#list").querySelector("[data-wk]")){ dayCache=new Map(); paintFilters(); $("#budNote").hidden=!!bud||!budChecked; renderWeeks(false); } else render(); },60); }
 Auth.start(firebaseConfig,"calendar",(r,info)=>{
@@ -2476,8 +2492,8 @@ Auth.start(firebaseConfig,"calendar",(r,info)=>{
   root.child("profiles").on("value",s=>{ profiles=s.val()||{}; refresh(); },()=>{});
   root.child("meta/calFeed").on("value",s=>{ calFeedOn=s.val()===true; if(calFeedOn) feedPublish(); },()=>{});
   const db=fdb();
-  /* Dateideen vorerst entfernt (Seite kommt evtl. später wieder) */
-  if(false) db.ref(`users/${myUid}/spaces/dates`).once("value").then(s=>{ const sid=s.val(); if(!sid) return; ideasRef=db.ref(`spaces/${sid}/ideas`); ideasRef.on("value",x=>{ ideas=x.val()||{}; refresh(); },()=>{}); }).catch(()=>{});
+  db.ref(`users/${myUid}/spaces/chores`).once("value").then(s=>{ const sid=s.val(); if(!sid) return; choreRoot=db.ref(`spaces/${sid}`); choreRoot.child("chores").on("value",x=>{ chores=x.val()||{}; refresh(); },()=>{}); }).catch(()=>{});
+  /* Dateideen vorerst entfernt */ if(false) db.ref(`users/${myUid}/spaces/dates`).once("value").then(s=>{ const sid=s.val(); if(!sid) return; ideasRef=db.ref(`spaces/${sid}/ideas`); ideasRef.on("value",x=>{ ideas=x.val()||{}; refresh(); },()=>{}); }).catch(()=>{});
   db.ref(`users/${myUid}/spaces/gym`).once("value").then(s=>{ const sid=s.val(); if(!sid) return; ["workouts","templates","sessions"].forEach(k=>db.ref(`spaces/${sid}/${k}`).on("value",x=>{ gym[k]=x.val()||{}; refresh(); },()=>{})); }).catch(()=>{});
   db.ref(`users/${myUid}/home/budget`).on("value",s=>{ bud=s.val(); budChecked=true; refresh(); },()=>{});
   db.ref(`users/${myUid}/spaces/trips`).once("value").then(s=>{ const sid=s.val(); if(!sid) return; db.ref(`spaces/${sid}/trips`).on("value",x=>{ trips=x.val()||{}; refresh(); },()=>{}); }).catch(()=>{});
