@@ -638,6 +638,7 @@ header.fire .wordmark{text-shadow:0 0 18px rgba(255,150,60,.55)}
 .foot-count{display:none}
 .alrow{display:flex;gap:8px;flex-wrap:wrap}
 .alrow select{flex:1 1 100%;min-width:0;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:10px 12px;font:inherit}
+.cost-line{margin:-2px 2px 12px;font-size:.84rem;color:var(--muted)}.cost-line b{color:var(--ink)}
 </style>
 </head>
 <body>
@@ -2706,6 +2707,17 @@ function lineChart(vals,opt={}){
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${opt.target!=null?`<line x1="0" x2="${W}" y1="${y(opt.target)}" y2="${y(opt.target)}" stroke="#4f8a5b" stroke-dasharray="5 4" stroke-width="1.5"/>`:""}
     <polyline fill="none" stroke="var(--band)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="${xs.map((x,i)=>x+","+y(vals[i])).join(" ")}"/>${xs.map((x,i)=>`<circle cx="${x}" cy="${y(vals[i])}" r="3" fill="var(--band)"/>`).join("")}</svg>`;
 }
+// Kosten pro Training: Fitnessstudio-Vertrag aus dem Budget (users/<uid>/home/budget → cons, nur für dich sichtbar)
+let budCons=null;
+const GYM_RX=/fitness|\bgym\b|mc ?fit|clever ?fit|fitx|john ?reed|urban ?sports|kieser|injoy|easy ?fit|fitness ?first|holmes ?place|sportstudio|wellpass|fit ?seven|bodystreet|crunch|f45|ai ?fitness|kraftwerk|sportpark/i;
+const PER_MON={week:52/12,month:1,quarter:1/3,half:1/6,year:1/12};
+function gymCost(){ if(!Array.isArray(budCons)) return null;
+  const list=budCons.filter(c=>c&&c.a>0&&(GYM_RX.test(c.n||"")||/fitness|sport/i.test(c.c||"")));
+  if(!list.length) return null; return {pm:Math.round(list.reduce((a,c)=>a+c.a*(PER_MON[c.r]||1),0)),names:list.map(c=>c.n)}; }
+const eur=c=>(c/100).toLocaleString("de-DE",{style:"currency",currency:"EUR"});
+function costLine(n,cur){ const g=gymCost(); if(!g) return "";
+  if(!n) return cur?`💶 Dein Studio kostet ${eur(g.pm)} im Monat – das erste Training macht's günstiger.`:"";
+  return `💶 <b>${eur(g.pm/n)}</b> pro Training${cur?" bisher":""} (${n}× · ${esc(g.names.join(", "))} ${eur(g.pm)}/Monat)`; }
 function monthStats(off){
   const now=new Date(), m0=new Date(now.getFullYear(),now.getMonth()+off,1), m1=new Date(now.getFullYear(),now.getMonth()+off+1,1);
   const list=doneSes().filter(x=>x.start>=m0.getTime()&&x.start<m1.getTime());
@@ -2729,7 +2741,7 @@ function renderProg(){
     <section class="pg-card"><div class="weeknav"><button class="arr" type="button" data-pm="-1" aria-label="Monat zurück">${PREV}</button><span style="text-align:center"><b>${mName}</b><small>Monatsrückblick</small></span><button class="arr" type="button" data-pm="1" aria-label="Monat vor"${progMon>=0?" disabled":""} style="${progMon>=0?"visibility:hidden":""}">${NEXT}</button></div>
       ${st.list.length?`<div class="mon-grid"><div><b>${st.list.length}</b><small>Trainings an ${st.days} ${st.days===1?"Tag":"Tagen"}</small></div><div><b>${fmtDur(st.dur)}</b><small>trainiert</small></div>
         <div><b>${fmtKg(Math.round(st.vol/100)/10)} t</b><small>Gewicht bewegt</small></div><div><b>ca. ${st.kc.toLocaleString("de-DE")}</b><small>kcal verbrannt</small></div></div>
-        <ul class="mon-hi">${st.bestWk?`<li>Beste Woche: <b>${st.bestWk} ${st.bestWk===1?"Training":"Trainings"}</b></li>`:""}${st.gain?`<li>Stärkste Steigerung: <b>${esc(st.gain.name)} +${fmtKg(st.gain.d)} kg</b></li>`:""}${st.topG?`<li>Am meisten trainiert: <b>${esc(grpOf(st.topG[0]).name)}</b> (${st.topG[1]} Sätze)</li>`:""}</ul>
+        <ul class="mon-hi">${costLine(st.list.length,progMon===0)?`<li>${costLine(st.list.length,progMon===0)}</li>`:""}${st.bestWk?`<li>Beste Woche: <b>${st.bestWk} ${st.bestWk===1?"Training":"Trainings"}</b></li>`:""}${st.gain?`<li>Stärkste Steigerung: <b>${esc(st.gain.name)} +${fmtKg(st.gain.d)} kg</b></li>`:""}${st.topG?`<li>Am meisten trainiert: <b>${esc(grpOf(st.topG[0]).name)}</b> (${st.topG[1]} Sätze)</li>`:""}</ul>
         <button class="btn" type="button" id="monShare">Rückblick teilen</button>`:`<p class="card-note">In diesem Monat noch kein Training.</p>`}</section>
     <section class="pg-card"><h4>🏆 Persönliche Rekorde <small>${rec.length||""}</small></h4>
       ${rec.length?`<ul class="pr-list">${rec.slice(0,12).map(r=>`<li><button type="button" class="th-btn" data-info="${esc(r.id)}">${thumb(r.img)}</button><span class="exn"><b>${esc(r.name)}</b><small>${new Date(r.at).toLocaleDateString("de-DE",{day:"numeric",month:"short",year:"2-digit"})}</small></span>
@@ -3005,6 +3017,7 @@ function renderWeek(){
   html+=`<div class="wsum"><span>${count?`<b>${count}</b> ${count===1?"Training":"Trainings"} · <b>${(mins/60).toLocaleString("de-DE",{maximumFractionDigits:1})}</b> Std.`:"Noch nichts geplant"}</span>
       <span class="wsum-btns">${Object.keys(workouts).length?`<button class="btn cal-btn" type="button" id="calExport"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>In Kalender</button>`:""}
       <button class="btn primary cal-btn" type="button" data-new-on="${iso(weekOff===0?new Date():dates[0])}">+ In den Plan</button></span></div>`;
+  if(weekOff===0){ const cl=costLine(monthStats(0).list.length,true); if(cl) html+=`<p class="cost-line">${cl}</p>`; }
   if(!count && !tplList().length) html+=`<div class="empty"><strong>So geht's</strong><span>1. Unter <b>„Übungen“</b> ein Workout erstellen, z.B. „Push“ mit deinen Übungen.</span><span>2. Hier auf einen Tag tippen und das Workout mit Uhrzeit und Wiederholung in den Plan legen.</span><span>3. Am Trainingstag unten auf <b>„Training starten“</b>: Timer läuft, du trägst Wiederholungen und Gewicht ein und siehst, was du letztes Mal geschafft hast.</span></div>`;
   const sn=streakOf(workouts,sessions,myUid), st=tierOf(sn);
   if(sn>0) html=`<div class="streak-card${st?" "+st.cls:""}"><span class="sc-emo">${st?"🔥".repeat(Math.min(3,st.flames)):"💪"}</span><span class="pb-txt"><b>${sn} ${sn===1?"Workout":"Workouts"} in Folge</b><small>${st?st.txt:`Noch ${3-sn} bis zur Streak. Schaff deine geplanten Workouts!`}</small></span></div>`+html;
@@ -4069,6 +4082,7 @@ Auth.start(firebaseConfig,"gym",(r,info)=>{
   root.child("workouts").on("value",s=>{ workouts=s.val()||{}; wLoaded=true; migrateWeek(); migratePlan(); render(); });
   root.child("templates").on("value",s=>{ templates=s.val()||{}; tLoaded=true; migratePlan(); render(); });
   root.child("sessions").on("value",s=>{ sessions=s.val()||{}; render(); });
+  if(myUid) fdb().ref(`users/${myUid}/home/budget/cons`).on("value",s=>{ budCons=s.val()||null; if(view==="week"||view==="prog") render(); },()=>{});
   root.child("bw").on("value",s=>{ bw=s.val()||{}; });
   root.child("week").on("value",s=>{ const v=s.val()||{}; week=Array.isArray(v)?Object.fromEntries(v.map((x,i)=>[i,x]).filter(([,x])=>x)):v; weekLoaded=true; migrateWeek(); });
 
