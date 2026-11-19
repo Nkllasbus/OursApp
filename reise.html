@@ -198,6 +198,7 @@ h2.big{margin:6px 0 10px;font-size:1.7rem;font-weight:800;letter-spacing:-.02em}
 .kchips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 .cell input.r{text-align:right;border:0;background:none;outline:none;min-width:0;flex:1;font-size:1rem}
 .cell select{border:0;background:none;color:var(--accent);font-size:1rem;text-align:right;max-width:60%}
+.it .am{font-weight:600;font-variant-numeric:tabular-nums;margin-left:auto;padding-left:8px}.it .bk-add{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--accent,#25a199);color:#fff;font-weight:700;margin-left:10px;flex:none}
 </style>
 </head>
 <body>
@@ -2028,6 +2029,21 @@ function tabPlan(id,tr){
     ${days.map(dayBlock).join("")}
     ${after.length?`<div class="dayh"><b>Danach</b></div><div class="list">${list(after)}</div>`:""}`;
 }
+// Urlaubsausgaben: eigene Abbuchungen im Reisezeitraum aus dem Budget (users/<uid>/home/budget/buys) – nur du siehst sie
+let myBuys=null;
+const BANK_CAT={"Essen gehen":"food","Lebensmittel":"food","Mobilität":"go","Wohnen":"stay","Freizeit":"fun","Shopping":"shop"};
+const bankKey=b=>`${b.d}|${b.a}|${String(b.n||"").slice(0,40)}`;
+function tripBuys(tr){ if(!Array.isArray(myBuys)||!tr.from) return [];
+  const used=new Set(Object.values(tr.costs||{}).map(c=>c&&c.bank).filter(Boolean)), to=tr.to||tr.from;
+  return myBuys.filter(b=>b&&b.d>=tr.from&&b.d<=to&&b.a>0&&!used.has(bankKey(b))); }
+function bankBox(tr){ if(!Array.isArray(myBuys)) return "";
+  const L=tripBuys(tr); if(!L.length) return "";
+  return `<p class="sec">Von deinem Konto im Reisezeitraum</p><p class="muted" style="font-size:.8rem;margin:-2px 2px 8px">Aus deinem Budget. Nur du siehst diese Liste – antippen übernimmt die Ausgabe in die Reisekosten.</p>
+    <div class="list">${L.slice(0,30).map(b=>{ const cc=CCATS.find(x=>x[0]===(BANK_CAT[b.c]||"misc"))||CCATS[5]; return `<button type="button" class="it" data-act="bankadd" data-bk="${esc(bankKey(b))}"><span class="ic">${cc[1]}</span><span class="tx"><b>${esc(b.n||"Ausgabe")}</b><small>${fmtD(b.d,{weekday:"short",day:"numeric",month:"short"})}${b.c?" · "+esc(b.c):""}</small></span><span class="am">${EUR(b.a)}</span><span class="bk-add" aria-hidden="true">+</span></button>`; }).join("")}</div>
+    ${L.length>1?`<div class="rowbtn"><button type="button" class="btn alt" data-act="bankall" style="flex:1">Alle ${L.length} übernehmen</button></div>`:""}`; }
+function bankAdd(list){ const tr=trips[cur]; if(!tr||!list.length) return; tr.costs=tr.costs||{}; const upd={};
+  list.forEach(b=>{ const id=uidNew(), c={amt:b.a,t:b.n||null,cat:BANK_CAT[b.c]||"misc",by:myUid,split:null,at:Date.now(),bank:bankKey(b)}; tr.costs[id]=c; upd[id]=c; });
+  root.child(`trips/${cur}/costs`).update(upd).catch(showErr); if(window.OursHaptic) OursHaptic(); render(); }
 function tabCost(id,tr){
   const cs=costStats(tr), ws=people(tr), L=Object.entries(tr.costs||{}).sort((a,b)=>(b[1].at||0)-(a[1].at||0)), b=tr.budget||0;
   return `<div class="card sum" style="margin-top:8px"><small class="muted">Zusammen ausgegeben</small><div class="tot">${EUR(cs.tot)}</div>
@@ -2035,6 +2051,7 @@ function tabCost(id,tr){
       ${ws.length>1?`<div class="pp">${ws.map(u=>`<span>${esc(nameOf(u).split(" ")[0])} hat ${EUR(cs.paid[u]||0)} bezahlt</span>`).join("")}</div>
       <div class="settle">${cs.tx.length?cs.tx.map(x=>`💸 ${esc(nameOf(x.from).split(" ")[0])} gibt ${esc(nameOf(x.to).split(" ")[0])} <b>${EUR(x.amt)}</b>`).join("<br>"):"✓ Ihr seid quitt."}</div>`:""}</div>
     <div class="rowbtn"><button type="button" class="btn" data-act="addcost" style="flex:1">+ Ausgabe eintragen</button>${b?`<button type="button" class="btn alt" data-act="budget">Budget</button>`:""}</div>
+    ${bankBox(tr)}
     ${L.length?`<p class="sec">Ausgaben</p><div class="list">${L.map(([k,c])=>{ const cc=CCATS.find(x=>x[0]===c.cat)||CCATS[5]; return `<button type="button" class="it" data-cost="${esc(k)}"><span class="ic">${cc[1]}</span><span class="tx"><b>${esc(c.t||cc[2])}</b><small>${esc(nameOf(c.by).split(" ")[0])} hat bezahlt${Array.isArray(c.split)&&c.split.length===1?` · nur für ${esc(nameOf(c.split[0]).split(" ")[0])}`:""}</small></span><span class="amt">${EUR(c.amt)}</span></button>`; }).join("")}</div>`:""}`;
 }
 function tabInfo(id,tr){
@@ -2134,6 +2151,8 @@ document.addEventListener("click",ev=>{
   if(A==="new") return newTripSheet();
   if(A==="back"){ cur=null; editing=false; history.replaceState(null,"",location.pathname); render(); return; }
   if(A==="edit"){ editing=!editing; return render(); }
+  if(A==="bankadd"){ const b=tripBuys(trips[cur]).find(x=>bankKey(x)===a.dataset.bk); if(b) bankAdd([b]); return; }
+  if(A==="bankall") return bankAdd(tripBuys(trips[cur]));
   if(A==="addcost") return openSheet({type:"cost",id:null,amt:0,t:"",cat:"food",by:myUid,split:""});
   if(A==="budget") return openSheet({type:"budget",amt:trips[cur].budget||0});
   if(A==="edittrip"){ const tr=trips[cur]; return openSheet({type:"trip",id:cur,dest:tr.dest||"",from:tr.from,to:tr.to||tr.from,kind:tr.kind||"city",go:tr.go||"car",who:Array.isArray(tr.who)&&tr.who.length?[...tr.who]:people(tr)}); }
@@ -2176,6 +2195,7 @@ Auth.start(firebaseConfig,"trips",(r,info)=>{
     }
     if(!sheet) render(); },()=>showErr());
   root.child("profiles").on("value",s=>{ profiles=s.val()||{}; if(!sheet) render(); },()=>{});
+  firebase.database().ref(`users/${myUid}/home/budget/buys`).on("value",s=>{ myBuys=s.val()||null; if(!sheet&&cur&&tab==="cost") render(); },()=>{});
 });
 </script>
 </body>
