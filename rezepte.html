@@ -420,6 +420,13 @@ a.fab{text-decoration:none}
 /* Supermärkte */
 .shop-btn{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:10px 12px;font-weight:600;font-size:.9rem}
 .shop-btn svg{width:20px;height:20px;color:var(--accent)}
+.cook-btn{width:100%;margin:2px 0 14px;border-color:transparent;background:var(--accent);color:#fff;font-size:.95rem;padding:12px;border-radius:999px}
+.cook-sec{margin:4px 0 14px}.cook-sec>span{display:block;font-size:.8rem;font-weight:600;color:var(--muted);margin:0 0 6px}
+.cook-chips{display:flex;flex-wrap:wrap;gap:6px}
+.cook-tog{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--line);font-size:.95rem}
+.cook-tog small{display:block;color:var(--muted);font-size:.8rem}
+.cook-tog input{width:22px;height:22px;accent-color:var(--accent);flex:none}
+#cookTime{font:inherit;border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:var(--surface);color:var(--ink)}
 .shop-sheet{max-height:calc(100dvh - 40px);overflow-y:auto}
 .shop-loc{display:flex;flex-direction:column;gap:8px}
 .shop-loc form{display:flex;gap:8px}
@@ -691,6 +698,13 @@ body{background-image:radial-gradient(var(--dots) 1.2px,transparent 1.2px)!impor
     <div class="sheet vsheet prof-sheet" role="dialog" aria-modal="true" aria-label="Profil">
       <div id="profBody"></div>
       <div class="vrow"><button class="ghost" type="button" id="profClose">Schließen</button></div>
+    </div>
+  </div>
+  <div class="modal" id="cookModal" hidden>
+    <div class="sheet vsheet" role="dialog" aria-modal="true" aria-labelledby="cookTitle">
+      <h3 id="cookTitle">Kochen planen</h3>
+      <div id="cookBody"></div>
+      <div class="vrow"><button class="ghost" type="button" id="cookClose">Abbrechen</button><button class="btn primary" type="button" id="cookSave">Eintragen</button></div>
     </div>
   </div>
   <div class="modal" id="shopModal" hidden>
@@ -2591,6 +2605,7 @@ function renderDetail(r){
       <button type="button" class="fact" data-act="fold-open" data-f="price"><b class="tn">${priceTxt}</b><small>${priceHas(r)?"ca. pro Portion":"Preis pro Portion"}</small></button>
       <div class="fact pv${scaled?" on":""}" role="group" aria-label="Portionen"><span class="serv-row"><button type="button" data-act="serv" data-d="-1" aria-label="Eine Portion weniger">−</button><b class="tn">${vs}</b><button type="button" data-act="serv" data-d="1" aria-label="Eine Portion mehr">+</button></span><small>${vs===1?"Portion":"Portionen"}</small></div>
     </div>`:""}
+    <button class="shop-btn cook-btn" type="button" data-act="cook">🍳 Kochen planen</button>
     <section class="sec ing-sec">
       <h2>Zutaten <span>${had?`${had} von ${ing.length} da · <button type="button" class="linkish" data-act="have-reset">zurücksetzen</button>`:ing.length||""}</span></h2>
       ${scaled?`<p class="scale-note">Mengen für <b>${vs} ${vs===1?"Portion":"Portionen"}</b> umgerechnet. Das Rezept ist für ${s}. <button type="button" class="linkish" data-act="serv-reset">Original zeigen</button></p>`
@@ -2615,6 +2630,53 @@ function renderDetail(r){
   scheduleEstimate(r); schedulePrice(r);
 }
 const grow=t=>{ t.style.height="auto"; t.style.height=t.scrollHeight+"px"; };
+
+/* ---------- Kochen planen: Kalender (Abendessen) + Essen-Tagebuch im Gym ---------- */
+let cook=null;
+const cookIso=n=>{ const d=new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()+n); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+async function openCook(){
+  const r=cur(); if(!r) return;
+  cook={rid:r.id,day:0,meal:new Date().getHours()<14?"lunch":"dinner",cal:true,diary:true,calSid:null,ready:false};
+  cook.time=cook.meal==="lunch"?"12:30":"19:00";
+  renderCook(); $("#cookModal").hidden=false;
+  try{ cook.calSid=(await fdb().ref(`users/${myUid}/spaces/calendar`).once("value")).val(); }catch(e){}
+  if(!cook.calSid) cook.cal=false; cook.ready=true; renderCook();
+}
+function renderCook(){
+  if(!cook) return; const days=[0,1,2,3,4,5,6].map(n=>{ const d=new Date(); d.setDate(d.getDate()+n);
+    return [n,n===0?"Heute":n===1?"Morgen":d.toLocaleDateString("de-DE",{weekday:"short",day:"numeric"})]; });
+  const r=recipes.find(x=>x.id===cook.rid)||cur(), t=r?nutTotals(r):null, s=r?servOf(r):2;
+  $("#cookBody").innerHTML=`
+    <p class="hint-line" style="margin-top:0"><b>${esc(r?r.title:"")}</b></p>
+    <div class="cook-sec"><span>Wann</span><div class="cook-chips">${days.map(([n,l])=>`<button type="button" class="chip" data-cday="${n}" aria-pressed="${cook.day===n}">${l}</button>`).join("")}</div></div>
+    <div class="cook-sec"><span>Mahlzeit</span><div class="cook-chips">
+      <button type="button" class="chip" data-cmeal="lunch" aria-pressed="${cook.meal==="lunch"}">Mittagessen</button>
+      <button type="button" class="chip" data-cmeal="dinner" aria-pressed="${cook.meal==="dinner"}">Abendessen</button>
+      <input type="time" id="cookTime" value="${cook.time}" aria-label="Uhrzeit"></div></div>
+    <label class="cook-tog"><span>Im Kalender eintragen<small>${!cook.ready?"Kalender wird geladen …":cook.calSid?"Als Termin für alle im Kalender":"Du hast noch keinen Kalender angelegt"}</small></span><input type="checkbox" switch id="cookCal"${cook.cal?" checked":""}${cook.calSid?"":" disabled"}></label>
+    <label class="cook-tog"><span>Ins Essen-Tagebuch (Gym)<small>1 Portion${t&&!t.missing?` · ${fmtN(t.kcal/s)} kcal · ${fmtN(t.p/s)} g Eiweiß`:" · Nährwerte noch unvollständig"}</small></span><input type="checkbox" switch id="cookDiary"${cook.diary?" checked":""}></label>`;
+  $("#cookSave").disabled=!cook.ready;
+}
+$("#cookBody").addEventListener("click",e=>{ if(!cook) return;
+  const d=e.target.closest("[data-cday]"); if(d){ cook.day=+d.dataset.cday; return renderCook(); }
+  const m=e.target.closest("[data-cmeal]"); if(m){ cook.meal=m.dataset.cmeal; cook.time=cook.meal==="lunch"?"12:30":"19:00"; return renderCook(); } });
+$("#cookBody").addEventListener("change",e=>{ if(!cook) return;
+  if(e.target.id==="cookCal") cook.cal=e.target.checked; if(e.target.id==="cookDiary") cook.diary=e.target.checked; if(e.target.id==="cookTime") cook.time=e.target.value||cook.time; });
+$("#cookClose").addEventListener("click",()=>{ $("#cookModal").hidden=true; cook=null; });
+$("#cookSave").addEventListener("click",()=>{
+  const r=cook&&recipes.find(x=>x.id===cook.rid); if(!cook||!r) return; const tm=($("#cookTime")||{}).value||cook.time;
+  const di=cookIso(cook.day), [h,mi]=tm.split(":").map(Number), end=`${String(Math.min(23,h+1)).padStart(2,"0")}:${String(mi||0).padStart(2,"0")}`, done=[];
+  if(cook.cal&&cook.calSid){ const id=Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+    fdb().ref(`spaces/${cook.calSid}/events/${id}`).set({title:"🍽️ "+(cook.meal==="lunch"?"Mittagessen":"Abendessen")+": "+r.title,date:di,start:tm,endTime:end,col:"#ea580c",note:"Aus Rezepte",by:myUid,at:Date.now(),recipe:r.id}).catch(showErr);
+    done.push("im Kalender"); }
+  if(cook.diary){ const t=nutTotals(r), s=servOf(r), n={};
+    if(!t.missing) ["kcal","p","c","f","zu","bs","sa","fs"].forEach(k=>{ if(t[k]!=null) n[k]=Math.round(t[k]/s*10)/10; }); if(n.kcal!=null) n.kcal=Math.round(n.kcal);
+    const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    fdb().ref(`users/${myUid}/meals/${di}/${cook.meal}/${id}`).set({rid:r.id,title:r.title,por:1,at:Date.now(),...n}).catch(showErr);
+    done.push("im Essen-Tagebuch"); }
+  $("#cookModal").hidden=true; cook=null; if(window.OursHaptic) OursHaptic();
+  $("#status").textContent=done.length?`„${r.title}“ ${done.join(" und ")} eingetragen.`:"Nichts ausgewählt."; setTimeout(()=>{ $("#status").textContent=""; },3500);
+});
 
 /* ---------- Navigation (Zurück-Taste des Handys funktioniert) ---------- */
 function openRecipe(id){ view=id; confirmDel=false; folds=new Set(); nutOpen=null; history.pushState({r:id,swipe:swipeOpen},"",location.pathname); render(); $("#detailView .scroll").scrollTop=0; }
@@ -3702,6 +3764,7 @@ document.addEventListener("click",e=>{
   const act=b.dataset.act, k=+b.dataset.k;
   if(act==="cover"){ coverFor=r.id; $("#coverInput").click(); }
   if(act==="shops") openShops();
+  if(act==="cook") openCook();
   if(act==="fold"||act==="fold-open"){ const id=b.dataset.f; if(act==="fold-open"||!folds.has(id)) folds.add(id); else folds.delete(id);
     nutOpen=null; render(); if(act==="fold-open"){ const el=document.querySelector(`[data-f="${id}"].fold-head`); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); } return; }
   if(act==="have"){ const t=arr(r.ingredients)[k]; if(t==null) return; const key=ingKey(t), have={...(r.have||{})};
