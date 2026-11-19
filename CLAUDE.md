@@ -18,7 +18,7 @@ Ours ist eine private Web-App für ein Paar bzw. eine WG (Niklas, GitHub `Nkllas
 - iPhone-App (unsigniert, Installation mit Sideloadly): https://github.com/Nkllasbus/OursApp/releases/download/app-neueste/Ours.ipa
 
 ## Aufbau
-- Jede Seite ist eine einzelne HTML-Datei im Hauptordner: `home` (Start), `index` (Dateideen), `rezepte`, `haushalt`, `budget`, `gym`, `kalender`, `reise`, `mail`, `chat`, `feed`, `datenschutz`. (Räume und Smart Home sind vorerst entfernt und kommen später.)
+- Jede Seite ist eine einzelne HTML-Datei im Hauptordner: `home` (Start), `rezepte`, `haushalt`, `budget`, `gym`, `kalender`, `reise`, `chat`, `feed`, `datenschutz`. `index.html` ist nur noch eine Weiterleitung auf `home.html` (behält `#friend-…`/`#join-…`). (Entfernt seit 19.11.2026: Dateideen und Mail – die Daten in Firebase unter `spaces/<dates-sid>/ideas` bleiben erhalten; der Kalender lädt sie nicht mehr. Räume und Smart Home kommen später.)
 - **`entwicklung/auth.js`** ist der gemeinsame Kern und steckt eingebettet in jeder Seite: Anmeldung, Bereiche (`spaces/<id>`), Seitenmenü, Einstellungen, Hell/Dunkel (`OursTheme`), Apple-Design-Schicht (Schrift, Farben, Drück-Gefühl, Haptik `OursHaptic`, Bögen, Seitenübergänge), Offline-Schicht (Zwischenspeicher `ofl:c:` + Warteschlange `ofl:outbox`, Daten sofort aus dem Speicher), Mitteilungen (`OursPush`), Kurzbefehle-Links, Freunde/Chat.
   - Nach Änderungen an `auth.js`: `python3 entwicklung/build.py` (baut es in alle Seiten ein und setzt eine neue Version in `version.json`).
   - **Navigation (seit 12.11.2026, Stil wie Instagram/YouTube):** Leiste unten `#oursTabs` mit Home · Feed · Seiten (Raster `#pgMenu`, Liste `GRID`) · Chats (Zähler `#oursChatN`) · Du (Profilbild `#pfBtn`, Menü `#pfMenu` als Bogen). Kopfzeile schlicht (Hintergrund `--bg`, Titel links). `.wrap` endet über der Leiste (`--tab-h`). Kein Logo und kein schwebender Chat-Knopf mehr.
@@ -55,5 +55,5 @@ Seiten lokal mit `python3 -m http.server` ausliefern und mit Playwright (Chromiu
 - Apple-Gestaltung (Stylesheet `ours-apple` in `auth.js`, je Seite eine Tint-Farbe über `data-hig-page`) – Niklas gibt weitere Anweisungen, danach Dunkelmodus.
 - Budget: Umsätze vom selben Tag kommen bei der Sparkasse teils nicht an. Diagnose eingebaut (Meldung nach „Aktualisieren“ zeigt Anzahl und Datum des neuesten Umsatzes). Auf der Webseite geht es, in der App noch prüfen (neue App-Version installieren).
 - iPhone-App: nächster Schritt für Niklas = automatische Verlängerung alle 7 Tage (kostenlose Apple-ID; Sideloadly „Auto Refresh“ o. Ä.).
-- Mail: Gmail-OAuth-Client-ID fehlt noch (`GMAIL_CLIENT_ID` in `mail.html`).
+- Dateideen und Mail: entfernt (19.11.2026), Dateideen evtl. später wieder (Code in Git-Verlauf, Kalender-Verknüpfung in `kalender.html` mit `if(false)` stillgelegt).
 - Smart Home und Räume: später (Seiten entfernt; Smart-Home-Fragen offen: IKEA-Hub, TV-Marke, Home Assistant).

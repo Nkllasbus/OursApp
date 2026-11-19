@@ -220,7 +220,7 @@ h2.big{margin:6px 0 10px;font-size:1.7rem;font-weight:800;letter-spacing:-.02em}
    - E-Mail und Passwort über Firebase Authentication
    - Jede Seite hat ihren eigenen Bereich unter spaces/<id> mit eigenen Personen (access/<uid>)
    - users/<uid>/spaces/<typ> merkt sich, welcher Bereich zu welcher Seite gehört
-   Seiten rufen Auth.start(firebaseConfig, "dates" | "recipes" | "chores" | "budget" | "gym", (ref, info) => { ... }) auf. */
+   Seiten rufen Auth.start(firebaseConfig, "recipes" | "chores" | "budget" | "gym", (ref, info) => { ... }) auf. */
 /* ---------- Darstellung: Automatisch / Hell / Dunkel – gilt für alle Seiten ----------
    Seiten mit eigenem Dunkel-Design (@media prefers-color-scheme) werden umgeschaltet,
    alle anderen bekommen ein allgemeines dunkles Farbschema. */
@@ -771,14 +771,12 @@ window.OursPush=(function(){
   const SOON = [];
   // Raster im Tab „Seiten“
   const GRID = [
-    {type:"dates",file:"index.html",label:"Dateideen",color:"#d04d66",ic:"💡"},
     {type:"recipes",file:"rezepte.html",label:"Rezepte",color:"#d98e30",ic:"🍝"},
     {type:"chores",file:"haushalt.html",label:"Haushalt",color:"#9a60bd",ic:"🧹"},
     {type:"budget",file:"budget.html",label:"Budget",color:"#3e9e60",ic:"💶"},
     {type:"gym",file:"gym.html",label:"Gym",color:"#5a5bb8",ic:"🏋️"},
     {type:"calendar",file:"kalender.html",label:"Kalender",color:"#cf4b42",ic:"📅"},
     {type:"trips",file:"reise.html",label:"Reisen",color:"#25a199",ic:"✈️"},
-    {type:"mail",file:"mail.html",label:"Mail",color:"#2f72c4",ic:"✉️"},
   ];
   // Symbole der Leiste unten: Umriss, aktiv ausgefüllt
   const svg=(b,on)=>`<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="${on?2:1.8}" stroke-linecap="round" stroke-linejoin="round">${b}</svg>`;
@@ -792,9 +790,6 @@ window.OursPush=(function(){
   };
   const PAGES = [
     {type:"home",    file:"home.html",     label:"Home",  color:"#2f72c4", noSpace:true, menu:true},
-    {type:"dates",   file:"index.html",    label:"Dateideen", color:"#d04d66", noun:"Dateideen-Liste",
-     empty:"Noch keine Dateideen-Liste", hint:"Leg eine Liste an und lad danach deine Freundin oder deinen Freund ein. Nur eingeladene Personen sehen sie.",
-     keys:["ideas"]},
     {type:"recipes", file:"rezepte.html",  label:"Rezepte",   color:"#d98e30", noun:"Rezeptsammlung",
      empty:"Noch keine Rezeptsammlung", hint:"Leg eine Sammlung an und lad Freunde oder Familie ein. Nur eingeladene Personen sehen sie.",
      keys:["recipes","people","swipe"]},
@@ -808,14 +803,13 @@ window.OursPush=(function(){
      empty:"Noch kein Trainingsplan", hint:"Leg deinen Plan an: Übungen nach Muskelgruppen und ein Wochenplan. Später kannst du deinen Trainingspartner dazuholen.",
      keys:[]},
     {type:"calendar",file:"kalender.html", label:"Kalender", color:"#cf4b42", noun:"Kalender",
-     empty:"Noch kein Kalender", hint:"Leg einen Kalender an und lad deine Freundin oder deinen Freund ein. Ihr seht und bearbeitet dieselben Termine. Gym, Dateideen und Budget kommen automatisch dazu – die siehst nur du.",
+     empty:"Noch kein Kalender", hint:"Leg einen Kalender an und lad deine Freundin oder deinen Freund ein. Ihr seht und bearbeitet dieselben Termine. Gym und Budget kommen automatisch dazu – die siehst nur du.",
      keys:["events"]},
     {type:"trips",   file:"reise.html",    label:"Reisen", color:"#25a199", noun:"Reiseplanung",
      empty:"Noch keine Reiseplanung", hint:"Leg eine Reiseplanung an und lad deine Freundin oder deinen Freund ein. Ihr plant zusammen: Packliste, Ablauf, Buchungen und Kosten.",
      keys:["trips"]},
     {type:"feed",    file:"feed.html",     label:"Feed",  color:"#2f72c4", noSpace:true},
     {type:"chat",    file:"chat.html",     label:"Chats", color:"#2f72c4", noSpace:true},
-    {type:"mail",    file:"mail.html",     label:"Mail",  color:"#2f72c4", noSpace:true, menu:true},
   ];
   const CSS = `
   .auth-screen{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow-y:auto;background:var(--page);
@@ -1056,13 +1050,13 @@ window.OursPush=(function(){
   const GOOGLE = '<svg viewBox="0 0 48 48" aria-hidden="true" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg>';
 
   // Versionsprüfung: Hat der Browser eine alte Seite aus dem Zwischenspeicher geholt, einmal neu laden
-  const APP_VERSION="2026-11-12-105538";
+  const APP_VERSION="2026-11-19-215056";
   function checkVersion(){
     try{ fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(v=>{
       if(!v || !v.v || v.v===APP_VERSION) return;
       const k="ours.reload."+v.v; try{ if(sessionStorage.getItem(k)) return; sessionStorage.setItem(k,"1"); }catch(e){}
-      (async()=>{ try{ if(window.caches){ const c=await caches.open("ours-v9"), here=location.pathname.split("/").pop()||"index.html";
-          await Promise.all(["home.html","index.html","rezepte.html","haushalt.html","budget.html","chat.html","gym.html","mail.html","kalender.html","reise.html","feed.html"].map(f=>
+      (async()=>{ try{ if(window.caches){ const c=await caches.open("ours-v10"), here=location.pathname.split("/").pop()||"index.html";
+          await Promise.all(["home.html","rezepte.html","haushalt.html","budget.html","chat.html","gym.html","kalender.html","reise.html","feed.html"].map(f=>
             fetch(f+"?v="+v.v,{cache:"no-store"}).then(r=>{ if(r.ok) return c.put(new URL(f,location.href).href,r); }).catch(()=>{}))); } }catch(e){}
         location.reload(); })();
     }).catch(()=>{}); }catch(e){}
@@ -1491,7 +1485,7 @@ window.OursPush=(function(){
     function friendsView(msgText,isErr){
       friendsOpen=true;
       const base=location.href.split("#")[0].replace(/[^/]*$/,"");
-      const link=friendCode?`${base}index.html#friend-${friendCode}`:"";
+      const link=friendCode?`${base}home.html#friend-${friendCode}`:"";
       const reqs=Object.entries(requestsIn), inv=Object.entries(inbox), fl=Object.entries(friends).sort((a,b)=>(a[1].name||"").localeCompare(b[1].name||""));
       const pageOf=t=>PAGES.find(p=>p.type===(t==="swipe"?"recipes":t))||PAGES[0];
       const since=t=>new Date(t||Date.now()).toLocaleDateString("de-DE",{day:"numeric",month:"short",year:"numeric"});
@@ -1539,7 +1533,7 @@ window.OursPush=(function(){
     }
 
     /* ---------- Profil eines Freundes (wie eine Kontaktkarte in iOS) ---------- */
-    const FP_TYPES=["calendar","trips","dates","recipes","gym","chores"];
+    const FP_TYPES=["calendar","trips","recipes","gym","chores"];
     let fpUid=null, fpBack=null, fpData=null, fpSent={};
     const fpIc={
       msg:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4c4.7 0 8.3 3.2 8.3 7.3s-3.6 7.3-8.3 7.3c-1.1 0-2.1-.2-3-.5L4.5 19.6l1.2-3.5a6.9 6.9 0 0 1-2-4.8C3.7 7.2 7.3 4 12 4z" fill="currentColor"/></svg>',
