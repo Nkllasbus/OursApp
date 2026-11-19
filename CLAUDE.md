@@ -21,11 +21,19 @@ Ours ist eine private Web-App für ein Paar bzw. eine WG (Niklas, GitHub `Nkllas
 - Jede Seite ist eine einzelne HTML-Datei im Hauptordner: `home` (Start), `rezepte`, `haushalt`, `budget`, `gym`, `kalender`, `reise`, `chat`, `feed`, `datenschutz`. `index.html` ist nur noch eine Weiterleitung auf `home.html` (behält `#friend-…`/`#join-…`). (Entfernt seit 19.11.2026: Dateideen und Mail – die Daten in Firebase unter `spaces/<dates-sid>/ideas` bleiben erhalten; der Kalender lädt sie nicht mehr. Räume und Smart Home kommen später.)
 - **`entwicklung/auth.js`** ist der gemeinsame Kern und steckt eingebettet in jeder Seite: Anmeldung, Bereiche (`spaces/<id>`), Seitenmenü, Einstellungen, Hell/Dunkel (`OursTheme`), Apple-Design-Schicht (Schrift, Farben, Drück-Gefühl, Haptik `OursHaptic`, Bögen, Seitenübergänge), Offline-Schicht (Zwischenspeicher `ofl:c:` + Warteschlange `ofl:outbox`, Daten sofort aus dem Speicher), Mitteilungen (`OursPush`), Kurzbefehle-Links, Freunde/Chat.
   - Nach Änderungen an `auth.js`: `python3 entwicklung/build.py` (baut es in alle Seiten ein und setzt eine neue Version in `version.json`).
-  - **Navigation (seit 12.11.2026, Stil wie Instagram/YouTube):** Leiste unten `#oursTabs` mit Home · Feed · Seiten (Raster `#pgMenu`, Liste `GRID`) · Chats (Zähler `#oursChatN`) · Du (Profilbild `#pfBtn`, Menü `#pfMenu` als Bogen). Kopfzeile schlicht (Hintergrund `--bg`, Titel links). `.wrap` endet über der Leiste (`--tab-h`). Kein Logo und kein schwebender Chat-Knopf mehr.
+  - **Navigation (seit 12.11.2026, Stil wie Instagram/YouTube):** Leiste unten `#oursTabs` mit Home · Feed · **+** (Bogen `#newMenu`, Liste `NEW`: Direkt-Links `<seite>.html?neu=1` – Kalender, Haushalt, Rezepte, Gym, Budget, Reisen öffnen damit gleich das Anlegen; Variable `ourNeu` in den Seiten) · Seiten (Raster `#pgMenu`, Liste `GRID`) · Chats (Zähler `#oursChatN`) · Du (Profilbild `#pfBtn`, Menü `#pfMenu` als Bogen). Kopfzeile schlicht (Hintergrund `--bg`, Titel links). `.wrap` endet über der Leiste (`--tab-h`). Kein Logo und kein schwebender Chat-Knopf mehr.
 - `sw.js`: Service Worker. Seiten zuerst aus dem Speicher, im Hintergrund aktualisieren. Bei Bild-/Dateiänderungen `CACHE` (z. B. `ours-v7`) hochzählen und denselben Namen in `auth.js` (Versionsprüfung, `caches.open(...)`) anpassen.
 - `entwicklung/cloudflare-worker.js`: aktueller Worker-Code (Rezept-Import, Nährwerte, Raumdesign mit Gemini, Bank über Enable Banking `fin-*`, Mitteilungen `push-*`, Cron für Erinnerungen und neue Umsätze).
 - `entwicklung/firebase/regeln.json`: aktuelle Firebase-Regeln (Bereiche generisch über `spaces/$sid/access`).
 - `app/` + `.github/workflows/ios-app.yml`: iPhone-App mit Capacitor 7. Lädt live `home.html` (server.url), Plugins: Haptics, LocalNotifications, Keyboard. GitHub Actions baut bei Änderungen in `app/` eine unsignierte IPA und legt sie als Release `app-neueste` ab. (macOS-Runner werden manchmal nach 15 Min. Wartezeit abgebrochen – dann einfach erneut anstoßen.)
+
+## Verknüpfungen zwischen den Seiten (Stand 19.11.2026)
+- Home „Alles für heute“: Termine, Training, Haushalt, Budget-Rest, Reise; plant lokale Erinnerungen.
+- Kalender zeigt: Gym-Plan, **Haushalt** (eigene Aufgaben, heute abhakbar → gleiche Felder/Punkte wie `haushalt.html` `complete()`), Reisen (Zeitraum + Plan mit Uhrzeit), Budget (Verträge, Gehalt, Käufe, Einnahmen aus `users/<uid>/home/budget`).
+- Rezepte → „Kochen planen“ (`#cookModal`): Termin `spaces/<kal>/events` (mit `recipe`) + Essen-Tagebuch `users/<uid>/meals/<datum>/<lunch|dinner>`.
+- Gym: Essen-Tagebuch aus Rezepten; **Kosten pro Training** aus `home/budget/cons` (Studio-Erkennung `GYM_RX`).
+- Reisen → Kosten: eigene Abbuchungen im Reisezeitraum aus `home/budget/buys` übernehmen (Feld `bank` verhindert Doppelte).
+- Feed/Freundesprofil/Chat: Rezepte, Trainings, geteilte Termine.
 
 ## Daten (Firebase)
 - `spaces/<sid>/…` gemeinsame Bereiche je Seite (`users/<uid>/spaces/<typ>` zeigt auf den Bereich). Typen: dates, recipes, chores, budget, gym, calendar, trips.
