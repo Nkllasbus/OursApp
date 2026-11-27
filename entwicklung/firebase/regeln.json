@@ -27,7 +27,7 @@
       "$to": {
         ".read": "auth != null && auth.uid === $to",
         "$from": {
-          ".write": "auth != null && (auth.uid === $from || auth.uid === $to)"
+          ".write": "auth != null && (auth.uid === $from || (auth.uid === $to && !newData.exists()))"
         }
       }
     },
@@ -35,7 +35,7 @@
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         "$f": {
-          ".write": "auth != null && (auth.uid === $uid || (auth.uid === $f && (!newData.exists() || root.child('requests').child($f).child($uid).exists() || root.child('requests').child($uid).child($f).exists())))"
+          ".write": "auth != null && (auth.uid === $uid || (auth.uid === $f && (!newData.exists() || root.child('requests').child($f).child($uid).exists())))"
         }
       }
     },
