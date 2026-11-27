@@ -12,7 +12,7 @@
         ".write": "auth != null && data.child('access').child(auth.uid).exists()",
         "access": {
           "$uid": {
-            ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.isString() && (!root.child('spaces').child($sid).exists() || root.child('spaces').child($sid).child('invites').child(newData.val()).exists())"
+            ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.isString() && (!root.child('spaces').child($sid).exists() || root.child('spaces').child($sid).child('invites').child(newData.val()).exists() || (newData.val().beginsWith('g:') && root.child('groups').child(newData.val().replace('g:','')).child('spaceIds').child($sid).exists() && root.child('groups').child(newData.val().replace('g:','')).child('members').child(auth.uid).exists() && (root.child('groups').child(newData.val().replace('g:','')).child('members').child(auth.uid).child('role').val() === 'adult' || (root.child('groups').child(newData.val().replace('g:','')).child('spaceIds').child($sid).child('adults').val() !== true && (!root.child('groups').child(newData.val().replace('g:','')).child('spaceIds').child($sid).child('owner').exists() || root.child('groups').child(newData.val().replace('g:','')).child('spaceIds').child($sid).child('owner').val() === auth.uid)))))"
           }
         }
       }
@@ -100,6 +100,31 @@
         "$cid": {
           ".write": "auth != null && (auth.uid === $uid || (($cid.beginsWith(auth.uid + '_') || $cid.endsWith('_' + auth.uid)) && ($cid.beginsWith($uid + '_') || $cid.endsWith('_' + $uid))))"
         }
+      }
+    },
+    "groups": {
+      "$gid": {
+        ".read": "auth != null && data.child('members').child(auth.uid).exists()",
+        ".write": "auth != null && ((!data.exists() && newData.child('members').child(auth.uid).child('role').val() === 'adult') || data.child('members').child(auth.uid).child('role').val() === 'adult')",
+        "members": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && ((!data.exists() && root.child('groupInvites').child(newData.child('code').val()).child('gid').val() === $gid && root.child('groupInvites').child(newData.child('code').val()).child('role').val() === newData.child('role').val() && root.child('groupInvites').child(newData.child('code').val()).child('exp').val() > now) || !newData.exists())"
+          }
+        }
+      }
+    },
+    "groupIndex": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$gid": {
+          ".write": "auth != null && (auth.uid === $uid || root.child('groups').child($gid).child('members').child(auth.uid).child('role').val() === 'adult')"
+        }
+      }
+    },
+    "groupInvites": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && ((!data.exists() && root.child('groups').child(newData.child('gid').val()).child('members').child(auth.uid).child('role').val() === 'adult') || (data.exists() && !newData.exists() && root.child('groups').child(data.child('gid').val()).child('members').child(auth.uid).child('role').val() === 'adult'))"
       }
     }
   }

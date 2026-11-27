@@ -89,9 +89,3 @@ final class Session {
     }
 }
 
-extension DatabaseReference {
-    /// Speichern ohne auf die Antwort zu warten (offline landet es in der Warteschlange)
-    func put(_ value: Any?) {
-        setValue(value) { _, _ in }
-    }
-}

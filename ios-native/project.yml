@@ -28,6 +28,9 @@ targets:
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIUserInterfaceStyle: Light
         ITSAppUsesNonExemptEncryption: false
+        CFBundleURLTypes:
+          - CFBundleURLName: de.nkllasbus.ours
+            CFBundleURLSchemes: [ours]
         NSCameraUsageDescription: "Ours braucht die Kamera, um Fotos von Rezepten, Etiketten oder für dein Profilbild aufzunehmen."
         NSPhotoLibraryUsageDescription: "Ours braucht Zugriff auf deine Fotos, damit du Bilder für Rezepte und dein Profil auswählen kannst."
         NSLocationWhenInUseUsageDescription: "Ours nutzt deinen Standort, um Läden in deiner Nähe zu finden."

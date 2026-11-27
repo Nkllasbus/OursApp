@@ -60,3 +60,11 @@ extension Color {
                   opacity: 1)
     }
 }
+
+extension Color {
+    /// Farbe aus „#RRGGBB“
+    init(hexString: String) {
+        let h = hexString.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+        self.init(hex: UInt32(h, radix: 16) ?? 0x2F72C4)
+    }
+}

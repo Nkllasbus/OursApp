@@ -23,6 +23,24 @@ struct MeView: View {
                     }
                 }
 
+                Section {
+                    NavigationLink {
+                        GroupsView()
+                    } label: {
+                        Label {
+                            Text("Gruppen")
+                        } icon: {
+                            Image(systemName: "person.3.fill")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .frame(width: 29, height: 29)
+                                .background(Color.green, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                        }
+                    }
+                } footer: {
+                    Text("Paar, Familie oder WG: Mit wem du Kalender, Listen und mehr teilst.")
+                }
+
                 Section("Allgemein") {
                     row("Freunde", symbol: "person.2.fill", color: .blue)
                     row("Mitteilungen", symbol: "bell.badge.fill", color: .red)
