@@ -40,7 +40,7 @@ struct BudgetView: View {
         .background(Color(.systemGroupedBackground))
         .refreshable { await store.refresh() }
         .navigationTitle("Budget")
-        .tint(OursPage.budget.color)
+        .tint(Color(.systemGreen))
         .task { if let uid = session.uid { await store.start(uid: uid) } }
         .onChange(of: tab) { UserDefaults.standard.set(tab.rawValue, forKey: "budget.tab") }
         .sensoryFeedback(.selection, trigger: tab)
@@ -119,7 +119,7 @@ struct BudgetHomeView: View {
                         HStack(spacing: 12) {
                             Image(systemName: a.kind == "depot" ? "chart.line.uptrend.xyaxis" : "building.columns.fill")
                                 .foregroundStyle(.white).frame(width: 38, height: 38)
-                                .background(OursPage.budget.color, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .background(a.isPayPal ? Color(.systemBlue) : Color(.systemGreen), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(a.name).font(.body.weight(.semibold)).foregroundStyle(.primary)
                                 Text(a.subtitle).font(.caption).foregroundStyle(.secondary)
@@ -204,10 +204,10 @@ struct TxRow: View {
     var body: some View {
         let c = store.cat(tx), name = store.label(tx)
         HStack(spacing: 12) {
-            Text(String(name.prefix(1)).uppercased())
-                .font(.headline).foregroundStyle(.white)
+            Image(systemName: store.symbol(c))
+                .font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
                 .frame(width: 38, height: 38)
-                .background(Color(hex: store.color(c)), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .background(store.tint(c), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 6) {
                     Text(name).font(.body.weight(.medium)).lineLimit(1)
@@ -243,7 +243,7 @@ struct MonthCard: View {
                 HStack(spacing: 16) {
                     Chart(cats, id: \.key) { c in
                         SectorMark(angle: .value("Betrag", c.value), innerRadius: .ratio(0.62), angularInset: 1.5)
-                            .foregroundStyle(Color(hex: store.color(c.key)))
+                            .foregroundStyle(store.tint(c.key))
                     }
                     .frame(width: 130, height: 130)
                     .overlay {
@@ -255,7 +255,7 @@ struct MonthCard: View {
                     VStack(alignment: .leading, spacing: 6) {
                         ForEach(cats.prefix(6), id: \.key) { c in
                             HStack(spacing: 6) {
-                                Circle().fill(Color(hex: store.color(c.key))).frame(width: 8, height: 8)
+                                Circle().fill(store.tint(c.key)).frame(width: 8, height: 8)
                                 Text(c.key).font(.caption).lineLimit(1)
                                 Spacer(minLength: 4)
                                 Text(Money.text(c.value)).font(.caption.weight(.semibold).monospacedDigit())
@@ -293,7 +293,7 @@ struct InOutCard: View {
                         .foregroundStyle(by: .value("Art", b.kind))
                         .cornerRadius(4)
                 }
-                .chartForegroundStyleScale(["Einnahmen": Color.green, "Ausgaben": Color.red.opacity(0.75)])
+                .chartForegroundStyleScale(["Einnahmen": Color(.systemGreen), "Ausgaben": Color(.systemRed)])
                 .frame(height: 180)
             }
         }
@@ -424,7 +424,7 @@ struct TxSheet: View {
                     Section("Kategorie") {
                         Picker("Kategorie", selection: $cat) {
                             ForEach(store.catList, id: \.self) { c in
-                                Label { Text(c) } icon: { Circle().fill(Color(hex: store.color(c))).frame(width: 10, height: 10) }.tag(c)
+                                Label { Text(c) } icon: { Circle().fill(store.tint(c)).frame(width: 10, height: 10) }.tag(c)
                             }
                         }
                         .pickerStyle(.navigationLink)

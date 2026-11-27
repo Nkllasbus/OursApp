@@ -214,6 +214,8 @@ html,body{height:100%}
 :root{--logo-bg:#232428}
 
 /* ===== Neues Budget: Konten, Umsätze, Verträge, Budgets ===== */
+.pdsel{display:block;margin-top:4px;color:var(--muted)}
+.pdsel select{font:inherit;border:0;background:rgba(118,118,128,.12);border-radius:8px;padding:2px 6px;margin:0 2px;color:var(--ink)}
 .alltx{display:block;width:100%;margin-top:10px;border:0;border-radius:999px;background:rgba(118,118,128,.12);color:var(--accent);font-weight:600;padding:11px 14px}
 .txday{margin:12px 4px 6px;font-size:.78rem;font-weight:600;color:var(--muted)}
 .txback{display:block;align-self:flex-start;margin-right:auto;text-align:left;border:0;background:none;color:var(--accent);font:inherit;font-weight:600;font-size:1rem;padding:2px 0 10px;cursor:pointer}
@@ -2641,14 +2643,14 @@ function renderBud(){
 /* ---------- Budgets: Gehalt einteilen ----------
    Zeitraum = vom letzten Gehalt bis zum Tag vor dem nächsten (ohne erkanntes Gehalt: Kalendermonat).
    Budgets gelten pro Kategorie für diesen Zeitraum und zählen alle Ausgaben der Kategorie (auch Verträge). */
+// Budget-Zeitraum: vom Stichtag bis zum Tag davor im nächsten Monat (Standard: 1. bis Monatsende), fin.meta.periodDay
+const periodDay=()=>Math.min(28,Math.max(1,+(fin.meta&&fin.meta.periodDay)||1));
 function salaryInfo(){
   const t0=new Date(); t0.setHours(0,0,0,0); const today=iso(t0);
   const sal=allTx().filter(t=>t.amount>0&&!t.ex&&catOf(t)==="Gehalt"&&t.date<=today).sort((a,b)=>b.date.localeCompare(a.date));
-  const last=sal[0]&&(t0-fromIso(sal[0].date))/864e5<=40?sal[0]:null, nx=nextPayday();
-  let start, end;
-  if(last){ start=last.date; const ld=fromIso(last.date), e=nx?new Date(nx.date):new Date(ld.getFullYear(),ld.getMonth()+1,ld.getDate()); e.setDate(e.getDate()-1); end=iso(e); }
-  else { start=iso(new Date(t0.getFullYear(),t0.getMonth(),1)); end=iso(new Date(t0.getFullYear(),t0.getMonth()+1,0)); }
-  if(end<today) end=today;
+  const last=sal[0]&&(t0-fromIso(sal[0].date))/864e5<=40?sal[0]:null, nx=nextPayday(), pd=periodDay();
+  let s0=new Date(t0.getFullYear(),t0.getMonth(),pd); if(t0<s0) s0=new Date(t0.getFullYear(),t0.getMonth()-1,pd);
+  const start=iso(s0), end=iso(new Date(s0.getFullYear(),s0.getMonth()+1,pd-1));
   const auto=last?last.amount:nx?nx.amount:0, manual=fin.meta&&fin.meta.salaryAmt||0;
   return {start,end,amount:manual||auto,auto,manual:!!manual,fromSalary:!!last,daysLeft:Math.max(1,Math.round((fromIso(end)-t0)/864e5)+1)};
 }
@@ -2675,7 +2677,8 @@ function renderPlan(){
     <div class="inc-list"><button type="button" class="inc-row" data-plansal><span>💰 ${si.fromSalary?"Gehalt":"Einkommen"}${si.manual?" (eigener Betrag)":""}</span><b class="num">${si.amount?money(si.amount):"eintragen"}</b><i>›</i></button>
       ${inc.ex.map(x=>`<button type="button" class="inc-row" data-inc="${esc(x.id)}"><span>➕ ${esc(x.n||"Einnahme")}<small>${x.m?"jeden Monat":"nur dieser Zeitraum"}</small></span><b class="num">${money(x.a)}</b><i>›</i></button>`).join("")}
       <button type="button" class="inc-add" data-inc="">+ Weitere Einnahme hinzufügen</button></div>
-    <p class="hint">${si.fromSalary?"Zeitraum":"Monat"} ${fmt(si.start)} – ${fmt(si.end)} · noch ${si.daysLeft} ${si.daysLeft===1?"Tag":"Tage"}${si.manual?" · Betrag von dir eingetragen":""}</p>
+    <p class="hint">Zeitraum ${fmt(si.start)} – ${fmt(si.end)} · noch ${si.daysLeft} ${si.daysLeft===1?"Tag":"Tage"}${si.manual?" · Betrag von dir eingetragen":""}
+      <label class="pdsel">Beginnt am <select data-periodday>${Array.from({length:28},(_,i)=>`<option value="${i+1}"${periodDay()===i+1?" selected":""}>${i+1}.</option>`).join("")}</select>${periodDay()===1?" (ganzer Monat)":` (bis zum ${periodDay()-1}.)`}</label></p>
     <div class="plan-tiles"><div><span>Eingeteilt</span><b class="num">${money(planned)}</b></div><div><span>Ausgegeben</span><b class="num">${money(spentB)}</b></div>
       <div class="${free<0?"neg":""}"><span>${free<0?"Zu viel eingeteilt":"Noch frei"}</span><b class="num">${money(Math.abs(free))}</b></div></div>
     ${inc.total?`<div class="plan-bar" aria-hidden="true"><i style="width:${Math.min(100,planned/inc.total*100)}%"></i></div>`:""}</div>`;
@@ -3256,6 +3259,7 @@ $("#sheetModal").addEventListener("click",e=>{
     fin.accounts[id]=a; finRef("accounts/"+id).set(a).catch(showErr); closeSheet(); render(); return; }
   if(t.closest("#csvGo")) return importCsv();
 });
+document.addEventListener("change",e=>{ const pd=e.target.closest("[data-periodday]"); if(!pd) return; const v=Math.min(28,Math.max(1,+pd.value||1)); fin.meta=fin.meta||{}; fin.meta.periodDay=v===1?null:v; finRef("meta/periodDay").set(v===1?null:v).catch(showErr); render(); budgetPush(); });
 document.addEventListener("change",e=>{ if(e.target.id!=="salaryShift") return; fin.meta=fin.meta||{}; fin.meta.salaryShift=e.target.checked; finRef("meta/salaryShift").set(e.target.checked).catch(showErr); render(); });
 $("#sheetModal").addEventListener("change",e=>{ const m=e.target.closest("[data-map]"); if(m&&csv){ csv.map[m.dataset.map]=+m.value; csvSheet(); } });
 $("#csvFile").addEventListener("change",async e=>{

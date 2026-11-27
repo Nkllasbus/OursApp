@@ -10,6 +10,7 @@ struct BudgetPlanView: View {
     @State private var editSalary = false
     @State private var editIncome: ExtraIncome?
     @State private var newIncome = false
+    @State private var editPeriod = false
 
     var body: some View {
         let si = store.salaryInfo(), spend = store.periodSpend(si), inc = store.income(si)
@@ -45,8 +46,13 @@ struct BudgetPlanView: View {
                     }
                 }
                 Button { newIncome = true } label: { Label("Weitere Einnahme hinzufügen", systemImage: "plus").font(.subheadline.weight(.semibold)) }
-                Text("\(si.fromSalary ? "Zeitraum" : "Monat") \(Gym.date(si.start).formatted(.dateTime.day().month())) – \(Gym.date(si.end).formatted(.dateTime.day().month())) · noch \(si.daysLeft) \(si.daysLeft == 1 ? "Tag" : "Tage")")
+                Button { editPeriod = true } label: {
+                    HStack(spacing: 4) {
+                        Text("Zeitraum \(Gym.date(si.start).formatted(.dateTime.day().month())) – \(Gym.date(si.end).formatted(.dateTime.day().month())) · noch \(si.daysLeft) \(si.daysLeft == 1 ? "Tag" : "Tage")")
+                        Image(systemName: "chevron.right").font(.caption2)
+                    }
                     .font(.caption).foregroundStyle(.secondary)
+                }
                 HStack(spacing: 8) {
                     StatTile(value: Money.text(planned), label: "Eingeteilt")
                     StatTile(value: Money.text(spentB), label: "Ausgegeben")
@@ -81,6 +87,7 @@ struct BudgetPlanView: View {
         .sheet(isPresented: $editSalary) { SalarySheet(store: store) }
         .sheet(item: $editIncome) { x in IncomeSheet(store: store, income: x) }
         .sheet(isPresented: $newIncome) { IncomeSheet(store: store, income: nil) }
+        .sheet(isPresented: $editPeriod) { PeriodSheet(store: store) }
     }
 }
 
@@ -95,11 +102,12 @@ struct BudgetRow: View {
 
     var body: some View {
         let lv = budget == 0 ? 0 : spent >= budget ? 2 : Double(spent) >= Double(budget) * 0.8 ? 1 : 0
-        let col: Color = lv == 2 ? .red : lv == 1 ? .orange : Color(hex: store.color(cat))
+        let col: Color = lv == 2 ? Color(.systemRed) : lv == 1 ? Color(.systemOrange) : store.tint(cat)
         let left = budget - spent
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Circle().fill(Color(hex: store.color(cat))).frame(width: 9, height: 9)
+            HStack(spacing: 10) {
+                Image(systemName: store.symbol(cat)).font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
+                    .frame(width: 28, height: 28).background(store.tint(cat), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
                 Text(cat).foregroundStyle(.primary)
                 Spacer()
                 Text(Money.text(spent)).bold().foregroundStyle(.primary)
@@ -145,7 +153,7 @@ struct CategorySheet: View {
                             Text(b > 0 ? "von \(Money.text(b)) Budget" : "ausgegeben").foregroundStyle(.secondary)
                         }
                         if b > 0 {
-                            ProgressView(value: min(1, Double(v) / Double(b))).tint(v >= b ? .red : Color(hex: store.color(cat)))
+                            ProgressView(value: min(1, Double(v) / Double(b))).tint(v >= b ? .red : store.tint(cat))
                             Text(v >= b ? "\(Money.text(v - b)) über dem Budget" : "Noch \(Money.text(b - v)) frei")
                                 .font(.subheadline.weight(v >= b ? .semibold : .regular)).foregroundStyle(v >= b ? Color.red : Color.secondary)
                         }
@@ -345,6 +353,7 @@ struct BudgetEditSheet: View {
 struct ContractsView: View {
     let store: BudgetStore
     @State private var open: Contract?
+    @State private var add = false
 
     var body: some View {
         let list = store.contracts()
@@ -353,15 +362,19 @@ struct ContractsView: View {
             Card {
                 Text("VERTRÄGE & ABOS").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 Text("\(Money.text(pm)) pro Monat").font(.system(size: 30, weight: .bold))
-                Text("\(list.count) erkannt aus wiederkehrenden Abbuchungen").font(.caption).foregroundStyle(.secondary)
+                Text("\(list.count) Verträge · erkannt aus wiederkehrenden Abbuchungen oder von dir eingetragen").font(.caption).foregroundStyle(.secondary)
+                if store.budgetSid != nil {
+                    Button { add = true } label: { Label("Vertrag hinzufügen", systemImage: "plus").frame(maxWidth: .infinity) }
+                        .buttonStyle(.bordered).buttonBorderShape(.capsule)
+                }
             }
             if list.isEmpty { Text("Noch keine wiederkehrenden Abbuchungen erkannt.").foregroundStyle(.secondary) }
             ForEach(list) { c in
                 Button { open = c } label: {
                     HStack(spacing: 12) {
-                        Text(String(c.name.prefix(1)).uppercased()).font(.headline).foregroundStyle(.white)
+                        Image(systemName: store.symbol(c.cat)).font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
                             .frame(width: 38, height: 38)
-                            .background(Color(hex: store.color(c.cat)), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .background(store.tint(c.cat), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                         VStack(alignment: .leading, spacing: 2) {
                             HStack(spacing: 6) {
                                 Text(c.name).font(.body.weight(.semibold)).foregroundStyle(.primary).lineLimit(1)
@@ -379,7 +392,11 @@ struct ContractsView: View {
                 .buttonStyle(PressStyle())
             }
         }
-        .sheet(item: $open) { c in ContractSheet(store: store, contract: c) }
+        .sheet(item: $open) { c in
+            if let id = c.manualID { ContractEditSheet(store: store, id: id, raw: store.recurring[id]) }
+            else { ContractSheet(store: store, contract: c) }
+        }
+        .sheet(isPresented: $add) { ContractEditSheet(store: store, id: nil, raw: nil) }
     }
 }
 
@@ -405,7 +422,7 @@ struct ContractSheet: View {
                     ForEach(contract.txs) { t in TxRow(store: store, tx: t, showDate: true).listRowInsets(EdgeInsets()) }
                 }
                 Section {
-                    Button("Ist kein Vertrag – ausblenden", role: .destructive) { store.hideContract(contract); dismiss() }
+                    Button("Ist kein Vertrag – entfernen", role: .destructive) { store.hideContract(contract); dismiss() }
                 }
             }
             .navigationTitle(contract.name)
@@ -456,7 +473,7 @@ struct BudgetStatsView: View {
                                 Text(Money.text(c.value)).bold().monospacedDigit().foregroundStyle(.primary)
                             }
                             GeometryReader { g in
-                                Capsule().fill(Color(hex: store.color(c.key)))
+                                Capsule().fill(store.tint(c.key))
                                     .frame(width: max(6, g.size.width * CGFloat(c.value) / CGFloat(mx)), height: 7)
                             }
                             .frame(height: 7)
@@ -477,6 +494,106 @@ struct BudgetStatsView: View {
                 .navigationBarTitleDisplayMode(.inline)
             }
             .presentationDetents([.medium, .large])
+        }
+    }
+}
+
+/// Budget-Zeitraum: ab welchem Tag ein Monat beginnt
+struct PeriodSheet: View {
+    let store: BudgetStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var day = 1
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Picker("Beginnt am", selection: $day) {
+                        ForEach(1...28, id: \.self) { d in Text("\(d).").tag(d) }
+                    }
+                    .pickerStyle(.wheel)
+                } footer: {
+                    Text(day == 1 ? "Dein Budget gilt immer vom 1. bis zum Monatsende." : "Dein Budget gilt immer vom \(day). bis zum \(day - 1). des nächsten Monats – praktisch, wenn dein Gehalt z. B. am \(day). kommt.")
+                }
+            }
+            .navigationTitle("Zeitraum")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { Button("Sichern") { store.setPeriodDay(day); dismiss() } }
+            }
+            .onAppear { day = store.periodDay }
+        }
+        .presentationDetents([.medium])
+    }
+}
+
+/// Vertrag von Hand (spaces/<budget>/recurring/<id>): {amount, name, kind, every, start, cat}
+struct ContractEditSheet: View {
+    let store: BudgetStore
+    let id: String?
+    let raw: [String: Any]?
+    @Environment(\.dismiss) private var dismiss
+    @State private var name = ""
+    @State private var amount = ""
+    @State private var kind = "abo"
+    @State private var every = "month"
+    @State private var start = Date()
+    @State private var cat = "Medien & Abos"
+    @State private var confirmDelete = false
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Name, z. B. Netflix, Miete, Handy", text: $name)
+                    HStack {
+                        TextField("0,00", text: $amount).keyboardType(.decimalPad).font(.title3.bold())
+                        Text("€").foregroundStyle(.secondary)
+                    }
+                }
+                Section {
+                    Picker("Art", selection: $kind) {
+                        Text("Abo").tag("abo")
+                        Text("Fixkosten").tag("fix")
+                    }
+                    .pickerStyle(.segmented)
+                    Picker("Wie oft", selection: $every) {
+                        Text("Wöchentlich").tag("week"); Text("Monatlich").tag("month")
+                        Text("Vierteljährlich").tag("quarter"); Text("Jährlich").tag("year")
+                    }
+                    DatePicker("Erste bzw. nächste Abbuchung", selection: $start, displayedComponents: .date)
+                    Picker("Kategorie", selection: $cat) {
+                        ForEach(store.catList.filter { !BudgetCats.income.contains($0) && !BudgetCats.noSpend.contains($0) }, id: \.self) { Text($0).tag($0) }
+                    }
+                }
+                if id != nil {
+                    Section { Button("Vertrag löschen", role: .destructive) { confirmDelete = true } }
+                }
+            }
+            .navigationTitle(id == nil ? "Vertrag hinzufügen" : "Vertrag")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Sichern") {
+                        guard let c = Money.parse(amount) else { return }
+                        store.saveRecurring(id: id, name: name.trimmingCharacters(in: .whitespaces), cents: c, kind: kind, every: every, start: Gym.iso(start), cat: cat)
+                        dismiss()
+                    }
+                    .disabled(Money.parse(amount) == nil || name.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+            .confirmationDialog("Vertrag löschen?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                Button("Löschen", role: .destructive) { if let id { store.deleteRecurring(id) }; dismiss() }
+            }
+            .onAppear {
+                guard let r = raw else { return }
+                name = r["name"] as? String ?? ""
+                amount = String(format: "%.2f", DB.num(r["amount"]) / 100).replacingOccurrences(of: ".", with: ",")
+                kind = r["kind"] as? String ?? "abo"; every = r["every"] as? String ?? "month"
+                start = Gym.date(r["start"] as? String ?? Gym.iso(Date())); cat = r["cat"] as? String ?? "Sonstiges"
+            }
         }
     }
 }

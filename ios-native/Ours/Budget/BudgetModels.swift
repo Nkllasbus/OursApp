@@ -89,6 +89,7 @@ struct Contract: Identifiable, Hashable {
     let txs: [Transaction]
     let raise: (from: Int, to: Int)?
     let isNew: Bool
+    let manualID: String?
 
     static func == (a: Contract, b: Contract) -> Bool { a.key == b.key && a.avg == b.avg && a.next == b.next }
     func hash(into h: inout Hasher) { h.combine(key) }
@@ -138,5 +139,27 @@ enum BudgetCats {
     static let income: Set<String> = ["Gehalt", "Sonstige Einnahmen", "Rückzahlung"]
     static let palette: [UInt32] = [0x3F70B8, 0x3F9A5E, 0xD08440, 0x8A63B5, 0x3A93A3, 0xC7514A, 0xC09A35, 0xC25A86,
                                     0x5A5FB0, 0x2F9488, 0x7A9A3E, 0x8A67B8, 0xC0703C, 0x3D82B3, 0x98A1AD, 0xA07C3E]
+    /// Apple-Systemfarben und SF Symbols je Kategorie
+    static let style: [String: (color: Color, symbol: String)] = [
+        "Lebensmittel": (Color(.systemGreen), "cart.fill"),
+        "Essen gehen": (Color(.systemOrange), "fork.knife"),
+        "Wohnen": (Color(.systemBrown), "house.fill"),
+        "Mobilität": (Color(.systemBlue), "car.fill"),
+        "Shopping": (Color(.systemPink), "bag.fill"),
+        "Freizeit": (Color(.systemPurple), "ticket.fill"),
+        "Medien & Abos": (Color(.systemRed), "play.tv.fill"),
+        "Versicherung": (Color(.systemTeal), "shield.fill"),
+        "Gesundheit": (Color(.systemMint), "cross.case.fill"),
+        "Bildung": (Color(.systemIndigo), "book.fill"),
+        "Bargeld": (Color(.systemYellow), "banknote.fill"),
+        "Sparen & Investieren": (Color(.systemCyan), "chart.line.uptrend.xyaxis"),
+        "Gebühren & Zinsen": (Color(.systemGray), "percent"),
+        "Umbuchung": (Color(.systemGray2), "arrow.left.arrow.right"),
+        "Gehalt": (Color(.systemGreen), "briefcase.fill"),
+        "Sonstige Einnahmen": (Color(.systemTeal), "arrow.down.circle.fill"),
+        "Rückzahlung": (Color(.systemBlue), "arrow.uturn.backward"),
+        "Sonstiges": (Color(.systemGray), "ellipsis"),
+    ]
+    static let extraColors: [Color] = [Color(.systemIndigo), Color(.systemOrange), Color(.systemTeal), Color(.systemPink), Color(.systemPurple), Color(.systemBlue)]
     static let months = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
 }

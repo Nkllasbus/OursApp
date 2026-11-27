@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import FirebaseAuth
 import FirebaseDatabase
+import SwiftUI
 
 /// Privates Budget (users/<uid>/fin) – gleiche Rechenregeln wie budget.html
 @MainActor
@@ -20,6 +21,8 @@ final class BudgetStore {
     var aicat: [String: String] = [:]
     var adj: [String: BudgetAdjustment] = [:]
     var salaryManual = 0
+    var periodDay = 1
+    var recurring: [String: [String: Any]] = [:]
     var salaryShift = true
     var ppKeep: Set<String> = []
     var extraIncome: [ExtraIncome] = []
@@ -64,6 +67,11 @@ final class BudgetStore {
                 let v = snap.value
                 Task { @MainActor in self?.applyManual(v) }
             })))
+            let rc = db.child("spaces/\(sid)/recurring")
+            handles.append((rc, rc.observe(.value, with: { [weak self] snap in
+                let v = snap.value
+                Task { @MainActor in self?.recurring = DB.dict(v).mapValues { DB.dict($0) } }
+            })))
             let c = db.child("spaces/\(sid)/cats")
             handles.append((c, c.observe(.value, with: { [weak self] snap in
                 let v = snap.value
@@ -85,6 +93,7 @@ final class BudgetStore {
         adj = Dictionary(uniqueKeysWithValues: DB.dict(v["adj"]).compactMap { k, x in BudgetAdjustment.parse(k, x).map { (k, $0) } })
         let meta = DB.dict(v["meta"])
         salaryManual = Int(DB.num(meta["salaryAmt"]))
+        periodDay = min(28, max(1, Int(DB.num(meta["periodDay"])) == 0 ? 1 : Int(DB.num(meta["periodDay"]))))
         salaryShift = (meta["salaryShift"] as? Bool) != false
         ppKeep = Set(DB.dict(meta["ppKeep"]).filter { ($0.value as? Bool) == true }.map(\.key))
         extraIncome = DB.dict(meta["extraInc"]).compactMap { k, x in
@@ -124,11 +133,15 @@ final class BudgetStore {
 
     var catList: [String] { BudgetCats.base + customCats.filter { !BudgetCats.base.contains($0) } }
 
-    func color(_ c: String) -> UInt32 {
-        if c == "Sonstiges" { return 0x94A3B8 }
-        let l = catList, i = l.firstIndex(of: c) ?? l.count
-        return BudgetCats.palette[i % BudgetCats.palette.count]
+    /// iOS-Systemfarbe je Kategorie
+    func tint(_ c: String) -> Color {
+        if let s = BudgetCats.style[c] { return s.color }
+        let l = customCats, i = l.firstIndex(of: c) ?? 0
+        return BudgetCats.extraColors[i % BudgetCats.extraColors.count]
     }
+
+    /// SF-Symbol je Kategorie
+    func symbol(_ c: String) -> String { BudgetCats.style[c]?.symbol ?? "tag.fill" }
 
     private static let star = RX(#"\*\s*(.+)$"#)
     private static let purchase = RX(#"(?:ihr einkauf bei|einkauf bei|purchase at|zahlung an)\s+([^,.;]+)"#)
@@ -352,18 +365,12 @@ final class BudgetStore {
         let sal = allTx.filter { $0.amount > 0 && !$0.ex && cat($0) == "Gehalt" && $0.date <= todayS }.sorted { $0.date > $1.date }
         let last = sal.first.flatMap { s in t0.timeIntervalSince(Gym.date(s.date)) / 86400 <= 40 ? s : nil }
         let nx = nextPayday()
-        var start: String, end: String
-        if let last {
-            start = last.date
-            var e = nx?.date ?? cal.date(byAdding: .month, value: 1, to: Gym.date(last.date))!
-            e = cal.date(byAdding: .day, value: -1, to: e)!
-            end = Gym.iso(e)
-        } else {
-            let first = cal.date(from: cal.dateComponents([.year, .month], from: t0))!
-            start = Gym.iso(first)
-            end = Gym.iso(cal.date(byAdding: DateComponents(month: 1, day: -1), to: first)!)
-        }
-        if end < todayS { end = todayS }
+        // Zeitraum vom Stichtag bis zum Tag davor im nächsten Monat (Standard: ganzer Kalendermonat)
+        let monthStart = cal.date(from: cal.dateComponents([.year, .month], from: t0))!
+        var s0 = cal.date(byAdding: .day, value: periodDay - 1, to: monthStart)!
+        if t0 < s0 { s0 = cal.date(byAdding: .month, value: -1, to: s0)! }
+        let start = Gym.iso(s0)
+        let end = Gym.iso(cal.date(byAdding: .day, value: -1, to: cal.date(byAdding: .month, value: 1, to: s0)!)!)
         let auto = last?.amount ?? nx?.amount ?? 0
         let daysLeft = max(1, Int((Gym.date(end).timeIntervalSince(t0) / 86400).rounded()) + 1)
         return SalaryInfo(start: start, end: end, amount: salaryManual > 0 ? salaryManual : auto, fromSalary: last != nil,
@@ -435,9 +442,46 @@ final class BudgetStore {
             let base = raise?.to ?? avg
             out.append(Contract(key: kk, name: label(same.last!), cat: cat(same.last!), rhythm: r.0, rhythmLabel: r.3, avg: base,
                                 perMonth: Int((Double(base) * (Self.perMonthFactor[r.0] ?? 1)).rounded()), last: last, next: next,
-                                txs: Array(same.reversed()), raise: raise, isNew: isNew))
+                                txs: Array(same.reversed()), raise: raise, isNew: isNew, manualID: nil))
+        }
+        // von Hand eingetragene Verträge (spaces/<budget>/recurring, wie auf der Webseite)
+        for (id, r) in recurring {
+            guard (r["kind"] as? String) != "income", let start = r["start"] as? String else { continue }
+            let every = r["every"] as? String ?? "month", amount = Int(DB.num(r["amount"]))
+            let next = Self.nextDate(start: start, every: every) ?? Gym.date(start)
+            let label = ["week": "wöchentlich", "month": "monatlich", "quarter": "vierteljährlich", "year": "jährlich"][every] ?? "monatlich"
+            out.append(Contract(key: "rec_" + id, name: r["name"] as? String ?? "Vertrag", cat: r["cat"] as? String ?? "Sonstiges", rhythm: every,
+                                rhythmLabel: label, avg: amount, perMonth: Int((Double(amount) * (Self.perMonthFactor[every] ?? 1)).rounded()),
+                                last: Gym.date(start), next: next, txs: [], raise: nil, isNew: false, manualID: id))
         }
         return out.sorted { $0.perMonth > $1.perMonth }
+    }
+
+    /// nächste Fälligkeit ab heute (wie nextDate() auf der Webseite)
+    static func nextDate(start: String, every: String) -> Date? {
+        let cal = Calendar.current, t = cal.startOfDay(for: Date()), s = Gym.date(start)
+        if every == "week" {
+            var d = s
+            while d < t { d = cal.date(byAdding: .day, value: 7, to: d)! }
+            return d
+        }
+        let step = every == "year" ? 12 : every == "quarter" ? 3 : 1
+        for i in 0..<60 {
+            guard let d = cal.date(byAdding: .month, value: i * step, to: s) else { continue }
+            if d >= t { return d }
+        }
+        return nil
+    }
+
+    func saveRecurring(id: String?, name: String, cents: Int, kind: String, every: String, start: String, cat: String) {
+        guard let sid = budgetSid else { return }
+        let id = id ?? (String(Int(Date().timeIntervalSince1970 * 1000), radix: 36) + DB.randomID(4).lowercased())
+        db.child("spaces/\(sid)/recurring/\(id)").put(["amount": cents, "name": String(name.prefix(60)), "kind": kind, "every": every, "start": start, "cat": cat])
+    }
+
+    func deleteRecurring(_ id: String) {
+        guard let sid = budgetSid else { return }
+        db.child("spaces/\(sid)/recurring/\(id)").drop()
     }
 
     func pairInfo(_ t: Transaction) -> (with: Transaction?, kind: String)? {
@@ -648,6 +692,11 @@ final class BudgetStore {
         let si = salaryInfo()
         if si.manual { let saved = salaryManual; salaryManual = 0; let a = salaryInfo().amount; salaryManual = saved; return a }
         return si.amount
+    }
+
+    func setPeriodDay(_ d: Int) {
+        periodDay = min(28, max(1, d))
+        fin.child("meta/periodDay").put(periodDay == 1 ? nil : periodDay)
     }
 
     func setSalary(_ cents: Int?) {
