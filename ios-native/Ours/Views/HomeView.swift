@@ -2,7 +2,7 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(Session.self) private var session
-    @Binding var path: [OursPage]
+    @Binding var path: NavigationPath
 
     private var greeting: String {
         let h = Calendar.current.component(.hour, from: Date())
@@ -29,6 +29,7 @@ struct HomeView: View {
                 .padding(.bottom, 24)
             }
             .background(Color(.systemGroupedBackground))
+            .refreshable { try? await Task.sleep(nanoseconds: 500_000_000) }
             .navigationTitle("Ours")
             .navigationDestination(for: OursPage.self) { page in PageDestination(page: page) }
         }
@@ -90,6 +91,8 @@ struct PageDestination: View {
         switch page {
         case .gym:
             GymView()
+        case .budget:
+            BudgetView()
         default:
             ComingSoonView(title: page.label, symbol: page.symbol, color: page.color,
                            text: "\(page.label) wird gerade für die App neu gebaut. Bis dahin findest du es auf der Webseite.")

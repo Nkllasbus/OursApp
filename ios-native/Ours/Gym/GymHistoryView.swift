@@ -45,7 +45,7 @@ struct StatTile: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(value).font(.title2.bold()).foregroundStyle(OursPage.gym.color)
+            Text(value).font(.title2.bold()).foregroundStyle(.tint).lineLimit(1).minimumScaleFactor(0.5)
             Text(label).font(.caption).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

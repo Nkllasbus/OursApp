@@ -45,6 +45,7 @@ struct GymView: View {
                     .padding(.bottom, 30)
                 }
                 .background(Color(.systemGroupedBackground))
+                .refreshable { await store.reload() }
             }
         }
         .navigationTitle("Gym")

@@ -9,7 +9,7 @@ struct RootView: View {
     @State private var joinCode = ""
     @State private var showJoin = false
     @State private var showPages = false
-    @State private var homePath: [OursPage] = []
+    @State private var homePath = NavigationPath()
 
     var body: some View {
         // „Seiten“ wechselt nicht den Reiter, sondern öffnet das Popup
@@ -54,7 +54,7 @@ struct RootView: View {
         .sheet(isPresented: $showPages) {
             PagesSheet { page in
                 tab = .home
-                homePath = [page]
+                var p = NavigationPath(); p.append(page); homePath = p
             }
         }
         .sheet(isPresented: $showJoin) {

@@ -58,6 +58,15 @@ final class GymStore {
         handles.append((ref, h))
     }
 
+    /// Ziehen zum Aktualisieren: Daten neu verbinden
+    func reload() async {
+        if let s = sid { attach(s) } else {
+            let snap = try? await db.child("users/\(uid)/spaces/gym").getData()
+            if let s = snap?.value as? String, !s.isEmpty { attach(s) }
+        }
+        try? await Task.sleep(nanoseconds: 400_000_000)
+    }
+
     func stop() {
         for (r, h) in handles { r.removeObserver(withHandle: h) }
         handles = []
