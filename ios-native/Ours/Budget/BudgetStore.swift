@@ -110,9 +110,15 @@ final class BudgetStore {
         rebuild()
     }
 
+    /// Ziehen zum Aktualisieren: Stand direkt vom Server holen (nicht aus dem Zwischenspeicher), dann die Bank abfragen
     func refresh() async {
-        if !eb.isEmpty { await sync(manual: true) } else { try? await Task.sleep(nanoseconds: 400_000_000) }
+        if let snap = try? await fin.getData() { applyFin(snap.value) }
+        if !eb.isEmpty { await sync(manual: true) }
+        else { message = "Aktualisiert. Neuester Umsatz: \(newestText)." }
     }
+
+    var newestDate: String? { allTx.map(\.date).max() }
+    var newestText: String { newestDate.map { Gym.date($0).formatted(.dateTime.day().month().year()) } ?? "keiner" }
 
     // MARK: Kategorien (wie budget.html)
 
@@ -551,7 +557,7 @@ final class BudgetStore {
         guard !syncing, !eb.isEmpty else { return }
         syncing = true; message = nil
         defer { syncing = false }
-        var nNew = 0, got = 0, newest = "", errs: [String] = []
+        var nNew = 0, got = 0, newest = "", pend = 0, errs: [String] = []
         for (sk, s) in eb {
             let accs = accounts.values.filter { $0.session == sk }
             if accs.isEmpty { continue }
@@ -573,6 +579,7 @@ final class BudgetStore {
                     for t in list {
                         guard let date = t["date"] as? String else { continue }
                         if date > newest { newest = date }
+                        if (t["pending"] as? Bool) == true { pend += 1 }
                         let amount = Int(DB.num(t["amount"])), name = t["name"] as? String ?? "", text = t["text"] as? String ?? ""
                         let rawID = (t["id"] as? String) ?? Self.hashTx(date: date, amount: amount, name: name, text: text)
                         let id = String((a.id + "_" + rawID).replacingOccurrences(of: #"[.#$\[\]/\s]"#, with: "_", options: .regularExpression).prefix(120))
@@ -593,8 +600,10 @@ final class BudgetStore {
             }
         }
         fin.child("meta/lastSync").put(["at": DB.nowMs, "got": got, "newest": newest.isEmpty ? NSNull() as Any : newest])
+        let info = got > 0 ? " Die Bank hat \(got) Umsätze geschickt, der neueste ist vom \(Gym.date(newest).formatted(.dateTime.day().month().year()))\(pend > 0 ? " (\(pend) vorgemerkt)" : "")."
+                           : " Die Bank hat keine Umsätze geschickt."
         if let e = errs.first { message = e }
-        else if manual { message = nNew > 0 ? "\(nNew) neue Umsätze geladen." : "Keine neuen Umsätze." }
+        else if manual { message = (nNew > 0 ? "\(nNew) neue Umsätze geladen." : "Keine neuen Umsätze.") + info }
         await categorizeNew()
     }
 

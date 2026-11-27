@@ -113,6 +113,7 @@ struct BudgetHomeView: View {
                     }
                 }
                 Text(Money.text(total)).font(.system(size: 38, weight: .bold)).foregroundStyle(total < 0 ? Color.red : Color.primary)
+                Text("\(store.rawTx.count) Umsätze · neuester vom \(store.newestText)").font(.caption).foregroundStyle(.secondary)
                 ForEach(accs) { a in
                     NavigationLink(value: TxFilter(account: a.id)) {
                         HStack(spacing: 12) {

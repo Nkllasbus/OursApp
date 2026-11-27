@@ -10,6 +10,7 @@ struct OursApp: App {
         FirebaseConfig.configure()
         if FirebaseConfig.isReady {
             // Daten bleiben auf dem Gerät gespeichert: die App startet sofort und funktioniert offline
+            Database.database().persistenceCacheSizeBytes = 80 * 1024 * 1024   // viele Umsätze: großer Speicher
             Database.database().isPersistenceEnabled = true
         }
         _session = State(initialValue: Session())
