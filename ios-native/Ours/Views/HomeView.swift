@@ -29,6 +29,7 @@ struct HomeView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Ours")
+            .navigationDestination(for: OursPage.self) { page in PageDestination(page: page) }
         }
     }
 }
@@ -45,9 +46,6 @@ struct PageGrid: View {
                 }
                 .buttonStyle(PressStyle())
             }
-        }
-        .navigationDestination(for: OursPage.self) { page in
-            PageDestination(page: page)
         }
     }
 }

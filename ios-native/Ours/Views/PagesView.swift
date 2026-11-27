@@ -10,6 +10,7 @@ struct PagesView: View {
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Seiten")
+            .navigationDestination(for: OursPage.self) { page in PageDestination(page: page) }
         }
     }
 }

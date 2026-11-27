@@ -1,17 +1,21 @@
 import SwiftUI
 
 /// „Du“: Profil und Einstellungen wie in der Einstellungen-App
+/// Ziele im Reiter „Du“ – alle Links laufen über diese Liste (keine gemischten Link-Arten, sonst springt SwiftUI zurück)
+enum MeRoute: Hashable {
+    case profile, groups, group(String), soon(String)
+}
+
 struct MeView: View {
     @Environment(Session.self) private var session
     @State private var confirmLogout = false
+    @State private var path: [MeRoute] = []
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             List {
                 Section {
-                    NavigationLink {
-                        ProfileEditView()
-                    } label: {
+                    NavigationLink(value: MeRoute.profile) {
                         HStack(spacing: 14) {
                             Avatar(name: session.name, size: 56)
                             VStack(alignment: .leading, spacing: 2) {
@@ -24,9 +28,7 @@ struct MeView: View {
                 }
 
                 Section {
-                    NavigationLink {
-                        GroupsView()
-                    } label: {
+                    NavigationLink(value: MeRoute.groups) {
                         Label {
                             Text("Gruppen")
                         } icon: {
@@ -53,6 +55,14 @@ struct MeView: View {
                 }
             }
             .navigationTitle("Du")
+            .navigationDestination(for: MeRoute.self) { route in
+                switch route {
+                case .profile: ProfileEditView()
+                case .groups: GroupsView()
+                case .group(let id): GroupDetailView(gid: id)
+                case .soon(let title): ComingSoonView(title: title, symbol: "hammer", color: .accentColor, text: "Kommt in einer der nächsten Versionen.")
+                }
+            }
             .confirmationDialog("Wirklich abmelden?", isPresented: $confirmLogout, titleVisibility: .visible) {
                 Button("Abmelden", role: .destructive) { session.signOut() }
             }
@@ -60,9 +70,7 @@ struct MeView: View {
     }
 
     private func row(_ title: String, symbol: String, color: Color) -> some View {
-        NavigationLink {
-            ComingSoonView(title: title, symbol: symbol, color: color, text: "Kommt in einer der nächsten Versionen.")
-        } label: {
+        NavigationLink(value: MeRoute.soon(title)) {
             Label {
                 Text(title)
             } icon: {

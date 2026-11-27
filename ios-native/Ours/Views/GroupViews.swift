@@ -1,8 +1,6 @@
 import SwiftUI
 import UIKit
 
-struct GroupRef: Hashable { let id: String }
-
 /// Liste aller Gruppen (Du → Gruppen)
 struct GroupsView: View {
     @Environment(GroupStore.self) private var store
@@ -49,7 +47,7 @@ struct GroupsView: View {
             } else {
                 Section {
                     ForEach(store.groups) { g in
-                        NavigationLink(value: GroupRef(id: g.id)) { GroupRow(group: g) }
+                        NavigationLink(value: MeRoute.group(g.id)) { GroupRow(group: g) }
                     }
                 } footer: {
                     Text("Du kannst in mehreren Gruppen sein, z. B. mit deinem Partner und mit deiner Familie.")
@@ -57,7 +55,6 @@ struct GroupsView: View {
             }
         }
         .navigationTitle("Gruppen")
-        .navigationDestination(for: GroupRef.self) { ref in GroupDetailView(gid: ref.id) }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
