@@ -2650,7 +2650,10 @@ function salaryInfo(){
   const sal=allTx().filter(t=>t.amount>0&&!t.ex&&catOf(t)==="Gehalt"&&t.date<=today).sort((a,b)=>b.date.localeCompare(a.date));
   const last=sal[0]&&(t0-fromIso(sal[0].date))/864e5<=40?sal[0]:null, nx=nextPayday(), pd=periodDay();
   let s0=new Date(t0.getFullYear(),t0.getMonth(),pd); if(t0<s0) s0=new Date(t0.getFullYear(),t0.getMonth()-1,pd);
-  const start=iso(s0), end=iso(new Date(s0.getFullYear(),s0.getMonth()+1,pd-1));
+  let start=iso(s0); const end=iso(new Date(s0.getFullYear(),s0.getMonth()+1,pd-1));
+  // nach dem Umstellen des Starttags: erster Zeitraum schließt an den alten an (fin.meta.periodSince)
+  const since=fin.meta&&fin.meta.periodSince, prev=iso(new Date(s0.getFullYear(),s0.getMonth()-1,pd));
+  if(since&&since<start&&since>=prev) start=since;
   const auto=last?last.amount:nx?nx.amount:0, manual=fin.meta&&fin.meta.salaryAmt||0;
   return {start,end,amount:manual||auto,auto,manual:!!manual,fromSalary:!!last,daysLeft:Math.max(1,Math.round((fromIso(end)-t0)/864e5)+1)};
 }
@@ -3259,7 +3262,9 @@ $("#sheetModal").addEventListener("click",e=>{
     fin.accounts[id]=a; finRef("accounts/"+id).set(a).catch(showErr); closeSheet(); render(); return; }
   if(t.closest("#csvGo")) return importCsv();
 });
-document.addEventListener("change",e=>{ const pd=e.target.closest("[data-periodday]"); if(!pd) return; const v=Math.min(28,Math.max(1,+pd.value||1)); fin.meta=fin.meta||{}; fin.meta.periodDay=v===1?null:v; finRef("meta/periodDay").set(v===1?null:v).catch(showErr); render(); budgetPush(); });
+document.addEventListener("change",e=>{ const pd=e.target.closest("[data-periodday]"); if(!pd) return; const v=Math.min(28,Math.max(1,+pd.value||1)); if(v===periodDay()) return;
+  const since=salaryInfo().start; fin.meta=fin.meta||{}; fin.meta.periodDay=v===1?null:v; fin.meta.periodSince=since;
+  finRef("meta").update({periodDay:v===1?null:v,periodSince:since}).catch(showErr); render(); budgetPush(); });
 document.addEventListener("change",e=>{ if(e.target.id!=="salaryShift") return; fin.meta=fin.meta||{}; fin.meta.salaryShift=e.target.checked; finRef("meta/salaryShift").set(e.target.checked).catch(showErr); render(); });
 $("#sheetModal").addEventListener("change",e=>{ const m=e.target.closest("[data-map]"); if(m&&csv){ csv.map[m.dataset.map]=+m.value; csvSheet(); } });
 $("#csvFile").addEventListener("change",async e=>{
@@ -3288,7 +3293,7 @@ Auth.start(firebaseConfig,"budget",(r,info)=>{
   root.child("expenses").on("value",s=>{ exp=s.val()||{}; render(); });
   root.child("cats").on("value",s=>{ customCats=s.val()||{}; render(); if(form) renderFormChips(); });
   if(myUid){ let first=true;
-    finRef().on("value",s=>{ finLoaded=true; const v=s.val()||{}; fin={accounts:v.accounts||{},tx:v.tx||{},rules:v.rules||{},budgets:v.budgets||{},contracts:v.contracts||{},eb:v.eb||{},meta:v.meta||{},alias:v.alias||{},aicat:v.aicat||{},goals:v.goals||{},adj:v.adj||{}};
+    finRef().on("value",s=>{ finLoaded=true; { const m=(s.val()||{}).meta||{}; if(m.periodDay>1&&!m.periodSince){ const t=new Date(); let s0=new Date(t.getFullYear(),t.getMonth(),m.periodDay); if(t<s0) s0=new Date(t.getFullYear(),t.getMonth()-1,m.periodDay); finRef("meta/periodSince").set(iso(new Date(s0.getFullYear(),s0.getMonth(),1))).catch(()=>{}); } } const v=s.val()||{}; fin={accounts:v.accounts||{},tx:v.tx||{},rules:v.rules||{},budgets:v.budgets||{},contracts:v.contracts||{},eb:v.eb||{},meta:v.meta||{},alias:v.alias||{},aicat:v.aicat||{},goals:v.goals||{},adj:v.adj||{}};
       if(!document.querySelector("#sheetModal:not([hidden]) input:focus")) render();
       if(first){ first=false; if(ebBack) finishBank();
         const last=Math.max(0,...Object.values(fin.accounts).filter(a=>a&&a.src==="eb").map(a=>a.syncAt||0));

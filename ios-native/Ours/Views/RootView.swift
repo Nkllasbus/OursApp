@@ -51,12 +51,26 @@ struct RootView: View {
             tab = .me
             showJoin = true
         }
-        .sheet(isPresented: $showPages) {
-            PagesSheet { page in
-                tab = .home
-                var p = NavigationPath(); p.append(page); homePath = p
+        .overlay {
+            ZStack(alignment: .bottom) {
+                if showPages {
+                    Color.black.opacity(0.18)
+                        .ignoresSafeArea()
+                        .onTapGesture { showPages = false }
+                        .transition(.opacity)
+                    PagesPopup { page in
+                        showPages = false
+                        tab = .home
+                        var p = NavigationPath(); p.append(page); homePath = p
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 58)
+                    .transition(.scale(scale: 0.6, anchor: .bottom).combined(with: .opacity))
+                }
             }
+            .animation(.spring(response: 0.38, dampingFraction: 0.82), value: showPages)
         }
+        .sensoryFeedback(.impact(weight: .light), trigger: showPages)
         .sheet(isPresented: $showJoin) {
             JoinGroupSheet(initialCode: joinCode).environment(groups)
         }

@@ -388,6 +388,7 @@ struct TxSheet: View {
     @State private var remember = true
     @State private var exclude = false
     @State private var editManual = false
+    @State private var filled = false
 
     var body: some View {
         NavigationStack {
@@ -453,7 +454,8 @@ struct TxSheet: View {
                     }
                 }
             }
-            .onAppear { cat = store.cat(tx); name = store.label(tx); exclude = tx.ex }
+            // nur beim ersten Öffnen füllen – nach der Kategorie-Auswahl erscheint das Formular erneut
+            .onAppear { if !filled { filled = true; cat = store.cat(tx); name = store.label(tx); exclude = tx.ex } }
             .sheet(isPresented: $editManual, onDismiss: { dismiss() }) { ExpenseSheet(store: store, tx: tx) }
         }
     }

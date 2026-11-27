@@ -22,6 +22,7 @@ final class BudgetStore {
     var adj: [String: BudgetAdjustment] = [:]
     var salaryManual = 0
     var periodDay = 1
+    var periodSince: String?
     var recurring: [String: [String: Any]] = [:]
     var salaryShift = true
     var ppKeep: Set<String> = []
@@ -94,6 +95,14 @@ final class BudgetStore {
         let meta = DB.dict(v["meta"])
         salaryManual = Int(DB.num(meta["salaryAmt"]))
         periodDay = min(28, max(1, Int(DB.num(meta["periodDay"])) == 0 ? 1 : Int(DB.num(meta["periodDay"]))))
+        periodSince = meta["periodSince"] as? String
+        // vor dieser Version umgestellt: ersten Zeitraum ab dem 1. des Monats rechnen
+        if periodDay > 1 && periodSince == nil {
+            let s = Self.periodStart(day: periodDay)
+            let first = Gym.iso(Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: s))!)
+            periodSince = first
+            fin.child("meta/periodSince").put(first)
+        }
         salaryShift = (meta["salaryShift"] as? Bool) != false
         ppKeep = Set(DB.dict(meta["ppKeep"]).filter { ($0.value as? Bool) == true }.map(\.key))
         extraIncome = DB.dict(meta["extraInc"]).compactMap { k, x in
@@ -366,11 +375,12 @@ final class BudgetStore {
         let last = sal.first.flatMap { s in t0.timeIntervalSince(Gym.date(s.date)) / 86400 <= 40 ? s : nil }
         let nx = nextPayday()
         // Zeitraum vom Stichtag bis zum Tag davor im nächsten Monat (Standard: ganzer Kalendermonat)
-        let monthStart = cal.date(from: cal.dateComponents([.year, .month], from: t0))!
-        var s0 = cal.date(byAdding: .day, value: periodDay - 1, to: monthStart)!
-        if t0 < s0 { s0 = cal.date(byAdding: .month, value: -1, to: s0)! }
-        let start = Gym.iso(s0)
+        let s0 = Self.periodStart(day: periodDay)
+        var start = Gym.iso(s0)
         let end = Gym.iso(cal.date(byAdding: .day, value: -1, to: cal.date(byAdding: .month, value: 1, to: s0)!)!)
+        // nach dem Umstellen des Starttags schließt der erste Zeitraum an den alten an
+        let prev = Gym.iso(cal.date(byAdding: .month, value: -1, to: s0)!)
+        if let since = periodSince, since < start, since >= prev { start = since }
         let auto = last?.amount ?? nx?.amount ?? 0
         let daysLeft = max(1, Int((Gym.date(end).timeIntervalSince(t0) / 86400).rounded()) + 1)
         return SalaryInfo(start: start, end: end, amount: salaryManual > 0 ? salaryManual : auto, fromSalary: last != nil,
@@ -694,9 +704,20 @@ final class BudgetStore {
         return si.amount
     }
 
+    static func periodStart(day: Int) -> Date {
+        let cal = Calendar.current, t0 = cal.startOfDay(for: Date())
+        let monthStart = cal.date(from: cal.dateComponents([.year, .month], from: t0))!
+        var s0 = cal.date(byAdding: .day, value: day - 1, to: monthStart)!
+        if t0 < s0 { s0 = cal.date(byAdding: .month, value: -1, to: s0)! }
+        return s0
+    }
+
     func setPeriodDay(_ d: Int) {
-        periodDay = min(28, max(1, d))
-        fin.child("meta/periodDay").put(periodDay == 1 ? nil : periodDay)
+        let v = min(28, max(1, d))
+        guard v != periodDay else { return }
+        let since = salaryInfo().start
+        periodDay = v; periodSince = since
+        fin.child("meta").merge(["periodDay": v == 1 ? NSNull() as Any : v, "periodSince": since])
     }
 
     func setSalary(_ cents: Int?) {
