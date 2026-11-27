@@ -214,6 +214,9 @@ html,body{height:100%}
 :root{--logo-bg:#232428}
 
 /* ===== Neues Budget: Konten, Umsätze, Verträge, Budgets ===== */
+.alltx{display:block;width:100%;margin-top:10px;border:0;border-radius:999px;background:rgba(118,118,128,.12);color:var(--accent);font-weight:600;padding:11px 14px}
+.txday{margin:12px 4px 6px;font-size:.78rem;font-weight:600;color:var(--muted)}
+.txback{display:block;align-self:flex-start;margin-right:auto;text-align:left;border:0;background:none;color:var(--accent);font:inherit;font-weight:600;font-size:1rem;padding:2px 0 10px;cursor:pointer}
 .seg{flex:none;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:3px}
 .seg button{border:0;background:none;border-radius:9px;padding:7px 2px;font-size:.84rem;font-weight:600;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--accent);color:#16130b}
@@ -369,7 +372,7 @@ header{border-bottom:0!important}
 .rev{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:.88rem}
 .rev li{display:flex;gap:10px;align-items:flex-start}
 .sorter-h{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;color:var(--muted)}
-.seg{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;flex-wrap:nowrap!important}
+.seg{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;flex-wrap:nowrap!important}
 .seg>button{font-size:13px!important;padding:6px 2px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .inc-list{display:flex;flex-direction:column;margin-top:12px;background:var(--surface2,#f2f2f7);border-radius:14px;overflow:hidden}
 .inc-row{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:11px 12px;font:inherit;color:var(--ink);text-align:left;cursor:pointer;position:relative}
@@ -413,7 +416,7 @@ header{border-bottom:0!important}
   <div class="count foot-count" id="count">Verbindet …</div>
 
   <section class="panel">
-    <div class="seg" role="group" aria-label="Ansicht"><button type="button" data-view="home" aria-pressed="true">Übersicht</button><button type="button" data-view="plan" aria-pressed="false">Budgets</button><button type="button" data-view="tx" aria-pressed="false">Umsätze</button><button type="button" data-view="con" aria-pressed="false">Verträge</button><button type="button" data-view="stats" aria-pressed="false">Analyse</button></div>
+    <div class="seg" role="group" aria-label="Ansicht"><button type="button" data-view="home" aria-pressed="true">Übersicht</button><button type="button" data-view="con" aria-pressed="false">Verträge</button><button type="button" data-view="plan" aria-pressed="false">Budgets</button><button type="button" data-view="stats" aria-pressed="false">Analyse</button></div>
     <div class="topbar" id="monthBar">
       <div class="month" role="group" aria-label="Monat wählen">
         <button type="button" id="prevM" aria-label="Vorheriger Monat"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -2313,7 +2316,7 @@ function render(){
   document.querySelectorAll("[data-view]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.view===view));
   $("#monthBar").hidden=true;
   const nAcc=Object.keys(fin.accounts||{}).length, nTx=Object.keys(fin.tx||{}).length;
-  $("#count").textContent=nAcc?`${nAcc} ${nAcc===1?"Konto":"Konten"} · ${nTx} Umsätze`:"Budget";
+  $("#count").textContent=nAcc?`${nAcc} ${nAcc===1?"Konto":"Konten"} · ${nTx} ${nTx===1?"Umsatz":"Umsätze"}`:"Budget";
   const sc=$("#list"), top=sc.scrollTop, act=document.activeElement, keepQ=act&&act.id==="txQ";
   homeSummary();
   sc.innerHTML=view==="tx"?renderTx():view==="con"?renderCon():view==="stats"?renderStats():view==="plan"?renderPlan():renderHome();
@@ -2339,6 +2342,8 @@ function conRow(c){
     <span class="main"><b>${esc(c.name)}${c.raise?`<span class="tag" style="color:var(--minus);border-color:var(--minus)">+${money(c.raise.to-c.raise.from)}</span>`:""}${c.meta&&c.meta.cancelled?`<span class="tag">gekündigt</span>`:""}${c.isNew?`<span class="tag" style="color:var(--accent);border-color:var(--accent)">neu</span>`:""}</b><small>${c.next?`${dateLong(c.next)} · ${until(c.next)}`:"–"} · ${esc(c.rlabel)}</small></span>
     <span class="amt">${money(c.avg)}</span></button></li>`;
 }
+const dayLabel=d=>{ const t=new Date(); t.setHours(0,0,0,0); const x=fromIso(d), n=Math.round((t-x)/864e5);
+  return n===0?"Heute":n===1?"Gestern":x.toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"}); };
 function renderHome(){
   const accs=Object.entries(fin.accounts||{}).map(([id,a])=>({id,...a})), total=accs.reduce((a,x)=>a+(x.balance||0),0);
   let h="";
@@ -2349,11 +2354,21 @@ function renderHome(){
       <span class="total num" style="color:${total>=0?"var(--ink)":"var(--minus)"}">${money(total)}</span>
       <ul class="accrows">${accs.sort((a,b)=>(b.balance||0)-(a.balance||0)).map(a=>`<li><button type="button" class="accrow" data-acc="${esc(a.id)}"><span class="ico" style="background:${a.kind==="depot"?"#7c3aed":a.kind==="cash"?"#16a34a":"var(--band)"}">${a.kind==="depot"?"📈":a.kind==="cash"?"💶":"🏦"}</span>
         <span class="main"><b>${esc(a.name)}</b><small>${esc(a.bank||(a.kind==="depot"?"Depot":a.src==="csv"?"CSV-Import":"Manuell"))}</small></span><span class="amt" style="color:${(a.balance||0)<0?"var(--minus)":"var(--ink)"}">${a.balance!=null?money(a.balance):"–"}</span><span class="chev">›</span></button></li>`).join("")}
-        <li><button type="button" class="accrow add" data-fab="bank">+ Konto hinzufügen</button></li></ul></div>`;
+        <li><button type="button" class="accrow add" data-fab="bank">+ Konto hinzufügen</button></li></ul>
+      <button type="button" class="btn alltx" data-alltx>Alle Umsätze anzeigen</button></div>`;
   } else {
     h+=`<div class="hero"><span class="lbl">Deine Finanzen auf einen Blick</span><p class="hint" style="font-size:.9rem;color:var(--ink)">Verbinde dein Bankkonto oder importiere Umsätze als CSV.</p>
       <div class="fchips"><button class="btn primary" type="button" data-fab="bank">🏦 Konto verbinden</button><button class="btn" type="button" data-fab="csv">📄 CSV importieren</button></div>
       <div class="safe"><span>🔒</span><span>Deine Bank-Zugangsdaten gibst du nur auf der Seite deiner Bank ein. Ours bekommt nur Lesezugriff.</span></div></div>`;
+  }
+  // gleich nach den Konten: die neuesten Umsätze (Ausgaben und Eingänge), nach Tag gruppiert
+  const list=allTx().sort((a,b)=>b.date.localeCompare(a.date)||Math.abs(b.amount)-Math.abs(a.amount)).slice(0,12);
+  if(accs.length||list.length){
+    let lastD="", rows="";
+    list.forEach(t=>{ if(t.date!==lastD){ if(lastD) rows+="</ul>"; lastD=t.date; rows+=`<p class="txday">${esc(dayLabel(t.date))}</p><ul>`; } rows+=txRow(t); });
+    if(lastD) rows+="</ul>";
+    h+=`<div class="sec"><div class="sec-head"><h2>Umsätze</h2>${list.length?`<button class="note" type="button" data-alltx style="border:0;background:none;color:var(--accent);font-weight:600;cursor:pointer">Alle ›</button>`:""}</div>
+      ${rows||`<div class="empty">Noch keine Umsätze.</div>`}</div>`;
   }
   // Diagramme: Ausgaben diesen Monat nach Kategorie + rein/raus der letzten 6 Monate
   const tm=totals(now.getFullYear(),now.getMonth()), cats=Object.entries(tm.byCat).sort((a,b)=>(a[0]==="Sonstiges")-(b[0]==="Sonstiges")||b[1]-a[1]);
@@ -2362,10 +2377,6 @@ function renderHome(){
   if(hasBank()){ const months=[]; for(let i=5;i>=0;i--){ const x=new Date(now.getFullYear(),now.getMonth()-i,1), t=totals(x.getFullYear(),x.getMonth()); months.push({l:MONTHS[x.getMonth()].slice(0,3),inc:t.inc,out:t.out}); }
     h+=`<div class="chart-card"><div class="sec-head"><h2>Rein und raus</h2><span class="sum">letzte 6 Monate</span></div>${barsChart(months)}
       <div class="chart-leg"><span><i style="background:var(--plus)"></i>Einnahmen</span><span><i style="background:var(--minus)"></i>Ausgaben</span></div></div>`; }
-  // letzte 5 Ausgaben
-  const list=allTx().filter(t=>t.amount<0&&!t.ex).sort((a,b)=>b.date.localeCompare(a.date)||a.amount-b.amount).slice(0,5);
-  h+=`<div class="sec"><div class="sec-head"><h2>Letzte Ausgaben</h2><button class="note" type="button" data-view="tx" style="border:0;background:none;color:var(--accent);font-weight:600;cursor:pointer">Alle ›</button></div>
-    ${list.length?`<ul>${list.map(t=>txRow(t,true)).join("")}</ul>`:`<div class="empty">Noch keine Ausgaben.</div>`}</div>`;
   return h;
 }
 // Kurzinfo für die Startseite (users/<uid>/home/budget): Stand, Hinweise, fällige Zahlungen, Vorschau
@@ -2586,11 +2597,11 @@ function renderTx(){
   let list=allTx().filter(t=>!txAcc||t.acc===txAcc).filter(t=>txFilter==="all"||(txFilter==="out"?t.amount<0:txFilter==="back"?t.amount>0&&catOf(t)===BACK_CAT:t.amount>0&&catOf(t)!==BACK_CAT)).sort((a,b)=>b.date.localeCompare(a.date)||Math.abs(b.amount)-Math.abs(a.amount));
   if(ql) list=list.filter(t=>((t.name||"")+" "+(t.text||"")+" "+catOf(t)+" "+(t.amount/100).toFixed(2).replace(".",",")).toLowerCase().includes(ql));
   const fa=txAcc&&fin.accounts[txAcc], accs=Object.entries(fin.accounts||{});
-  let h=accs.length>1||fa?`<div class="fchips">${[["","Alle Konten"],...accs.map(([id,a])=>[id,a.name])].map(([id,l])=>`<button type="button" class="chip" data-txacc="${esc(id)}" aria-pressed="${(txAcc||"")===id}">${esc(l)}</button>`).join("")}</div>`:"";
+  let h=`<button type="button" class="txback" data-view="home">‹ Übersicht</button>`+(accs.length>1||fa?`<div class="fchips">${[["","Alle Konten"],...accs.map(([id,a])=>[id,a.name])].map(([id,l])=>`<button type="button" class="chip" data-txacc="${esc(id)}" aria-pressed="${(txAcc||"")===id}">${esc(l)}</button>`).join("")}</div>`:"");
   if(fa){ const sp=accSpent(txAcc); h+=`<div class="hero" style="padding:12px 14px;gap:6px"><div class="hero-row"><span class="lbl">${esc(fa.bank||"Konto")} · ${esc(fa.name)}</span><button class="sync" type="button" data-accset="${esc(txAcc)}">⚙️ Konto</button></div>
     <span class="total num" style="font-size:1.6rem!important">${fa.balance!=null?money(fa.balance):"–"}</span>${sp?`<span class="note">Ausgaben im ${MONTHS[now.getMonth()]}: ${money(sp)}</span>`:""}</div>`; }
   h+=`<input class="search" id="txQ" type="search" placeholder="Suchen: Name, Zweck, Betrag" value="${esc(q)}" autocomplete="off">
-    <div class="fchips">${[["all","Alle"],["out","Ausgaben"],["back","Rückzahlungen"],["in","Einnahmen"]].map(([k,l])=>`<button type="button" class="chip" data-txf="${k}" aria-pressed="${txFilter===k}">${l}</button>`).join("")}<span class="sum num" style="margin-left:auto;color:var(--muted);font-size:.82rem">${list.length} Umsätze</span></div>`;
+    <div class="fchips">${[["all","Alle"],["out","Ausgaben"],["back","Rückzahlungen"],["in","Einnahmen"]].map(([k,l])=>`<button type="button" class="chip" data-txf="${k}" aria-pressed="${txFilter===k}">${l}</button>`).join("")}<span class="sum num" style="margin-left:auto;color:var(--muted);font-size:.82rem">${list.length} ${list.length===1?"Umsatz":"Umsätze"}</span></div>`;
   if(!list.length) return h+`<div class="empty">${ql?"Nichts gefunden.":"Noch keine Umsätze."}</div>`;
   // nach Monat gruppiert, mit Summe pro Monat
   const shown=list.slice(0,txShown), sums={}; list.forEach(t=>{ if(t.ex) return; const c=catOf(t); if(NO_SPEND.has(c)) return; const k=effKey(t); sums[k]=sums[k]||{in:0,out:0,back:0}; if(t.amount>0){ if(c===BACK_CAT) sums[k].back+=t.amount; else sums[k].in+=t.amount; } else sums[k].out+=t.amount; });
@@ -3139,6 +3150,7 @@ document.addEventListener("click",e=>{
   const t=e.target;
   if(!t.closest("#fabMenu,#fab")&&$("#fab").getAttribute("aria-expanded")==="true") setFab(false);
   const f=t.closest("[data-fab]"); if(f){ setFab(false); const k=f.dataset.fab; if(k==="bank") return bankSheet(); if(k==="csv") return $("#csvFile").click(); if(k==="manualacc") return manualAccSheet(); if(k==="expense") return openForm("expense"); }
+  if(t.closest("[data-alltx]")){ txAcc=null; txShown=100; view="tx"; try{ localStorage.setItem("budget.view",view); }catch(err){} $("#list").scrollTop=0; render(); return; }
   const v=t.closest("[data-view]"); if(v){ view=v.dataset.view; try{ localStorage.setItem("budget.view",view); }catch(err){} $("#list").scrollTop=0; render(); return; }
   const n=t.closest("[data-new]"); if(n) return openForm(n.dataset.new);
   const ed=t.closest("[data-edit]"); if(ed) return openForm(ed.dataset.edit,ed.dataset.id);
