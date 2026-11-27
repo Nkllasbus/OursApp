@@ -12,6 +12,7 @@ struct BankAccount: Identifiable, Hashable {
     var syncAt: Double
     var session: String?
     var ebUid: String?
+    var iban: String?
 
     var subtitle: String { bank ?? (kind == "depot" ? "Depot" : src == "csv" ? "CSV-Import" : "Manuell") }
     var isPayPal: Bool { "\(bank ?? "") \(name)".lowercased().contains("paypal") }
@@ -21,7 +22,8 @@ struct BankAccount: Identifiable, Hashable {
         guard !v.isEmpty else { return nil }
         return BankAccount(id: id, name: v["name"] as? String ?? "Konto", bank: v["bank"] as? String, src: v["src"] as? String,
                            kind: v["kind"] as? String, balance: v["balance"] == nil ? nil : Int(DB.num(v["balance"])),
-                           syncAt: DB.num(v["syncAt"]), session: v["session"] as? String, ebUid: v["ebUid"] as? String)
+                           syncAt: DB.num(v["syncAt"]), session: v["session"] as? String, ebUid: v["ebUid"] as? String,
+                           iban: v["iban"] as? String)
     }
 }
 

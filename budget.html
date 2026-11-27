@@ -2956,7 +2956,12 @@ async function startBank(name){
 // Rückkehr von der Bank: ?code=…&state=…
 const ebBack=(()=>{ const p=new URLSearchParams(location.search); if(!p.has("code")&&!p.has("error")) return null;
   const o={code:p.get("code"),state:p.get("state"),error:p.get("error"),desc:p.get("error_description")}; history.replaceState(null,"",location.pathname+location.hash); return o; })();
+// Bankverbindung aus der iPhone-App gestartet (kein passender Merker in diesem Tab): Rückmeldung an die App weiterreichen
+if(ebBack){ let mine=null; try{ mine=JSON.parse(sessionStorage.getItem("budget.eb")||"null"); }catch(e){}
+  if(!mine||mine.state!==ebBack.state){ const q=new URLSearchParams(); [["code",ebBack.code],["state",ebBack.state],["error",ebBack.error],["error_description",ebBack.desc]].forEach(([k,v])=>{ if(v) q.set(k,v); });
+    window.__toApp=true; location.href="ours://bank?"+q.toString(); } }
 async function finishBank(){
+  if(window.__toApp){ say("Weiter zur Ours-App …",0); return; }
   let st=null; try{ st=JSON.parse(sessionStorage.getItem("budget.eb")||"null"); sessionStorage.removeItem("budget.eb"); }catch(e){}
   if(ebBack.error){ say("Die Verbindung wurde abgebrochen"+(ebBack.desc?": "+ebBack.desc:"."),8000); return; }
   if(!st||st.state!==ebBack.state){ say("Die Rückmeldung der Bank konnte nicht bestätigt werden. Versuch es nochmal.",8000); return; }

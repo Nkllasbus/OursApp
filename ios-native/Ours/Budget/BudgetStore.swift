@@ -38,6 +38,7 @@ final class BudgetStore {
     private var merchCache: [String: (label: String, cat: String?, proc: Bool)] = [:]
 
     private(set) var uid = ""
+    private(set) var budgetSid: String?
     private var handles: [(DatabaseReference, DatabaseHandle)] = []
     private var db: DatabaseReference { DB.root }
     private var fin: DatabaseReference { db.child("users/\(uid)/fin") }
@@ -57,6 +58,7 @@ final class BudgetStore {
         handles.append((f, h))
         // manuelle Ausgaben und eigene Kategorien liegen im gemeinsamen Budget-Bereich
         if let sid = (try? await db.child("users/\(uid)/spaces/budget").getData())?.value as? String {
+            budgetSid = sid
             let e = db.child("spaces/\(sid)/expenses")
             handles.append((e, e.observe(.value, with: { [weak self] snap in
                 let v = snap.value
@@ -618,5 +620,222 @@ final class BudgetStore {
             upd[k] = ok ? c : "Sonstiges"
         }
         fin.child("aicat").merge(upd)
+    }
+
+    // MARK: Ausgaben von Hand, Gehalt, weitere Einnahmen
+
+    func saveExpense(id: String?, cents: Int, title: String, cat: String, date: String) {
+        guard let sid = budgetSid else { return }
+        let id = id.map { String($0.dropFirst(2)) } ?? (String(Int(Date().timeIntervalSince1970 * 1000), radix: 36) + DB.randomID(4).lowercased())
+        db.child("spaces/\(sid)/expenses/\(id)").put(["amount": cents, "title": String(title.prefix(60)), "cat": cat, "date": date, "createdAt": DB.nowMs])
+    }
+
+    func deleteExpense(_ t: Transaction) {
+        guard let sid = budgetSid, t.src == "manual" else { return }
+        db.child("spaces/\(sid)/expenses/\(t.id.dropFirst(2))").drop()
+    }
+
+    func autoSalary() -> Int {
+        let si = salaryInfo()
+        if si.manual { let saved = salaryManual; salaryManual = 0; let a = salaryInfo().amount; salaryManual = saved; return a }
+        return si.amount
+    }
+
+    func setSalary(_ cents: Int?) {
+        salaryManual = cents ?? 0
+        fin.child("meta/salaryAmt").put(cents.flatMap { $0 > 0 ? $0 : nil })
+    }
+
+    func saveIncome(id: String?, name: String, cents: Int, monthly: Bool) {
+        let id = id ?? ("i" + String(Int(Date().timeIntervalSince1970 * 1000), radix: 36))
+        var v: [String: Any] = ["n": name.isEmpty ? "Einnahme" : String(name.prefix(40)), "a": cents, "m": monthly]
+        if !monthly { v["p"] = salaryInfo().start }
+        fin.child("meta/extraInc/\(id)").put(v)
+    }
+
+    func deleteIncome(_ x: ExtraIncome) {
+        fin.child("meta/extraInc/\(x.id)").drop()
+    }
+
+    // MARK: Bank verbinden (Enable Banking über den Helfer)
+
+    struct BankOption: Identifiable, Hashable { var id: String { name }; let name: String; let country: String; let logo: String?; let maxDays: Int }
+    struct PickedAccount: Identifiable, Hashable { var id: String { uid }; let uid: String; let iban: String?; let name: String; let product: String? }
+    struct BankResult { let session: String; let ticket: String; let bank: String; let validUntil: String?; let accounts: [PickedAccount] }
+    static let bankReturn = "https://nkllasbus.github.io/OursApp/budget.html"
+
+    func banks() async throws -> [BankOption] {
+        let d = try await api(["mode": "fin-banks", "country": "DE"])
+        return ((d["banks"] as? [[String: Any]]) ?? []).compactMap { b in
+            guard let n = b["name"] as? String else { return nil }
+            return BankOption(name: n, country: b["country"] as? String ?? "DE", logo: b["logo"] as? String, maxDays: Int(DB.num(b["maxDays"])))
+        }
+    }
+
+    /// Gibt die Anmeldeseite der Bank und den Prüfwert zurück
+    func startBank(_ b: BankOption) async throws -> (url: URL, state: String) {
+        let d = try await api(["mode": "fin-start", "bank": ["name": b.name, "country": b.country], "days": min(180, max(1, b.maxDays > 0 ? b.maxDays : 90)),
+                               "redirect": Self.bankReturn])
+        guard let s = d["url"] as? String, let url = URL(string: s), let state = d["state"] as? String else {
+            throw NSError(domain: "Ours", code: 2, userInfo: [NSLocalizedDescriptionKey: "Die Bank hat keine Anmeldeseite geschickt."])
+        }
+        return (url, state)
+    }
+
+    func finishBank(code: String) async throws -> BankResult {
+        let d = try await api(["mode": "fin-finish", "code": code])
+        let accs = ((d["accounts"] as? [[String: Any]]) ?? []).compactMap { a -> PickedAccount? in
+            guard let u = a["uid"] as? String else { return nil }
+            return PickedAccount(uid: u, iban: a["iban"] as? String, name: a["name"] as? String ?? "Konto", product: a["product"] as? String)
+        }
+        guard let session = d["session"] as? String, let ticket = d["ticket"] as? String else {
+            throw NSError(domain: "Ours", code: 3, userInfo: [NSLocalizedDescriptionKey: "Die Bankverbindung war unvollständig."])
+        }
+        return BankResult(session: session, ticket: ticket, bank: d["bank"] as? String ?? "", validUntil: d["validUntil"] as? String, accounts: accs)
+    }
+
+    func savePicked(_ r: BankResult, picked: Set<String>) async {
+        let sk = safeKey(r.session)
+        var s: [String: Any] = ["session": r.session, "ticket": r.ticket, "bank": r.bank, "accounts": Array(picked), "at": DB.nowMs]
+        if let v = r.validUntil { s["validUntil"] = v }
+        for (k, o) in eb where (o["bank"] as? String) == r.bank && k != sk { fin.child("eb/\(k)").drop(); eb[k] = nil }
+        eb[sk] = s
+        _ = try? await fin.child("eb/\(sk)").setValue(s)
+        for a in r.accounts where picked.contains(a.uid) {
+            let existing = accounts.values.first { $0.src == "eb" && a.iban != nil && $0.iban == a.iban }
+            let id = existing?.id ?? String(safeKey("eb_" + (a.iban ?? a.uid)).replacingOccurrences(of: " ", with: "_").prefix(60))
+            var acc: [String: Any] = ["name": existing?.name ?? (a.name.isEmpty ? (r.bank.isEmpty ? "Konto" : r.bank) : a.name), "bank": r.bank,
+                                      "src": "eb", "kind": "bank", "session": sk, "ebUid": a.uid]
+            if let iban = a.iban { acc["iban"] = iban }
+            if let b = existing?.balance { acc["balance"] = b }
+            if let t = existing?.syncAt, t > 0 { acc["syncAt"] = t }
+            _ = try? await fin.child("accounts/\(id)").setValue(acc)
+        }
+        try? await Task.sleep(nanoseconds: 600_000_000)
+        await sync(manual: true)
+    }
+
+    // MARK: CSV-Import (gleiche Erkennung wie die Webseite)
+
+    struct CSVData {
+        var head: [String]
+        var body: [[String]]
+        var map: [String: Int]     // date, amount, name, text → Spalte (-1 = keine)
+        var paypal: Bool
+        var accName: String
+    }
+
+    static func readCSV(_ data: Data, fileName: String) -> CSVData? {
+        let text = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .windowsCP1252) ?? ""
+        let lines = text.replacingOccurrences(of: "\u{FEFF}", with: "").components(separatedBy: .newlines)
+            .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        guard !lines.isEmpty else { return nil }
+        let sample = lines.prefix(30).joined(separator: "\n")
+        let delim = [";", ",", "\t"].max { a, b in sample.components(separatedBy: a).count < sample.components(separatedBy: b).count } ?? ";"
+        let d = Character(delim)
+        func parse(_ l: String) -> [String] {
+            var out: [String] = [], cur = "", inq = false
+            let ch = Array(l)
+            var i = 0
+            while i < ch.count {
+                let c = ch[i]
+                if inq {
+                    if c == "\"" { if i + 1 < ch.count && ch[i + 1] == "\"" { cur.append("\""); i += 1 } else { inq = false } } else { cur.append(c) }
+                } else if c == "\"" { inq = true }
+                else if c == d { out.append(cur.trimmingCharacters(in: .whitespaces)); cur = "" }
+                else { cur.append(c) }
+                i += 1
+            }
+            out.append(cur.trimmingCharacters(in: .whitespaces))
+            return out
+        }
+        let rows = lines.map(parse)
+        let dateRX = RX(#"^(buchungs?tag|buchung|datum|date|buchungsdatum|valuta(datum)?|wertstellung|transaktionsdatum|booking date)$"#)
+        let amountRX = RX(#"^(betrag( \(eur\)| in eur| \(€\))?|umsatz|amount|netto|brutto|betrag eur|wert)$"#)
+        let nameRX = RX(#"^(name|empfänger|empfaenger|auftraggeber\/empfänger|beguenstigter\/zahlungspflichtiger|begünstigter\/zahlungspflichtiger|zahlungsempfänger.*|auftraggeber.*|gegenpartei|payee|counterparty|partner)$"#)
+        let textRX = RX(#"^(verwendungszweck|beschreibung|description|betreff|buchungstext|vorgang|hinweis|typ|art|details?)$"#)
+        var hi = rows.firstIndex { r in r.contains { dateRX.test($0) } && r.contains { amountRX.test($0) } } ?? 0
+        if hi < 0 { hi = 0 }
+        let head = rows[hi]
+        let body = Array(rows.dropFirst(hi + 1)).filter { $0.count >= min(3, head.count) }
+        func find(_ re: RX) -> Int { head.firstIndex { re.test($0) } ?? -1 }
+        let paypal = head.contains("Transaktionscode") || head.contains("Brutto")
+        var map: [String: Int] = [
+            "date": find(dateRX),
+            "amount": paypal && head.contains("Netto") ? head.firstIndex(of: "Netto")! : find(amountRX),
+            "name": find(nameRX),
+            "text": paypal && head.contains("Typ") ? head.firstIndex(of: "Typ")! : find(textRX),
+        ]
+        if map["name"] == -1 { map["name"] = find(RX("name|empf|auftrag")) }
+        if map["text"] == -1 { map["text"] = find(RX("zweck|text|betreff")) }
+        let tr = RX("trade.?republic")
+        let accName = paypal ? "PayPal" : (tr.test(fileName) || head.contains { RX("trade republic").test($0) }) ? "Trade Republic" : RX("paypal").test(fileName) ? "PayPal" : ""
+        return CSVData(head: head, body: body, map: map, paypal: paypal, accName: accName)
+    }
+
+    static func parseDate(_ raw: String) -> String? {
+        let s = raw.trimmingCharacters(in: .whitespaces)
+        if let m = RX(#"^(\d{1,2})\.(\d{1,2})\.(\d{2,4})"#).re.firstMatch(in: s, range: NSRange(s.startIndex..., in: s)) {
+            let g = (1...3).map { Int(s[Range(m.range(at: $0), in: s)!]) ?? 0 }
+            let y = g[2] < 100 ? 2000 + g[2] : g[2]
+            return String(format: "%04d-%02d-%02d", y, g[1], g[0])
+        }
+        if let m = RX(#"^(\d{4})-(\d{2})-(\d{2})"#).first(s) { return m }
+        if let m = RX(#"^(\d{1,2})/(\d{1,2})/(\d{4})"#).re.firstMatch(in: s, range: NSRange(s.startIndex..., in: s)) {
+            let g = (1...3).map { Int(s[Range(m.range(at: $0), in: s)!]) ?? 0 }
+            return String(format: "%04d-%02d-%02d", g[2], g[1], g[0])
+        }
+        return nil
+    }
+
+    static func parseAmount(_ raw: String) -> Int? {
+        var s = raw.replacingOccurrences(of: "€", with: "").replacingOccurrences(of: "EUR", with: "").filter { !$0.isWhitespace }
+        if s.isEmpty { return nil }
+        if RX(#",\d{1,2}$"#).test(s) { s = s.replacingOccurrences(of: ".", with: "").replacingOccurrences(of: ",", with: ".") }
+        else { s = s.replacingOccurrences(of: ",", with: "") }
+        guard let v = Double(s), v.isFinite else { return nil }
+        return Int((v * 100).rounded())
+    }
+
+    static func parseSigned(_ raw: String) -> Int? {
+        let t = raw.trimmingCharacters(in: .whitespaces)
+        guard !t.isEmpty else { return nil }
+        let neg = t.hasPrefix("-") || t.hasPrefix("−")
+        guard let v = Money.parse(String(t.drop { $0 == "-" || $0 == "−" })) else { return t == "0" ? 0 : nil }
+        return neg ? -v : v
+    }
+
+    /// Importiert die Zeilen, doppelte werden übersprungen. Gibt (neu, übersprungen) zurück.
+    func importCSV(_ c: CSVData, account: String?, newName: String, balance: Int?) async -> (Int, Int) {
+        var aid = account ?? ""
+        var upd: [String: Any] = [:]
+        if account == nil {
+            let n = newName.trimmingCharacters(in: .whitespaces).isEmpty ? "Importiertes Konto" : newName.trimmingCharacters(in: .whitespaces)
+            aid = String(safeKey("csv_" + n + "_" + String(Int(Date().timeIntervalSince1970 * 1000), radix: 36)).replacingOccurrences(of: " ", with: "_"))
+            upd["accounts/\(aid)/name"] = n
+            upd["accounts/\(aid)/src"] = "csv"
+            upd["accounts/\(aid)/kind"] = n.lowercased().contains("depot") ? "depot" : "bank"
+        }
+        if let balance { upd["accounts/\(aid)/balance"] = balance }
+        upd["accounts/\(aid)/syncAt"] = DB.nowMs
+        var seen = Set(rawTx.values.filter { $0.acc == aid }.map { Self.hashTx(date: $0.date, amount: $0.amount, name: $0.name, text: $0.text) })
+        var n = 0, skip = 0
+        let col = { (r: [String], k: String) -> String in let i = c.map[k] ?? -1; return i >= 0 && i < r.count ? r[i] : "" }
+        let ppRX = RX(#"bankgutschrift|allgemeine abbuchung|kartengutschrift|umbuchung|überweisung auf|abbuchung von|kreditkarte|ausgleich"#)
+        for r in c.body {
+            guard let date = Self.parseDate(col(r, "date")), let amount = Self.parseAmount(col(r, "amount")), amount != 0 else { skip += 1; continue }
+            let name = String(col(r, "name").prefix(120))
+            let text = String(col(r, "text").split(whereSeparator: \.isWhitespace).joined(separator: " ").prefix(300))
+            let h = Self.hashTx(date: date, amount: amount, name: name, text: text)
+            if seen.contains(h) { skip += 1; continue }
+            seen.insert(h)
+            var t: [String: Any] = ["acc": aid, "date": date, "amount": amount, "name": name, "text": text, "src": "csv"]
+            if c.paypal && ppRX.test(text) { t["cat"] = "Umbuchung"; t["catSrc"] = "rule" }
+            upd["tx/\(safeKey(aid + "_" + h))"] = t
+            n += 1
+        }
+        _ = try? await fin.updateChildValues(upd)
+        await categorizeNew()
+        return (n, skip)
     }
 }

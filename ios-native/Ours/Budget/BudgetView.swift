@@ -8,6 +8,10 @@ struct BudgetView: View {
     enum Tab: String, CaseIterable { case home = "Übersicht", contracts = "Verträge", plan = "Budgets", stats = "Analyse" }
     @State private var tab: Tab = Tab(rawValue: UserDefaults.standard.string(forKey: "budget.tab") ?? "") ?? .home
     @State private var openTx: Transaction?
+    @State private var addExpense = false
+    @State private var connectBank = false
+    @State private var pickCSV = false
+    @State private var csvData: CSVRef?
 
     var body: some View {
         ScrollView {
@@ -42,8 +46,32 @@ struct BudgetView: View {
         .sensoryFeedback(.selection, trigger: tab)
         .sheet(item: $openTx) { t in TxSheet(store: store, tx: t) }
         .navigationDestination(for: TxFilter.self) { f in TxListView(store: store, filter: f) }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    if store.budgetSid != nil { Button("Ausgabe eintragen", systemImage: "square.and.pencil") { addExpense = true } }
+                    Button("Konto verbinden", systemImage: "building.columns") { connectBank = true }
+                    Button("CSV importieren", systemImage: "doc.text") { pickCSV = true }
+                } label: { Image(systemName: "plus") }
+            }
+        }
+        .sheet(isPresented: $addExpense) { ExpenseSheet(store: store, tx: nil) }
+        .sheet(isPresented: $connectBank) { BankConnectSheet(store: store) }
+        .sheet(item: $csvData) { ref in CSVImportSheet(store: store, data: ref.data) }
+        .fileImporter(isPresented: $pickCSV, allowedContentTypes: [.commaSeparatedText, .plainText, .text, .data]) { res in
+            guard case .success(let url) = res else { return }
+            let ok = url.startAccessingSecurityScopedResource()
+            defer { if ok { url.stopAccessingSecurityScopedResource() } }
+            if let d = try? Data(contentsOf: url), let c = BudgetStore.readCSV(d, fileName: url.lastPathComponent), !c.body.isEmpty {
+                csvData = CSVRef(data: c)
+            } else {
+                store.message = "In der Datei wurden keine Umsätze gefunden."
+            }
+        }
     }
 }
+
+struct CSVRef: Identifiable { let id = UUID(); let data: BudgetStore.CSVData }
 
 /// Welche Umsätze die Liste zeigt (alle oder ein Konto)
 struct TxFilter: Hashable { let account: String? }
@@ -358,6 +386,7 @@ struct TxSheet: View {
     @State private var name = ""
     @State private var remember = true
     @State private var exclude = false
+    @State private var editManual = false
 
     var body: some View {
         NavigationStack {
@@ -383,6 +412,11 @@ struct TxSheet: View {
                     Section {
                         Button("Wieder nicht doppelt zählen") { store.setKeep(tx, false); dismiss() }
                     } footer: { Text("Wird mitgezählt, obwohl es nach einer doppelten PayPal-Buchung aussieht.") }
+                }
+                if tx.src == "manual" {
+                    Section {
+                        Button("Ausgabe bearbeiten") { editManual = true }
+                    } footer: { Text("Von Hand eingetragen.") }
                 }
                 if tx.src != "manual" {
                     Section("Name") { TextField("Name", text: $name) }
@@ -419,6 +453,7 @@ struct TxSheet: View {
                 }
             }
             .onAppear { cat = store.cat(tx); name = store.label(tx); exclude = tx.ex }
+            .sheet(isPresented: $editManual, onDismiss: { dismiss() }) { ExpenseSheet(store: store, tx: tx) }
         }
     }
 

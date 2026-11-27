@@ -7,6 +7,9 @@ struct BudgetPlanView: View {
     @Binding var openTx: Transaction?
     @State private var openCat: String?
     @State private var newBudget = false
+    @State private var editSalary = false
+    @State private var editIncome: ExtraIncome?
+    @State private var newIncome = false
 
     var body: some View {
         let si = store.salaryInfo(), spend = store.periodSpend(si), inc = store.income(si)
@@ -20,15 +23,28 @@ struct BudgetPlanView: View {
             Card {
                 Text("ZUM EINTEILEN").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 Text(Money.text(inc.total)).font(.system(size: 36, weight: .bold))
-                HStack {
-                    Text("💰 \(si.fromSalary ? "Gehalt" : "Einkommen")\(si.manual ? " (eigener Betrag)" : "")")
-                    Spacer()
-                    Text(si.amount > 0 ? Money.text(si.amount) : "–").bold()
+                Button { editSalary = true } label: {
+                    HStack {
+                        Text("💰 \(si.fromSalary ? "Gehalt" : "Einkommen")\(si.manual ? " (eigener Betrag)" : "")").foregroundStyle(.primary)
+                        Spacer()
+                        Text(si.amount > 0 ? Money.text(si.amount) : "eintragen").bold().foregroundStyle(.primary)
+                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                    }
+                    .font(.subheadline)
                 }
-                .font(.subheadline)
                 ForEach(inc.extra) { x in
-                    HStack { Text("➕ \(x.n)"); Spacer(); Text(Money.text(x.a)).bold() }.font(.subheadline)
+                    Button { editIncome = x } label: {
+                        HStack {
+                            Text("➕ \(x.n)").foregroundStyle(.primary)
+                            Text(x.monthly ? "jeden Monat" : "nur dieser Zeitraum").font(.caption).foregroundStyle(.secondary)
+                            Spacer()
+                            Text(Money.text(x.a)).bold().foregroundStyle(.primary)
+                            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                        }
+                        .font(.subheadline)
+                    }
                 }
+                Button { newIncome = true } label: { Label("Weitere Einnahme hinzufügen", systemImage: "plus").font(.subheadline.weight(.semibold)) }
                 Text("\(si.fromSalary ? "Zeitraum" : "Monat") \(Gym.date(si.start).formatted(.dateTime.day().month())) – \(Gym.date(si.end).formatted(.dateTime.day().month())) · noch \(si.daysLeft) \(si.daysLeft == 1 ? "Tag" : "Tage")")
                     .font(.caption).foregroundStyle(.secondary)
                 HStack(spacing: 8) {
@@ -62,6 +78,9 @@ struct BudgetPlanView: View {
             CategorySheet(store: store, cat: ref.id, openTx: $openTx)
         }
         .sheet(isPresented: $newBudget) { BudgetEditSheet(store: store, cat: nil) }
+        .sheet(isPresented: $editSalary) { SalarySheet(store: store) }
+        .sheet(item: $editIncome) { x in IncomeSheet(store: store, income: x) }
+        .sheet(isPresented: $newIncome) { IncomeSheet(store: store, income: nil) }
     }
 }
 
