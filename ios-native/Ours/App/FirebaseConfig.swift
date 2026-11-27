@@ -10,7 +10,7 @@ enum FirebaseConfig {
     static let storageBucket = "oursapp-ff4cf.firebasestorage.app"
     /// App-ID der iOS-App aus der Firebase-Konsole (Projekteinstellungen → Meine Apps → iOS-App „de.nkllasbus.ours“).
     /// Sieht aus wie 1:509984933255:ios:abc123…
-    static let iosAppID = ""
+    static let iosAppID = "1:509984933255:ios:844cbb964a420577f87f22"
 
     static var isReady: Bool { iosAppID.contains(":ios:") }
 
