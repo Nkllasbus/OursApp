@@ -140,26 +140,29 @@ enum BudgetCats {
     static let palette: [UInt32] = [0x3F70B8, 0x3F9A5E, 0xD08440, 0x8A63B5, 0x3A93A3, 0xC7514A, 0xC09A35, 0xC25A86,
                                     0x5A5FB0, 0x2F9488, 0x7A9A3E, 0x8A67B8, 0xC0703C, 0x3D82B3, 0x98A1AD, 0xA07C3E]
     /// Apple-Systemfarben und SF Symbols je Kategorie
+    /// ruhige, gedeckte Farben (Apple-ähnlich, nicht grell) und SF Symbols je Kategorie
     static let style: [String: (color: Color, symbol: String)] = [
-        "Lebensmittel": (Color(.systemGreen), "cart.fill"),
-        "Essen gehen": (Color(.systemOrange), "fork.knife"),
-        "Wohnen": (Color(.systemBrown), "house.fill"),
-        "Mobilität": (Color(.systemBlue), "car.fill"),
-        "Shopping": (Color(.systemPink), "bag.fill"),
-        "Freizeit": (Color(.systemPurple), "ticket.fill"),
-        "Medien & Abos": (Color(.systemRed), "play.tv.fill"),
-        "Versicherung": (Color(.systemTeal), "shield.fill"),
-        "Gesundheit": (Color(.systemMint), "cross.case.fill"),
-        "Bildung": (Color(.systemIndigo), "book.fill"),
-        "Bargeld": (Color(.systemYellow), "banknote.fill"),
-        "Sparen & Investieren": (Color(.systemCyan), "chart.line.uptrend.xyaxis"),
-        "Gebühren & Zinsen": (Color(.systemGray), "percent"),
-        "Umbuchung": (Color(.systemGray2), "arrow.left.arrow.right"),
-        "Gehalt": (Color(.systemGreen), "briefcase.fill"),
-        "Sonstige Einnahmen": (Color(.systemTeal), "arrow.down.circle.fill"),
-        "Rückzahlung": (Color(.systemBlue), "arrow.uturn.backward"),
-        "Sonstiges": (Color(.systemGray), "ellipsis"),
+        "Lebensmittel": (Color(hex: 0x4E9A6F), "cart.fill"),
+        "Essen gehen": (Color(hex: 0xC98B4E), "fork.knife"),
+        "Wohnen": (Color(hex: 0x9A8068), "house.fill"),
+        "Mobilität": (Color(hex: 0x5A82BF), "car.fill"),
+        "Shopping": (Color(hex: 0xB86F86), "bag.fill"),
+        "Freizeit": (Color(hex: 0x8A72B8), "ticket.fill"),
+        "Medien & Abos": (Color(hex: 0xBF6A60), "play.tv.fill"),
+        "Versicherung": (Color(hex: 0x5B9AA3), "shield.fill"),
+        "Gesundheit": (Color(hex: 0x5FA394), "cross.case.fill"),
+        "Bildung": (Color(hex: 0x6B70B5), "book.fill"),
+        "Bargeld": (Color(hex: 0xB89B52), "banknote.fill"),
+        "Sparen & Investieren": (Color(hex: 0x4F93B3), "chart.line.uptrend.xyaxis"),
+        "Gebühren & Zinsen": (Color(hex: 0x8E8E93), "percent"),
+        "Umbuchung": (Color(hex: 0xA3A3A8), "arrow.left.arrow.right"),
+        "Gehalt": (Color(hex: 0x4E9A6F), "briefcase.fill"),
+        "Sonstige Einnahmen": (Color(hex: 0x5B9AA3), "arrow.down.circle.fill"),
+        "Rückzahlung": (Color(hex: 0x5A82BF), "arrow.uturn.backward"),
+        "Sonstiges": (Color(hex: 0x98989D), "ellipsis"),
     ]
-    static let extraColors: [Color] = [Color(.systemIndigo), Color(.systemOrange), Color(.systemTeal), Color(.systemPink), Color(.systemPurple), Color(.systemBlue)]
+    static let extraColors: [Color] = [Color(hex: 0x6B70B5), Color(hex: 0xC98B4E), Color(hex: 0x5B9AA3), Color(hex: 0xB86F86), Color(hex: 0x8A72B8), Color(hex: 0x5A82BF)]
+    static let green = Color(hex: 0x3F9467)
+    static let red = Color(hex: 0xC4625A)
     static let months = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
 }

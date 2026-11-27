@@ -539,8 +539,9 @@ final class BudgetStore {
         }
         if remember {
             rememberMerchant(key, cat: cat, name: newName ?? (alias[key] != nil ? alias[key] : nil))
-            rawTx[t.id]?.cat = nil; rawTx[t.id]?.catSrc = nil; rawTx[t.id]?.ex = exclude
-            fin.child("tx/\(t.id)").merge(["cat": NSNull(), "catSrc": NSNull(), "ex": exclude ? true as Any : NSNull()])
+            // zusätzlich fest an diesem Umsatz, damit die Wahl sicher sichtbar bleibt
+            rawTx[t.id]?.cat = cat; rawTx[t.id]?.catSrc = "me"; rawTx[t.id]?.ex = exclude
+            fin.child("tx/\(t.id)").merge(["cat": cat, "catSrc": "me", "ex": exclude ? true as Any : NSNull()])
         } else {
             rawTx[t.id]?.cat = cat; rawTx[t.id]?.catSrc = "me"; rawTx[t.id]?.ex = exclude
             fin.child("tx/\(t.id)").merge(["cat": cat, "catSrc": "me", "ex": exclude ? true as Any : NSNull()])

@@ -40,7 +40,7 @@ struct BudgetView: View {
         .background(Color(.systemGroupedBackground))
         .refreshable { await store.refresh() }
         .navigationTitle("Budget")
-        .tint(Color(.systemGreen))
+        .tint(BudgetCats.green)
         .task { if let uid = session.uid { await store.start(uid: uid) } }
         .onChange(of: tab) { UserDefaults.standard.set(tab.rawValue, forKey: "budget.tab") }
         .sensoryFeedback(.selection, trigger: tab)
@@ -112,21 +112,21 @@ struct BudgetHomeView: View {
                         Text(ago(store.lastSyncAt)).font(.caption).foregroundStyle(.secondary)
                     }
                 }
-                Text(Money.text(total)).font(.system(size: 38, weight: .bold)).foregroundStyle(total < 0 ? Color.red : Color.primary)
+                Text(Money.text(total)).font(.system(size: 38, weight: .bold)).foregroundStyle(total < 0 ? BudgetCats.red : Color.primary)
                 Text("\(store.rawTx.count) Umsätze · neuester vom \(store.newestText)").font(.caption).foregroundStyle(.secondary)
                 ForEach(accs) { a in
                     NavigationLink(value: TxFilter(account: a.id)) {
                         HStack(spacing: 12) {
                             Image(systemName: a.kind == "depot" ? "chart.line.uptrend.xyaxis" : "building.columns.fill")
                                 .foregroundStyle(.white).frame(width: 38, height: 38)
-                                .background(a.isPayPal ? Color(.systemBlue) : Color(.systemGreen), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .background(a.isPayPal ? Color(hex: 0x5A82BF) : BudgetCats.green, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(a.name).font(.body.weight(.semibold)).foregroundStyle(.primary)
                                 Text(a.subtitle).font(.caption).foregroundStyle(.secondary)
                             }
                             Spacer()
                             Text(a.balance.map { Money.text($0) } ?? "–").font(.body.weight(.semibold).monospacedDigit())
-                                .foregroundStyle((a.balance ?? 0) < 0 ? Color.red : Color.primary)
+                                .foregroundStyle((a.balance ?? 0) < 0 ? BudgetCats.red : Color.primary)
                             Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
                         }
                         .padding(.vertical, 4)
@@ -218,7 +218,7 @@ struct TxRow: View {
             }
             Spacer()
             Text(Money.signed(tx.amount)).font(.body.weight(.semibold).monospacedDigit())
-                .foregroundStyle(tx.amount > 0 ? Color.green : Color.primary)
+                .foregroundStyle(tx.amount > 0 ? BudgetCats.green : Color.primary)
         }
         .padding(.horizontal, 12).padding(.vertical, 9)
         .opacity(tx.ex ? 0.45 : 1)
@@ -293,7 +293,7 @@ struct InOutCard: View {
                         .foregroundStyle(by: .value("Art", b.kind))
                         .cornerRadius(4)
                 }
-                .chartForegroundStyleScale(["Einnahmen": Color(.systemGreen), "Ausgaben": Color(.systemRed)])
+                .chartForegroundStyleScale(["Einnahmen": BudgetCats.green, "Ausgaben": BudgetCats.red])
                 .frame(height: 180)
             }
         }
@@ -396,7 +396,7 @@ struct TxSheet: View {
                 Section {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(Money.signed(tx.amount)).font(.system(size: 34, weight: .bold).monospacedDigit())
-                            .foregroundStyle(tx.amount > 0 ? Color.green : Color.primary)
+                            .foregroundStyle(tx.amount > 0 ? BudgetCats.green : Color.primary)
                         Text("\(Gym.date(tx.date).formatted(.dateTime.weekday(.wide).day().month(.wide).year()))\(tx.acc.flatMap { store.accounts[$0]?.name }.map { " · \($0)" } ?? "")")
                             .font(.subheadline).foregroundStyle(.secondary)
                     }
@@ -422,15 +422,23 @@ struct TxSheet: View {
                 }
                 if tx.src != "manual" {
                     Section("Name") { TextField("Name", text: $name) }
-                    Section("Kategorie") {
-                        Picker("Kategorie", selection: $cat) {
-                            ForEach(store.catList, id: \.self) { c in
-                                Label { Text(c) } icon: { Circle().fill(store.tint(c)).frame(width: 10, height: 10) }.tag(c)
-                            }
-                        }
-                        .pickerStyle(.navigationLink)
+                    Section {
                         Toggle("Für alle Umsätze von „\(name.isEmpty ? store.label(tx) : name)“ merken", isOn: $remember)
                         Toggle("Nicht mitzählen", isOn: $exclude)
+                    }
+                    // Kategorie direkt hier wählen (Häkchen), ohne in eine eigene Liste zu springen
+                    Section("Kategorie") {
+                        ForEach(store.catList, id: \.self) { c in
+                            Button { cat = c } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: store.symbol(c)).font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
+                                        .frame(width: 28, height: 28).background(store.tint(c), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                                    Text(c).foregroundStyle(.primary)
+                                    Spacer()
+                                    if cat == c { Image(systemName: "checkmark").font(.body.weight(.semibold)).foregroundStyle(.tint) }
+                                }
+                            }
+                        }
                     }
                 }
                 Section("Original") {
@@ -441,6 +449,7 @@ struct TxSheet: View {
                     }
                 }
             }
+            .sensoryFeedback(.selection, trigger: cat)
             .navigationTitle(store.label(tx))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

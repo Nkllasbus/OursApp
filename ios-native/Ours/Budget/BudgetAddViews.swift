@@ -300,10 +300,10 @@ struct CSVImportSheet: View {
                         HStack {
                             VStack(alignment: .leading) {
                                 Text(cell(r, "name")).lineLimit(1)
-                                Text(d ?? "Datum?").font(.caption).foregroundStyle(d == nil ? Color.red : Color.secondary)
+                                Text(d ?? "Datum?").font(.caption).foregroundStyle(d == nil ? BudgetCats.red : Color.secondary)
                             }
                             Spacer()
-                            Text(v.map { Money.signed($0) } ?? "?").foregroundStyle(v == nil ? Color.red : Color.primary).monospacedDigit()
+                            Text(v.map { Money.signed($0) } ?? "?").foregroundStyle(v == nil ? BudgetCats.red : Color.primary).monospacedDigit()
                         }
                     }
                 }

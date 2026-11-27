@@ -102,7 +102,7 @@ struct BudgetRow: View {
 
     var body: some View {
         let lv = budget == 0 ? 0 : spent >= budget ? 2 : Double(spent) >= Double(budget) * 0.8 ? 1 : 0
-        let col: Color = lv == 2 ? Color(.systemRed) : lv == 1 ? Color(.systemOrange) : store.tint(cat)
+        let col: Color = lv == 2 ? BudgetCats.red : lv == 1 ? Color(hex: 0xC98B4E) : store.tint(cat)
         let left = budget - spent
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
@@ -120,7 +120,7 @@ struct BudgetRow: View {
             Text(budget == 0 ? "Kein Budget festgelegt"
                  : lv == 2 ? "\(Money.text(-left)) über dem Budget"
                  : "noch \(Money.text(left))\(left > 0 ? " · \(Money.text(left / max(1, daysLeft))) pro Tag" : "")\(lv == 1 ? " · fast aufgebraucht" : "")")
-                .font(.caption).foregroundStyle(lv == 2 ? Color.red : Color.secondary)
+                .font(.caption).foregroundStyle(lv == 2 ? BudgetCats.red : Color.secondary)
         }
         .padding(14)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -153,9 +153,9 @@ struct CategorySheet: View {
                             Text(b > 0 ? "von \(Money.text(b)) Budget" : "ausgegeben").foregroundStyle(.secondary)
                         }
                         if b > 0 {
-                            ProgressView(value: min(1, Double(v) / Double(b))).tint(v >= b ? .red : store.tint(cat))
+                            ProgressView(value: min(1, Double(v) / Double(b))).tint(v >= b ? BudgetCats.red : store.tint(cat))
                             Text(v >= b ? "\(Money.text(v - b)) über dem Budget" : "Noch \(Money.text(b - v)) frei")
-                                .font(.subheadline.weight(v >= b ? .semibold : .regular)).foregroundStyle(v >= b ? Color.red : Color.secondary)
+                                .font(.subheadline.weight(v >= b ? .semibold : .regular)).foregroundStyle(v >= b ? BudgetCats.red : Color.secondary)
                         }
                         Text("Zeitraum \(Gym.date(si.start).formatted(.dateTime.day().month())) – \(Gym.date(si.end).formatted(.dateTime.day().month()))\(adj.isEmpty ? "" : " · \(Money.text(raw)) abgebucht \(adjSum >= 0 ? "−" : "+") \(Money.text(abs(adjSum))) Korrekturen")")
                             .font(.caption).foregroundStyle(.secondary)
@@ -167,13 +167,13 @@ struct CategorySheet: View {
                         Button { editAdj = a } label: {
                             HStack {
                                 Image(systemName: a.a > 0 ? "arrow.uturn.backward.circle.fill" : "plus.circle.fill")
-                                    .foregroundStyle(a.a > 0 ? Color.green : Color.secondary).font(.title3)
+                                    .foregroundStyle(a.a > 0 ? BudgetCats.green : Color.secondary).font(.title3)
                                 VStack(alignment: .leading) {
                                     Text(a.n ?? (a.a > 0 ? "Geld zurück" : "Ausgabe dazu")).foregroundStyle(.primary)
                                     Text(Gym.date(a.d).formatted(.dateTime.weekday(.abbreviated).day().month())).font(.caption).foregroundStyle(.secondary)
                                 }
                                 Spacer()
-                                Text("\(a.a > 0 ? "−" : "+")\(Money.text(abs(a.a)))").monospacedDigit().foregroundStyle(a.a > 0 ? Color.green : Color.primary)
+                                Text("\(a.a > 0 ? "−" : "+")\(Money.text(abs(a.a)))").monospacedDigit().foregroundStyle(a.a > 0 ? BudgetCats.green : Color.primary)
                             }
                         }
                     }
