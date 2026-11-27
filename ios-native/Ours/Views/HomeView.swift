@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(Session.self) private var session
+    @Binding var path: [OursPage]
 
     private var greeting: String {
         let h = Calendar.current.component(.hour, from: Date())
@@ -14,7 +15,7 @@ struct HomeView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -86,7 +87,12 @@ struct PageDestination: View {
     let page: OursPage
 
     var body: some View {
-        ComingSoonView(title: page.label, symbol: page.symbol, color: page.color,
-                       text: "\(page.label) wird gerade für die App neu gebaut. Bis dahin findest du es auf der Webseite.")
+        switch page {
+        case .gym:
+            GymView()
+        default:
+            ComingSoonView(title: page.label, symbol: page.symbol, color: page.color,
+                           text: "\(page.label) wird gerade für die App neu gebaut. Bis dahin findest du es auf der Webseite.")
+        }
     }
 }

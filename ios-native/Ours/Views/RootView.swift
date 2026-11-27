@@ -8,10 +8,15 @@ struct RootView: View {
     @State private var groups = GroupStore()
     @State private var joinCode = ""
     @State private var showJoin = false
+    @State private var showPages = false
+    @State private var homePath: [OursPage] = []
 
     var body: some View {
-        TabView(selection: $tab) {
-            HomeView()
+        // „Seiten“ wechselt nicht den Reiter, sondern öffnet das Popup
+        TabView(selection: Binding(get: { tab }, set: { new in
+            if new == .pages { showPages = true } else { tab = new }
+        })) {
+            HomeView(path: $homePath)
                 .tabItem { Label("Home", systemImage: "house") }
                 .tag(Tab.home)
             NavigationStack {
@@ -20,7 +25,7 @@ struct RootView: View {
             }
                 .tabItem { Label("Feed", systemImage: "newspaper") }
                 .tag(Tab.feed)
-            PagesView()
+            Color.clear
                 .tabItem { Label("Seiten", systemImage: "square.grid.2x2") }
                 .tag(Tab.pages)
             NavigationStack {
@@ -45,6 +50,12 @@ struct RootView: View {
             joinCode = url.lastPathComponent
             tab = .me
             showJoin = true
+        }
+        .sheet(isPresented: $showPages) {
+            PagesSheet { page in
+                tab = .home
+                homePath = [page]
+            }
         }
         .sheet(isPresented: $showJoin) {
             JoinGroupSheet(initialCode: joinCode).environment(groups)
